@@ -80,8 +80,8 @@ export default function Hero() {
       // its — sliding them in from outside the sentence, in opposite
       // directions, so neither travels through a static neighbor.
       const vw = window.innerWidth || 1024;
-      gsap.set(sixEl, { x: vw * -0.22 });
-      gsap.set(standardEl, { x: vw * 0.22 });
+      gsap.set(sixEl, { x: vw * -0.1 });
+      gsap.set(standardEl, { x: vw * 0.1 });
 
       gsap
         .timeline({ onComplete: armScrollInteraction })
@@ -124,10 +124,10 @@ export default function Hero() {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
 
-      <div className="relative z-10 w-full px-6 pb-16 pt-24 sm:px-10 sm:pb-20 md:px-16 md:pb-24 lg:px-20 lg:pb-28">
+      <div className="relative z-10 w-full px-6 pb-4 pt-24 sm:px-10 sm:pb-6 md:px-16 md:pb-8 lg:px-20 lg:pb-10">
         <p
           ref={kickerRef}
-          className="mb-6 font-body text-xs font-medium uppercase tracking-[0.35em] text-cream/70 opacity-0 md:mb-8 md:text-sm"
+          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:mb-8 md:text-sm"
         >
           Delivering excellence through experience.
         </p>
@@ -148,7 +148,7 @@ export default function Hero() {
             >
               <span
                 ref={sixRef}
-                style={{ display: "inline-block", transform: "translateX(-22vw)" }}
+                style={{ display: "inline-block", transform: "translateX(-10vw)" }}
               >
                 SIX
               </span>{" "}
@@ -171,7 +171,7 @@ export default function Hero() {
                 ref={standardRef}
                 style={{
                   display: "inline-block",
-                  transform: "translateX(22vw)",
+                  transform: "translateX(10vw)",
                 }}
                 className="text-emerald"
               >
