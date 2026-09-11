@@ -17,6 +17,7 @@
   --color-emerald: var(--color-emerald);
   --color-brown: var(--color-brown);
   --font-display: var(--font-poppins);
+  --font-headline: var(--font-anton);
   --font-body: var(--font-inter);
 }
 
