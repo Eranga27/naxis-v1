@@ -21,6 +21,13 @@ export default function SmoothScroll() {
 
     lenis.on("scroll", ScrollTrigger.update);
 
+    // ScrollTrigger pins insert spacer elements that change document height
+    // after Lenis has already measured it. Without re-measuring, Lenis clamps
+    // scrolling to the old, shorter limit and later sections become
+    // unreachable.
+    const handleRefresh = () => lenis.resize();
+    ScrollTrigger.addEventListener("refresh", handleRefresh);
+
     const tickerCallback = (time: number) => {
       lenis.raf(time * 1000);
     };
@@ -29,6 +36,7 @@ export default function SmoothScroll() {
     gsap.ticker.lagSmoothing(0);
 
     return () => {
+      ScrollTrigger.removeEventListener("refresh", handleRefresh);
       gsap.ticker.remove(tickerCallback);
       lenis.destroy();
     };

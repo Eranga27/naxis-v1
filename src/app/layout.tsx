@@ -43,9 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${poppins.variable} ${anton.variable} ${inter.variable} h-full antialiased`}
+      className={`${poppins.variable} ${anton.variable} ${inter.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ink text-cream font-body">
+      <body className="flex min-h-screen flex-col bg-ink text-cream font-body">
         <SmoothScroll />
         <CustomCursor />
         <ScrollProgress />
