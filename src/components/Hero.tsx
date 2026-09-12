@@ -17,8 +17,6 @@ export default function Hero() {
   const mediaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const kickerRef = useRef<HTMLParagraphElement>(null);
-  const kicker2Ref = useRef<HTMLParagraphElement>(null);
-  const kicker2WrapRef = useRef<HTMLDivElement>(null);
   const line1Ref = useRef<HTMLSpanElement>(null);
   const line2Ref = useRef<HTMLSpanElement>(null);
   const line1WrapRef = useRef<HTMLSpanElement>(null);
@@ -44,29 +42,6 @@ export default function Hero() {
 
     let entrance: (() => void) | null = null;
 
-    // Positions the second kicker from *measured* geometry rather than a
-    // guessed constant: its top is line1's own rendered bottom edge plus a
-    // small fixed gap, and its right inset is a percentage of the actual
-    // container width — so it can't drift out of sync with the headline
-    // the way two independently-tuned values could. Uses offsetTop/
-    // offsetHeight/clientWidth rather than getBoundingClientRect(): those
-    // reflect the untransformed layout box, so the measurement is correct
-    // immediately, before line1's own load-in transform (translateY) has
-    // played out, with no dependency on animation timing.
-    const GAP_BELOW_LINE1 = 20; // px
-    const RIGHT_INSET_RATIO = 0.2; // fraction of the container's own width
-    const measureKicker2 = () => {
-      const kicker2Wrap = kicker2WrapRef.current;
-      if (!line1 || !content || !kicker2Wrap) return;
-      kicker2Wrap.style.top = `${line1.offsetTop + line1.offsetHeight + GAP_BELOW_LINE1}px`;
-      kicker2Wrap.style.right = `${content.clientWidth * RIGHT_INSET_RATIO}px`;
-    };
-    measureKicker2();
-    window.addEventListener("resize", measureKicker2);
-    // Bebas Neue swaps in after the fallback font; re-measure once it has,
-    // in case its metrics shift line1's rendered height even slightly.
-    document.fonts?.ready?.then(measureKicker2);
-
     const ctx = gsap.context(() => {
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
@@ -80,14 +55,15 @@ export default function Hero() {
 
       // The scroll interaction is armed only after the load-in settles.
       // SIX and STANDARD sit apart from their neighbors at rest (SIX away
-      // from COUNTRIES,, STANDARD away from ONE, near the second kicker),
-      // fully legible the whole time, then on scroll they slide inward and
-      // close that gap — SIX right, STANDARD left — settling into the
-      // compact "SIX COUNTRIES," / "ONE STANDARD." reading. Only once
-      // that's resolved do the two lines (not either kicker, which stay
-      // put throughout) fade and lift away as the video keeps drifting
-      // inward, so the section's message is finished — not interrupted —
-      // by the time Mission takes over.
+      // from COUNTRIES,, STANDARD away from ONE), fully legible the whole
+      // time, then on scroll they slide inward and close that gap — SIX
+      // right, STANDARD left — settling into the compact
+      // "SIX COUNTRIES," / "ONE STANDARD." reading, with the video
+      // continuing a slow zoom alongside them. The pin is short — just
+      // long enough for that settle — and nothing fades: once settled, the
+      // pin releases and the page keeps scrolling straight into Mission,
+      // so the transition reads as one continuous scroll rather than a
+      // stall-then-fade.
       const armScrollInteraction = () => {
         releaseMasks();
 
@@ -96,25 +72,23 @@ export default function Hero() {
             scrollTrigger: {
               trigger: section,
               start: "top top",
-              end: () => "+=" + window.innerHeight,
+              end: () => "+=" + window.innerHeight * 0.6,
               pin: true,
               scrub: true,
               invalidateOnRefresh: true,
             },
           })
-          // First third of the pinned scroll: SIX and STANDARD slide
-          // inward, closing the gap to COUNTRIES,/ONE.
-          .to(sixEl, { x: 0, ease: "none", duration: 0.35 }, 0)
-          .to(standardEl, { x: 0, ease: "none", duration: 0.35 }, 0)
-          // Only once that's resolved does the headline fade and lift away.
-          .to([line1, line2], { opacity: 0, y: -48, ease: "power1.in", duration: 0.65 }, 0.35)
+          // A brief hold, then SIX and STANDARD slide inward, closing the
+          // gap to COUNTRIES,/ONE, finishing exactly as the pin releases.
+          .to(sixEl, { x: 0, ease: "none", duration: 0.85 }, 0.15)
+          .to(standardEl, { x: 0, ease: "none", duration: 0.85 }, 0.15)
           .to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
       };
 
       if (reduceMotion) {
         // No pin/scrub for reduced motion: the section is skipped straight
         // to its final (compact) state with no scroll-hijacking at all.
-        gsap.set([kickerRef.current, kicker2Ref.current], { opacity: 1, y: 0 });
+        gsap.set(kickerRef.current, { opacity: 1, y: 0 });
         gsap.set([line1, line2], { opacity: 1, y: 0 });
         gsap.set([sixEl, standardEl], { x: 0 });
         gsap.set(media, { opacity: 1, scale: 1 });
@@ -150,7 +124,7 @@ export default function Hero() {
             0.2
           )
           .fromTo(
-            [kickerRef.current, kicker2Ref.current],
+            kickerRef.current,
             { opacity: 0, y: 12 },
             { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
             0.8
@@ -178,7 +152,6 @@ export default function Hero() {
 
     return () => {
       unsubscribe();
-      window.removeEventListener("resize", measureKicker2);
       ctx.revert();
     };
   }, []);
@@ -208,28 +181,6 @@ export default function Hero() {
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
       >
-        {/* KICKER 2: "CERTIFIED PARTNERS..." — top/right are set at runtime
-            on THIS wrapper from line1's measured bounding box (see
-            measureKicker2 above), so it sits in the gap below
-            "SIX COUNTRIES," and scales with screen size automatically. To
-            manually nudge it FROM that calculated spot, add
-            translate-x-* or translate-y-* to THIS wrapper's className (e.g.
-            "translate-x-4 -translate-y-4") — NOT to the <p> inside it.
-            The <p> is what the entrance animation fades/moves in on load,
-            so a translate-y-* there gets silently overwritten once that
-            animation finishes; this wrapper is never touched by it, so
-            your nudge always sticks.
-            TODO: placeholder copy — replace with the real second line. */}
-        <div ref={kicker2WrapRef} className="absolute">
-          <p
-            ref={kicker2Ref}
-            className="max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
-          >
-            Certified partners.
-            Uncompromising standards.
-          </p>
-        </div>
-
         {/* Real accessible heading text — the visual lines below are
             decorative duplicates, individually aria-hidden. */}
         <h1 className="sr-only">Six countries. One standard.</h1>
@@ -253,14 +204,14 @@ export default function Hero() {
                   margin: margin on a word sharing a line pushes its
                   neighbors too; translate only moves this one, and
                   never fights the scroll animation on the inner span. */}
-              <span className="translate-y-44" style={{ display: "inline-block" }}>
+              <span className="translate-y-52" style={{ display: "inline-block" }}>
                 <span ref={sixRef} style={{ display: "inline-block" }}>
                   SIX
                 </span>
               </span>{" "}
               {/* WORD 2: "COUNTRIES," — same idea: edit this span's
                   className with translate-x-* or translate-y-* (see WORD 1). */}
-              <span className="translate-y-44" style={{ display: "inline-block" }}>
+              <span className="translate-y-52" style={{ display: "inline-block" }}>
                 COUNTRIES,
               </span>
             </span>
@@ -276,7 +227,7 @@ export default function Hero() {
               — the <p> is what the entrance animation fades/moves in on
               load, so a translate-y-* there gets silently overwritten
               once that finishes; this wrapper is never touched by it. */}
-          <div className="mb-6 mt-4 translate-y-40 translate-x-28 sm:mb-8 sm:mt-0 md:mb-10">
+          <div className="mb-6 mt-4 translate-y-48 translate-x-28 sm:mb-8 sm:mt-0 md:mb-10">
             <p
               ref={kickerRef}
               className="max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
@@ -298,14 +249,14 @@ export default function Hero() {
               {/* WORD 3: "ONE" — edit this span's className with
                   translate-x-* or translate-y-* (see WORD 1's comment for
                   the full explanation of why translate, not margin). */}
-              <span className="translate-x-20 translate-y-4 " style={{ display: "inline-block" }}>
+              <span className="translate-x-20 translate-y-12 " style={{ display: "inline-block" }}>
                 ONE
               </span>{" "}
               {/* WORD 4: "STANDARD." — its color (text-coral) lives on the
                   INNER span, already used by the scroll animation. Add
                   translate-x-* or translate-y-* to the OUTER span instead, so
                   a manual nudge never fights the animated one. */}
-              <span className="translate-x-20 translate-y-4" style={{ display: "inline-block" }}>
+              <span className="translate-x-20 translate-y-12" style={{ display: "inline-block" }}>
                 <span
                   ref={standardRef}
                   style={{ display: "inline-block" }}
