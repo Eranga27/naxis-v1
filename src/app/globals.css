@@ -5,6 +5,10 @@
   --color-cream: #f4efe4;
   --color-gold: #b8912f;
   --color-gold-light: #e6cd93;
+  /* A brighter, more saturated gold than the brand's muted --color-gold —
+     used sparingly as a single accent pop (e.g. one word) rather than as
+     a UI color. */
+  --color-gold-bright: #ffc94a;
   --color-emerald: #1f6f4a;
   --color-brown: #4a2a1c;
 }
@@ -14,6 +18,7 @@
   --color-cream: var(--color-cream);
   --color-gold: var(--color-gold);
   --color-gold-light: var(--color-gold-light);
+  --color-gold-bright: var(--color-gold-bright);
   --color-emerald: var(--color-emerald);
   --color-brown: var(--color-brown);
   --font-display: var(--font-poppins);

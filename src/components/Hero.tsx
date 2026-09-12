@@ -21,6 +21,8 @@ export default function Hero() {
   const line2Ref = useRef<HTMLSpanElement>(null);
   const line1WrapRef = useRef<HTMLSpanElement>(null);
   const line2WrapRef = useRef<HTMLSpanElement>(null);
+  const sixRef = useRef<HTMLSpanElement>(null);
+  const standardRef = useRef<HTMLSpanElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
@@ -30,7 +32,12 @@ export default function Hero() {
     const line2 = line2Ref.current;
     const line1Wrap = line1WrapRef.current;
     const line2Wrap = line2WrapRef.current;
-    if (!section || !media || !content || !line1 || !line2 || !line1Wrap || !line2Wrap)
+    const sixEl = sixRef.current;
+    const standardEl = standardRef.current;
+    if (
+      !section || !media || !content || !line1 || !line2 ||
+      !line1Wrap || !line2Wrap || !sixEl || !standardEl
+    )
       return;
 
     let entrance: (() => void) | null = null;
@@ -50,9 +57,12 @@ export default function Hero() {
       // Deliberately simple and self-contained (one ScrollTrigger, one
       // trigger element) rather than the previous multi-trigger setup,
       // which didn't reliably arm: the headline is fully readable at rest
-      // the moment it loads, then on scroll it fades and lifts away while
-      // the video keeps drifting inward, so the section's message is
-      // finished — not interrupted — by the time Mission takes over.
+      // the moment it loads — SIX and STANDARD are only a little off their
+      // resting spot, not hidden off-screen — then on scroll they settle
+      // the last bit into place, the two lines (not the kicker, which
+      // stays put throughout) fade and lift away, and the video keeps
+      // drifting inward, so the section's message is finished — not
+      // interrupted — by the time Mission takes over.
       const armScrollInteraction = () => {
         releaseMasks();
 
@@ -67,9 +77,12 @@ export default function Hero() {
               invalidateOnRefresh: true,
             },
           })
-          // First third of the pinned scroll is a dead hold — the headline
-          // just sits there, fully readable, before anything moves.
-          .to(content, { opacity: 0, y: -48, ease: "power1.in", duration: 0.65 }, 0.35)
+          // Early in the scroll, SIX and STANDARD settle their small drift
+          // into perfect alignment with COUNTRIES./ONE.
+          .to(sixEl, { x: 0, ease: "none", duration: 0.3 }, 0)
+          .to(standardEl, { x: 0, ease: "none", duration: 0.3 }, 0)
+          // Only once that's resolved does the headline fade and lift away.
+          .to([line1, line2], { opacity: 0, y: -48, ease: "power1.in", duration: 0.65 }, 0.35)
           .to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
       };
 
@@ -78,11 +91,18 @@ export default function Hero() {
         // to its final state with no scroll-hijacking at all.
         gsap.set(kickerRef.current, { opacity: 1, y: 0 });
         gsap.set([line1, line2], { opacity: 1, y: 0 });
+        gsap.set([sixEl, standardEl], { x: 0 });
         gsap.set(media, { opacity: 1, scale: 1 });
         releaseMasks();
         return;
       }
 
+      // A small, subtle drift — not an off-screen slide — so SIX and
+      // STANDARD are legible at rest and only need to settle a short
+      // distance once the user scrolls.
+      const vw = window.innerWidth || 1024;
+      gsap.set(sixEl, { x: vw * -0.025 });
+      gsap.set(standardEl, { x: vw * 0.025 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
       entrance = () => {
@@ -177,7 +197,10 @@ export default function Hero() {
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              SIX COUNTRIES.
+              <span ref={sixRef} style={{ display: "inline-block" }}>
+                SIX
+              </span>{" "}
+              COUNTRIES.
             </span>
           </span>
 
@@ -200,7 +223,14 @@ export default function Hero() {
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              ONE <span className="text-emerald">STANDARD.</span>
+              ONE{" "}
+              <span
+                ref={standardRef}
+                style={{ display: "inline-block" }}
+                className="text-gold-bright"
+              >
+                STANDARD.
+              </span>
             </span>
           </span>
         </div>
