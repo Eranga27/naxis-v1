@@ -16,7 +16,7 @@ const CHAR_MS = 35; // per-character type / delete speed
 const WORD_HOLD_MS = 420; // pause once a greeting is fully typed
 const FINAL_HOLD_MS = 1500;
 const TEXT_FADE_MS = 400;
-const VEIL_FADE_MS = 650;
+const VEIL_FADE_MS = 450; // quick clear, so the hero entrance plays in the open
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
 

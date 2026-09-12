@@ -45,11 +45,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${poppins.variable} ${anton.variable} ${inter.variable} antialiased`}
     >
       <head>
-        {/* Runs at parse time, before <body> paints, so a repeat visitor in
-            the same session never sees a flash of the white intro veil. */}
+        {/*
+          Marks "intro already played" before <body> is parsed, so a repeat
+          visitor in the same session never sees a flash of the white veil.
+          This must be a raw inline script in <head>: next/script's
+          beforeInteractive strategy runs too late here and the veil paints.
+          React dev-warns that component-rendered scripts don't re-execute on
+          client renders — which is fine, this only ever needs to run on a
+          document load. It sets a class on <html>, hence the
+          suppressHydrationWarning above.
+        */}
         <script
           dangerouslySetInnerHTML={{
             __html: `try{if(sessionStorage.getItem('naxis:intro-seen')==='done'){document.documentElement.classList.add('intro-seen')}}catch(e){}`,

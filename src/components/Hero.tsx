@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { onReveal } from "@/lib/intro";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,6 +21,7 @@ export default function Hero() {
   const line2WrapRef = useRef<HTMLSpanElement>(null);
   const sixRef = useRef<HTMLSpanElement>(null);
   const standardRef = useRef<HTMLSpanElement>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
@@ -29,8 +31,14 @@ export default function Hero() {
     const line2Wrap = line2WrapRef.current;
     const sixEl = sixRef.current;
     const standardEl = standardRef.current;
-    if (!section || !line1 || !line2 || !line1Wrap || !line2Wrap || !sixEl || !standardEl)
+    const media = mediaRef.current;
+    if (
+      !section || !line1 || !line2 || !line1Wrap || !line2Wrap ||
+      !sixEl || !standardEl || !media
+    )
       return;
+
+    let entrance: (() => void) | null = null;
 
     const ctx = gsap.context(() => {
       const reduceMotion = window.matchMedia(
@@ -68,6 +76,7 @@ export default function Hero() {
         gsap.set(kickerRef.current, { opacity: 1, y: 0 });
         gsap.set([line1, line2], { opacity: 1, y: 0 });
         gsap.set([sixEl, standardEl], { x: 0 });
+        gsap.set(media, { opacity: 1, scale: 1 });
         releaseMasks();
         return;
       }
@@ -82,30 +91,58 @@ export default function Hero() {
       const vw = window.innerWidth || 1024;
       gsap.set(sixEl, { x: vw * -0.1 });
       gsap.set(standardEl, { x: vw * 0.1 });
+      gsap.set(media, { opacity: 0, scale: 1.18 });
 
-      gsap
-        .timeline({ onComplete: armScrollInteraction })
-        .fromTo(
-          kickerRef.current,
-          { opacity: 0, y: 12 },
-          { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
-          0
-        )
-        .fromTo(
-          line1,
-          { opacity: 0, y: "100%" },
-          { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-          0.15
-        )
-        .fromTo(
-          line2,
-          { opacity: 0, y: "100%" },
-          { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-          0.3
-        );
+      entrance = () => {
+        gsap
+          .timeline({ onComplete: armScrollInteraction })
+          // Opacity rises early — while the veil is still opaque — so the
+          // clearing white never exposes the bare dark background.
+          .fromTo(
+            media,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.35, ease: "power1.out" },
+            0
+          )
+          // Scale settles slowly and starts slightly late, so the bulk of the
+          // "flying in" is still visibly in motion once the white has gone.
+          .fromTo(
+            media,
+            { scale: 1.18 },
+            { scale: 1, duration: 1.8, ease: "power2.out" },
+            0.2
+          )
+          .fromTo(
+            kickerRef.current,
+            { opacity: 0, y: 12 },
+            { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
+            0.8
+          )
+          .fromTo(
+            line1,
+            { opacity: 0, y: "100%" },
+            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
+            0.95
+          )
+          .fromTo(
+            line2,
+            { opacity: 0, y: "100%" },
+            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
+            1.1
+          );
+      };
     }, section);
 
-    return () => ctx.revert();
+    // Held back until the intro veil lifts, so the entrance isn't spent
+    // playing behind a white screen. Fires immediately if already revealed.
+    const unsubscribe = onReveal(() => {
+      if (entrance) ctx.add(entrance);
+    });
+
+    return () => {
+      unsubscribe();
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -114,15 +151,20 @@ export default function Hero() {
       id="top"
       className="relative flex h-screen w-full items-end overflow-hidden bg-ink"
     >
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        src="/videos/hero-compressed-video.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
+      {/* Video + grade move as one unit so the entrance is a single transform. */}
+      <div ref={mediaRef} className="absolute inset-0">
+        <video
+          data-hero-video
+          className="absolute inset-0 h-full w-full object-cover"
+          src="/videos/hero-compressed-video.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
+      </div>
 
       <div className="relative z-10 w-full px-6 pb-4 pt-24 sm:px-10 sm:pb-6 md:px-16 md:pb-8 lg:px-20 lg:pb-10">
         <p
