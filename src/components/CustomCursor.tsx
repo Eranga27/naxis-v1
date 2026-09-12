@@ -54,12 +54,10 @@ export default function CustomCursor() {
     const applyState = () => {
       gsap.to(ring, {
         scale: hovering ? 1.9 : pressed ? 0.8 : 1,
-        borderColor: hovering
-          ? "var(--color-gold-light)"
-          : "var(--color-gold)",
+        borderColor: "rgba(244, 239, 228, 0.9)",
         backgroundColor: hovering
-          ? "rgba(184, 145, 47, 0.12)"
-          : "rgba(184, 145, 47, 0)",
+          ? "rgba(244, 239, 228, 0.14)"
+          : "rgba(244, 239, 228, 0)",
         duration: 0.3,
         ease: "power3.out",
         overwrite: "auto",
@@ -144,12 +142,12 @@ export default function CustomCursor() {
       <div
         ref={ringRef}
         aria-hidden="true"
-        className="pointer-events-none fixed left-0 top-0 z-[200] h-9 w-9 rounded-full border border-gold will-change-transform"
+        className="pointer-events-none fixed left-0 top-0 z-[200] h-8 w-8 rounded-full border-[1.5px] border-cream/90 will-change-transform"
       />
       <div
         ref={dotRef}
         aria-hidden="true"
-        className="pointer-events-none fixed left-0 top-0 z-[200] h-1.5 w-1.5 rounded-full bg-gold will-change-transform"
+        className="pointer-events-none fixed left-0 top-0 z-[200] h-1.5 w-1.5 rounded-full bg-cream will-change-transform"
       />
     </>
   );
