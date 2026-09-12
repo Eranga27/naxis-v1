@@ -236,14 +236,21 @@ export default function Hero() {
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              {/* WORD 1: "SIX" — add a margin class here to move just this
-                  word, e.g. className="ml-4" to nudge it right, or
-                  className="-ml-4" to nudge it left. */}
-              <span ref={sixRef} className="" style={{ display: "inline-block" }}>
-                SIX
+              {/* WORD 1: "SIX" — edit the OUTER span's className to move
+                  just this word: className="translate-x-4" (right),
+                  "-translate-x-4" (left), "translate-y-4" (down),
+                  "-translate-y-4" (up) — combine two, e.g.
+                  "translate-x-4 translate-y-4". Use translate-*, not
+                  margin: margin on a word sharing a line pushes its
+                  neighbors too; translate only moves this one, and
+                  never fights the scroll animation on the inner span. */}
+              <span className="" style={{ display: "inline-block" }}>
+                <span ref={sixRef} style={{ display: "inline-block" }}>
+                  SIX
+                </span>
               </span>{" "}
-              {/* WORD 2: "COUNTRIES," — same idea, edit this span's
-                  className to move just this word. */}
+              {/* WORD 2: "COUNTRIES," — same idea: edit this span's
+                  className with translate-x-* or translate-y-* (see WORD 1). */}
               <span className="" style={{ display: "inline-block" }}>
                 COUNTRIES,
               </span>
@@ -251,10 +258,15 @@ export default function Hero() {
           </span>
 
           {/* Small print tucked under the first line, plain and quiet —
-              a real, readable tagline (not aria-hidden). */}
+              a real, readable tagline (not aria-hidden). Its mt-* and mb-*
+              margins push "ONE STANDARD." below it down/up too, since
+              they're stacked normally — that's usually what you want here.
+              If you instead want to nudge JUST this paragraph without
+              moving "ONE STANDARD.", add translate-x-* or translate-y-* to
+              its className instead of changing the margins. */}
           <p
             ref={kickerRef}
-            className="mb-6 mt-4 max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:mb-8 sm:mt-5 sm:text-xs md:mb-10 md:text-sm"
+            className="mb-6 mt-4 max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:mb-8 sm:mt-0 sm:text-xs md:mb-10 md:text-sm"
           >
             Delivering excellence through experience.
           </p>
@@ -269,20 +281,24 @@ export default function Hero() {
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              {/* WORD 3: "ONE" — add a margin class here to move just this
-                  word, e.g. className="ml-4" to nudge it right, or
-                  className="-ml-4" to nudge it left. */}
+              {/* WORD 3: "ONE" — edit this span's className with
+                  translate-x-* or translate-y-* (see WORD 1's comment for
+                  the full explanation of why translate, not margin). */}
               <span className="" style={{ display: "inline-block" }}>
                 ONE
               </span>{" "}
-              {/* WORD 4: "STANDARD." — same idea, edit this span's
-                  className to move just this word. */}
-              <span
-                ref={standardRef}
-                style={{ display: "inline-block" }}
-                className="text-coral"
-              >
-                STANDARD.
+              {/* WORD 4: "STANDARD." — its color (text-coral) lives on the
+                  INNER span, already used by the scroll animation. Add
+                  translate-x-* or translate-y-* to the OUTER span instead, so
+                  a manual nudge never fights the animated one. */}
+              <span className="" style={{ display: "inline-block" }}>
+                <span
+                  ref={standardRef}
+                  style={{ display: "inline-block" }}
+                  className="text-coral"
+                >
+                  STANDARD.
+                </span>
               </span>
             </span>
           </span>
