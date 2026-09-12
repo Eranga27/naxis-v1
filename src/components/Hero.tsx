@@ -43,6 +43,29 @@ export default function Hero() {
 
     let entrance: (() => void) | null = null;
 
+    // Positions the second kicker from *measured* geometry rather than a
+    // guessed constant: its top is line1's own rendered bottom edge plus a
+    // small fixed gap, and its right inset is a percentage of the actual
+    // container width — so it can't drift out of sync with the headline
+    // the way two independently-tuned values could. Uses offsetTop/
+    // offsetHeight/clientWidth rather than getBoundingClientRect(): those
+    // reflect the untransformed layout box, so the measurement is correct
+    // immediately, before line1's own load-in transform (translateY) has
+    // played out, with no dependency on animation timing.
+    const GAP_BELOW_LINE1 = 20; // px
+    const RIGHT_INSET_RATIO = 0.2; // fraction of the container's own width
+    const measureKicker2 = () => {
+      const kicker2 = kicker2Ref.current;
+      if (!line1 || !content || !kicker2) return;
+      kicker2.style.top = `${line1.offsetTop + line1.offsetHeight + GAP_BELOW_LINE1}px`;
+      kicker2.style.right = `${content.clientWidth * RIGHT_INSET_RATIO}px`;
+    };
+    measureKicker2();
+    window.addEventListener("resize", measureKicker2);
+    // Bebas Neue swaps in after the fallback font; re-measure once it has,
+    // in case its metrics shift line1's rendered height even slightly.
+    document.fonts?.ready?.then(measureKicker2);
+
     const ctx = gsap.context(() => {
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
@@ -154,6 +177,7 @@ export default function Hero() {
 
     return () => {
       unsubscribe();
+      window.removeEventListener("resize", measureKicker2);
       ctx.revert();
     };
   }, []);
@@ -183,17 +207,15 @@ export default function Hero() {
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
       >
-        {/* Sits inset from the right edge, its top aligned with the top of
-            the headline block (matching contentRef's own pt-24, which is
-            where the headline starts) — so it reads as level with the
-            "SIX COUNTRIES," row, not centered on the viewport. Positioned
-            as a percentage of the content box, not a fixed pixel/viewport
-            value, so the inset holds proportionally across screen sizes.
-            Stays put through the scroll, same as the first kicker.
+        {/* top/right are set at runtime from line1's measured bounding box
+            (see measureKicker2) — sits in the gap below "SIX COUNTRIES,",
+            not overlapping it, and scales with the actual container width
+            rather than a guessed per-breakpoint value. Stays put through
+            the scroll, same as the first kicker.
             TODO: placeholder copy — replace with the real second line. */}
         <p
           ref={kicker2Ref}
-          className="absolute right-[18%] top-24 max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:right-[20%] sm:text-xs md:right-[22%] md:text-sm"
+          className="absolute max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
         >
           Certified partners. Uncompromising standards.
         </p>
