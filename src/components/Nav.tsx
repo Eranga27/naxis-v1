@@ -15,10 +15,10 @@ export default function Nav() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between bg-ink/25 px-8 py-6 backdrop-blur-md md:px-12 md:py-7">
+      <header className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between bg-ink px-8 py-6 md:px-12 md:py-7">
         <a
           href="#top"
-          className="inline-flex h-11 items-center justify-center rounded-full bg-ink/50 p-3 backdrop-blur-md md:h-12 md:p-3.5"
+          className="inline-flex h-11 items-center justify-center rounded-full bg-cream/[0.07] p-3 transition-colors hover:bg-cream/15 md:h-12 md:p-3.5"
         >
           <span className="relative block h-full aspect-[1200/980]">
             <Image
@@ -45,7 +45,7 @@ export default function Nav() {
             aria-label="Open menu"
             aria-expanded={open}
             onClick={() => setOpen(true)}
-            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-ink/50 backdrop-blur-md transition-colors hover:bg-ink/70"
+            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-cream/[0.07] transition-colors hover:bg-cream/15"
           >
             <span className="block h-px w-4 bg-cream" />
             <span className="block h-px w-4 bg-cream" />
