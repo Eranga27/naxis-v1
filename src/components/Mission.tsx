@@ -74,11 +74,19 @@ export default function Mission() {
       // section scrolls through view. Scrubbed directly to scroll position
       // — not a timed fade-in — so it un-reveals smoothly in reverse when
       // scrolling back up.
+      //
+      // The trigger range spans from the wrapper entering at the bottom of
+      // the viewport to its bottom edge reaching a quarter of the way down
+      // — roughly 1.6 viewport-heights of scroll. That width is deliberate:
+      // an earlier, narrower range (~45% of one viewport) completed within
+      // a single normal scroll gesture, so it read as an instant snap to
+      // full color rather than a reveal tied to scroll — this is wide
+      // enough that it can't be blown through unnoticed.
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
-          start: "top 75%",
-          end: "top 30%",
+          start: "top bottom",
+          end: "bottom 20%",
           scrub: true,
         },
       }).to(words, {
