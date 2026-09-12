@@ -125,8 +125,8 @@ export default function Hero() {
       // pulled right, away from ONE — both still fully on-screen and
       // legible, just spaced apart, until scroll closes the gap.
       const vw = window.innerWidth || 1024;
-      gsap.set(sixEl, { x: -vw * 0.13 });
-      gsap.set(standardEl, { x: vw * 0.18 });
+      gsap.set(sixEl, { x: -vw * 0.03 });
+      gsap.set(standardEl, { x: vw * 0.03 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
       entrance = () => {
@@ -217,7 +217,8 @@ export default function Hero() {
           ref={kicker2Ref}
           className="absolute max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
         >
-          Certified partners. Uncompromising standards.
+          Certified partners.
+          Uncompromising standards.
         </p>
 
         {/* Real accessible heading text — the visual lines below are
@@ -228,17 +229,24 @@ export default function Hero() {
           <span
             ref={line1WrapRef}
             aria-hidden="true"
-            className="block overflow-hidden text-left"
+            className="block overflow-hidden text-left ml-[6vw] sm:ml-[8vw] md:ml-[15vw] lg:ml-[7vw]"
           >
             <span
               ref={line1Ref}
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              <span ref={sixRef} style={{ display: "inline-block" }}>
+              {/* WORD 1: "SIX" — add a margin class here to move just this
+                  word, e.g. className="ml-4" to nudge it right, or
+                  className="-ml-4" to nudge it left. */}
+              <span ref={sixRef} className="" style={{ display: "inline-block" }}>
                 SIX
               </span>{" "}
-              COUNTRIES,
+              {/* WORD 2: "COUNTRIES," — same idea, edit this span's
+                  className to move just this word. */}
+              <span className="" style={{ display: "inline-block" }}>
+                COUNTRIES,
+              </span>
             </span>
           </span>
 
@@ -261,7 +269,14 @@ export default function Hero() {
               style={{ display: "block", transform: "translateY(100%)" }}
               className="text-cream"
             >
-              ONE{" "}
+              {/* WORD 3: "ONE" — add a margin class here to move just this
+                  word, e.g. className="ml-4" to nudge it right, or
+                  className="-ml-4" to nudge it left. */}
+              <span className="" style={{ display: "inline-block" }}>
+                ONE
+              </span>{" "}
+              {/* WORD 4: "STANDARD." — same idea, edit this span's
+                  className to move just this word. */}
               <span
                 ref={standardRef}
                 style={{ display: "inline-block" }}
