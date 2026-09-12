@@ -30,3 +30,9 @@ html.custom-cursor-active,
 html.custom-cursor-active * {
   cursor: none !important;
 }
+
+/* Set by the inline head script when the intro has already played this
+   session — suppresses the veil before it can paint. */
+html.intro-seen [data-preloader] {
+  display: none !important;
+}

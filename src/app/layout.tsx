@@ -15,9 +15,11 @@ const poppins = Poppins({
 // Tall, condensed, minimal-counter grotesk for the hero headline only —
 // Poppins (kept for other display/UI uses) is too rounded/geometric to
 // match the intended industrial-poster look.
+// latin-ext carries the diacritics used by the preloader greetings
+// ("Xin chào", "Nǐ hǎo") — without it those glyphs fall back mid-word.
 const anton = Anton({
   variable: "--font-anton",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: "400",
   display: "swap",
 });
@@ -45,6 +47,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${poppins.variable} ${anton.variable} ${inter.variable} antialiased`}
     >
+      <head>
+        {/* Runs at parse time, before <body> paints, so a repeat visitor in
+            the same session never sees a flash of the white intro veil. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(sessionStorage.getItem('naxis:intro-seen')==='done'){document.documentElement.classList.add('intro-seen')}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="flex min-h-screen flex-col bg-ink text-cream font-body">
         <SmoothScroll />
         <CustomCursor />
