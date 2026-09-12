@@ -19,6 +19,12 @@
   --font-display: var(--font-poppins);
   --font-headline: var(--font-anton);
   --font-body: var(--font-inter);
+  /* Multi-script stack for the intro greetings. The browser resolves per
+     glyph, so Latin renders in Inter while each native script falls through
+     to its own Noto face; Chinese uses the system CJK font. */
+  --font-greeting: var(--font-inter), var(--font-noto-sinhala),
+    var(--font-noto-devanagari), var(--font-noto-bengali), "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 }
 
 body {

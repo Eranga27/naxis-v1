@@ -2,18 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// Each greeting in its own script. Vietnamese and Italian are natively
+// Latin, so they stay as written.
 const GREETINGS = [
-  "Ayubowan",
-  "Namaste",
-  "Shagotom",
-  "Xin chào",
-  "Nǐ hǎo",
-  "Ciao",
+  "ආයුබෝවන්", // Sinhala — Sri Lanka
+  "नमस्ते", // Devanagari — India
+  "স্বাগতম", // Bengali — Bangladesh
+  "Xin chào", // Vietnamese
+  "你好", // Simplified Chinese
+  "Ciao", // Italian
 ];
 const FINAL = "Welcome";
 
-const CHAR_MS = 35; // per-character type / delete speed
-const WORD_HOLD_MS = 420; // pause once a greeting is fully typed
+const CHAR_MS = 45; // per-character type / delete speed
+const WORD_HOLD_MS = 620; // pause once a greeting is fully typed
 const FINAL_HOLD_MS = 1500;
 const TEXT_FADE_MS = 400;
 const VEIL_FADE_MS = 450; // quick clear, so the hero entrance plays in the open
@@ -22,8 +24,20 @@ export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Split into user-perceived characters so diacritics survive. */
-const chars = (word: string) => Array.from(word);
+/**
+ * Split into grapheme clusters, not code points. Indic scripts build a single
+ * visible character from a consonant plus dependent vowel signs and viramas —
+ * splitting by code point would type and delete orphaned marks mid-cluster.
+ */
+const segmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+const chars = (word: string): string[] =>
+  segmenter
+    ? Array.from(segmenter.segment(word), (s) => s.segment)
+    : Array.from(word);
 
 type Props = {
   /** Fired the moment the white veil starts clearing. */
@@ -180,7 +194,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     >
       <span
         ref={textRef}
-        className="inline-block min-h-[1.2em] font-headline text-[clamp(1.75rem,5.5vw,4rem)] leading-[1.2] text-brown"
+        className="inline-block min-h-[1.3em] font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
         style={{ opacity: 0, transition: `opacity ${TEXT_FADE_MS}ms ease-out` }}
       />
     </div>

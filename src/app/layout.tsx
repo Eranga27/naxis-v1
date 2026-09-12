@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Anton, Inter } from "next/font/google";
+import {
+  Poppins,
+  Anton,
+  Inter,
+  Noto_Sans_Sinhala,
+  Noto_Sans_Devanagari,
+  Noto_Sans_Bengali,
+} from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -26,8 +33,33 @@ const anton = Anton({
 
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500", "600"],
+  display: "swap",
+});
+
+// Native scripts for the intro greetings. Script subsets only — Latin comes
+// from Inter, which sits first in the greeting stack. Chinese deliberately
+// falls back to the system CJK face rather than pulling a multi-megabyte
+// webfont for two glyphs.
+const notoSinhala = Noto_Sans_Sinhala({
+  variable: "--font-noto-sinhala",
+  subsets: ["sinhala"],
+  weight: "300",
+  display: "swap",
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-devanagari",
+  subsets: ["devanagari"],
+  weight: "300",
+  display: "swap",
+});
+
+const notoBengali = Noto_Sans_Bengali({
+  variable: "--font-noto-bengali",
+  subsets: ["bengali"],
+  weight: "300",
   display: "swap",
 });
 
@@ -46,7 +78,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${anton.variable} ${inter.variable} antialiased`}
+      className={`${poppins.variable} ${anton.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} antialiased`}
     >
       <head>
         {/*
