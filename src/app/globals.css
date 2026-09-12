@@ -17,7 +17,7 @@
   --color-emerald: var(--color-emerald);
   --color-brown: var(--color-brown);
   --font-display: var(--font-poppins);
-  --font-headline: var(--font-anton);
+  --font-headline: var(--font-bebas-neue);
   --font-body: var(--font-inter);
   /* Multi-script stack for the intro greetings. The browser resolves per
      glyph, so Latin renders in Inter while each native script falls through

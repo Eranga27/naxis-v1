@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import {
   Poppins,
-  Anton,
+  Bebas_Neue,
   Inter,
   Noto_Sans_Sinhala,
   Noto_Sans_Devanagari,
@@ -19,14 +19,12 @@ const poppins = Poppins({
   display: "swap",
 });
 
-// Tall, condensed, minimal-counter grotesk for the hero headline only —
-// Poppins (kept for other display/UI uses) is too rounded/geometric to
-// match the intended industrial-poster look.
-// latin-ext carries the diacritics used by the preloader greetings
-// ("Xin chào", "Nǐ hǎo") — without it those glyphs fall back mid-word.
-const anton = Anton({
-  variable: "--font-anton",
-  subsets: ["latin", "latin-ext"],
+// Tall, minimalist condensed sans for the hero headline only — thinner and
+// more restrained than a poster-weight face, which reads as premium rather
+// than shouty. Poppins is kept for other display/UI uses.
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas-neue",
+  subsets: ["latin"],
   weight: "400",
   display: "swap",
 });
@@ -78,7 +76,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${anton.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} antialiased`}
+      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} antialiased`}
     >
       <head>
         {/*

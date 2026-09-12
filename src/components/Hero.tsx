@@ -55,19 +55,38 @@ export default function Hero() {
       // The scroll-triggered slide is armed only after the load-in settles.
       const armScrollInteraction = () => {
         releaseMasks();
+
+        // Pin span is fixed at exactly one viewport height — not shorter,
+        // not longer. The word slide runs on a *separate* ScrollTrigger that
+        // shares this same start but keeps going past this trigger's end, so
+        // alignment continues progressing after the section unpins and
+        // starts scrolling away underneath Mission.
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () => "+=" + window.innerHeight,
+          pin: true,
+          invalidateOnRefresh: true,
+        });
+
         gsap
           .timeline({
             scrollTrigger: {
               trigger: section,
               start: "top top",
-              end: () => "+=" + window.innerHeight,
-              pin: true,
+              // One pinned viewport, plus 60% more of ordinary scroll while
+              // the section scrolls away underneath Mission — that tail is
+              // where the words are still allowed to finish.
+              end: () => "+=" + (window.innerHeight + window.innerHeight * 0.6),
               scrub: true,
               invalidateOnRefresh: true,
             },
           })
-          .to(sixEl, { x: 0, ease: "none" }, 0)
-          .to(standardEl, { x: 0, ease: "none" }, 0);
+          // First 15% of the range is a deliberate hold — roughly the first
+          // half-second of scrolling stays put, entirely inside the pin,
+          // before either word starts moving.
+          .to(sixEl, { x: 0, ease: "none", duration: 0.85 }, 0.15)
+          .to(standardEl, { x: 0, ease: "none", duration: 0.85 }, 0.15);
       };
 
       if (reduceMotion) {
@@ -166,49 +185,53 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
       </div>
 
-      <div className="relative z-10 w-full px-6 pb-4 pt-24 sm:px-10 sm:pb-6 md:px-16 md:pb-8 lg:px-20 lg:pb-10">
-        <p
-          ref={kickerRef}
-          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:mb-8 md:text-sm"
-        >
-          Delivering excellence through experience.
-        </p>
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14">
+        {/* Real accessible heading text — the visual lines below are
+            decorative duplicates, individually aria-hidden. */}
+        <h1 className="sr-only">Six countries. One standard.</h1>
 
-        <h1
-          aria-label="Six countries. One standard."
-          className="font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.75rem,11vw,10.5rem)] [text-shadow:0_2px_6px_rgba(0,0,0,0.3)]"
-        >
+        <div className="font-headline w-full uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.5rem,10vw,9.5rem)] [text-shadow:0_2px_6px_rgba(0,0,0,0.3)]">
           <span
             ref={line1WrapRef}
             aria-hidden="true"
-            className="block overflow-hidden text-left"
+            className="block w-full overflow-hidden text-left"
           >
             <span
               ref={line1Ref}
-              style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-cream"
+              style={{ transform: "translateY(100%)" }}
+              className="flex w-full items-baseline justify-between text-cream"
             >
               <span
                 ref={sixRef}
                 style={{ display: "inline-block", transform: "translateX(-10vw)" }}
               >
                 SIX
-              </span>{" "}
-              COUNTRIES.
+              </span>
+              <span>COUNTRIES.</span>
             </span>
           </span>
+
+          {/* Sits in the gap between the two headline lines — a real,
+              readable tagline (not aria-hidden), set apart from the
+              decorative lines around it with a rule and generous padding. */}
+          <p
+            ref={kickerRef}
+            className="my-6 max-w-[20ch] border-l-2 border-white/40 py-1 pl-5 font-body text-[0.65rem] font-bold uppercase leading-relaxed tracking-[0.3em] text-white opacity-0 sm:my-7 sm:text-xs sm:tracking-[0.35em] md:my-9 md:text-sm"
+          >
+            Delivering excellence through experience.
+          </p>
 
           <span
             ref={line2WrapRef}
             aria-hidden="true"
-            className="block overflow-hidden text-left sm:ml-[7vw]"
+            className="block w-full overflow-hidden text-left"
           >
             <span
               ref={line2Ref}
-              style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-cream"
+              style={{ transform: "translateY(100%)" }}
+              className="flex w-full items-baseline justify-between text-cream"
             >
-              ONE{" "}
+              <span>ONE</span>
               <span
                 ref={standardRef}
                 style={{
@@ -221,7 +244,7 @@ export default function Hero() {
               </span>
             </span>
           </span>
-        </h1>
+        </div>
       </div>
     </section>
   );
