@@ -10,6 +10,9 @@
      a UI color. */
   --color-gold-bright: #ffc94a;
   --color-emerald: #1f6f4a;
+  /* Warm coral accent for the hero's "STANDARD." pop — a single-word
+     accent, not a UI color. */
+  --color-coral: #f2705c;
   --color-brown: #4a2a1c;
 }
 
@@ -20,6 +23,7 @@
   --color-gold-light: var(--color-gold-light);
   --color-gold-bright: var(--color-gold-bright);
   --color-emerald: var(--color-emerald);
+  --color-coral: var(--color-coral);
   --color-brown: var(--color-brown);
   --font-display: var(--font-poppins);
   --font-headline: var(--font-bebas-neue);

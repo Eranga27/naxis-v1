@@ -17,6 +17,7 @@ export default function Hero() {
   const mediaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const kickerRef = useRef<HTMLParagraphElement>(null);
+  const kicker2Ref = useRef<HTMLParagraphElement>(null);
   const line1Ref = useRef<HTMLSpanElement>(null);
   const line2Ref = useRef<HTMLSpanElement>(null);
   const line1WrapRef = useRef<HTMLSpanElement>(null);
@@ -54,17 +55,16 @@ export default function Hero() {
       };
 
       // The scroll interaction is armed only after the load-in settles.
-      // Deliberately simple and self-contained (one ScrollTrigger, one
-      // trigger element) rather than the previous multi-trigger setup,
-      // which didn't reliably arm: the headline is fully readable at rest
-      // the moment it loads — SIX and STANDARD are only a little off their
-      // resting spot, not hidden off-screen — then on scroll they settle
-      // the last bit into place, the two lines (not the kicker, which
-      // stays put throughout) fade and lift away, and the video keeps
-      // drifting inward, so the section's message is finished — not
-      // interrupted — by the time Mission takes over.
+      // SIX and STANDARD sit naturally in place at rest ("SIX COUNTRIES,"
+      // and "ONE STANDARD." read as ordinary compact lines), then on
+      // scroll they pull apart from their neighbors — SIX left, STANDARD
+      // right — before the two lines (not either kicker, which stay put
+      // throughout) fade and lift away as the video keeps drifting inward,
+      // so the section's message is finished — not interrupted — by the
+      // time Mission takes over.
       const armScrollInteraction = () => {
         releaseMasks();
+        const vw = window.innerWidth || 1024;
 
         gsap
           .timeline({
@@ -77,10 +77,10 @@ export default function Hero() {
               invalidateOnRefresh: true,
             },
           })
-          // Early in the scroll, SIX and STANDARD settle their small drift
-          // into perfect alignment with COUNTRIES./ONE.
-          .to(sixEl, { x: 0, ease: "none", duration: 0.3 }, 0)
-          .to(standardEl, { x: 0, ease: "none", duration: 0.3 }, 0)
+          // First third of the pinned scroll: SIX and STANDARD pull apart
+          // from COUNTRIES,/ONE.
+          .to(sixEl, { x: -vw * 0.11, ease: "none", duration: 0.35 }, 0)
+          .to(standardEl, { x: vw * 0.18, ease: "none", duration: 0.35 }, 0)
           // Only once that's resolved does the headline fade and lift away.
           .to([line1, line2], { opacity: 0, y: -48, ease: "power1.in", duration: 0.65 }, 0.35)
           .to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
@@ -89,7 +89,7 @@ export default function Hero() {
       if (reduceMotion) {
         // No pin/scrub for reduced motion: the section is skipped straight
         // to its final state with no scroll-hijacking at all.
-        gsap.set(kickerRef.current, { opacity: 1, y: 0 });
+        gsap.set([kickerRef.current, kicker2Ref.current], { opacity: 1, y: 0 });
         gsap.set([line1, line2], { opacity: 1, y: 0 });
         gsap.set([sixEl, standardEl], { x: 0 });
         gsap.set(media, { opacity: 1, scale: 1 });
@@ -97,12 +97,6 @@ export default function Hero() {
         return;
       }
 
-      // A small, subtle drift — not an off-screen slide — so SIX and
-      // STANDARD are legible at rest and only need to settle a short
-      // distance once the user scrolls.
-      const vw = window.innerWidth || 1024;
-      gsap.set(sixEl, { x: vw * -0.025 });
-      gsap.set(standardEl, { x: vw * 0.025 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
       entrance = () => {
@@ -125,7 +119,7 @@ export default function Hero() {
             0.2
           )
           .fromTo(
-            kickerRef.current,
+            [kickerRef.current, kicker2Ref.current],
             { opacity: 0, y: 12 },
             { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
             0.8
@@ -178,6 +172,18 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
       </div>
 
+      {/* Sits to the right, roughly level with the gap between the two
+          headline lines — a second, quiet line of small print, mirroring
+          the first kicker's treatment. Stays put through the scroll, same
+          as the first kicker.
+          TODO: placeholder copy — replace with the real second line. */}
+      <p
+        ref={kicker2Ref}
+        className="absolute bottom-[40%] right-6 max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:right-10 sm:text-xs md:right-16 md:text-sm lg:right-20"
+      >
+        Certified partners. Uncompromising standards.
+      </p>
+
       <div
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
@@ -200,7 +206,7 @@ export default function Hero() {
               <span ref={sixRef} style={{ display: "inline-block" }}>
                 SIX
               </span>{" "}
-              COUNTRIES.
+              COUNTRIES,
             </span>
           </span>
 
@@ -227,7 +233,7 @@ export default function Hero() {
               <span
                 ref={standardRef}
                 style={{ display: "inline-block" }}
-                className="text-gold-bright"
+                className="text-coral"
               >
                 STANDARD.
               </span>
