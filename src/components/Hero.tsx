@@ -207,10 +207,14 @@ export default function Hero() {
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
       >
-        {/* top/right are set at runtime from line1's measured bounding box
-            (see measureKicker2) — sits in the gap below "SIX COUNTRIES,",
-            not overlapping it, and scales with the actual container width
-            rather than a guessed per-breakpoint value. Stays put through
+        {/* KICKER 2: "CERTIFIED PARTNERS..." — top/right are already set at
+            runtime from line1's measured bounding box (see measureKicker2
+            above), so it sits in the gap below "SIX COUNTRIES," and scales
+            with screen size automatically. To manually nudge it FROM that
+            calculated spot, add translate-x-* or translate-y-* to the
+            className below (e.g. "translate-x-4 -translate-y-4") — don't
+            use margin here, this element is already position:absolute so
+            margin wouldn't do anything useful anyway. Stays put through
             the scroll, same as the first kicker.
             TODO: placeholder copy — replace with the real second line. */}
         <p
@@ -244,26 +248,28 @@ export default function Hero() {
                   margin: margin on a word sharing a line pushes its
                   neighbors too; translate only moves this one, and
                   never fights the scroll animation on the inner span. */}
-              <span className="" style={{ display: "inline-block" }}>
+              <span className="translate-y-44" style={{ display: "inline-block" }}>
                 <span ref={sixRef} style={{ display: "inline-block" }}>
                   SIX
                 </span>
               </span>{" "}
               {/* WORD 2: "COUNTRIES," — same idea: edit this span's
                   className with translate-x-* or translate-y-* (see WORD 1). */}
-              <span className="" style={{ display: "inline-block" }}>
+              <span className="translate-y-44" style={{ display: "inline-block" }}>
                 COUNTRIES,
               </span>
             </span>
           </span>
 
-          {/* Small print tucked under the first line, plain and quiet —
-              a real, readable tagline (not aria-hidden). Its mt-* and mb-*
-              margins push "ONE STANDARD." below it down/up too, since
-              they're stacked normally — that's usually what you want here.
-              If you instead want to nudge JUST this paragraph without
-              moving "ONE STANDARD.", add translate-x-* or translate-y-* to
-              its className instead of changing the margins. */}
+          {/* KICKER 1: "DELIVERING EXCELLENCE..." — a real, readable
+              tagline (not aria-hidden). Its mt-* and mb-* margins reserve
+              the actual GAP between "SIX COUNTRIES," and "ONE STANDARD.",
+              so changing those also moves "ONE STANDARD." down/up with it
+              (that's usually what you want if you're adjusting the space
+              between the two headline lines). To nudge JUST this
+              paragraph, visually, WITHOUT moving "ONE STANDARD." — add
+              translate-x-* or translate-y-* to the className instead, e.g.
+              "translate-x-4 translate-y-2". */}
           <p
             ref={kickerRef}
             className="mb-6 mt-4 max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:mb-8 sm:mt-0 sm:text-xs md:mb-10 md:text-sm"
@@ -284,14 +290,14 @@ export default function Hero() {
               {/* WORD 3: "ONE" — edit this span's className with
                   translate-x-* or translate-y-* (see WORD 1's comment for
                   the full explanation of why translate, not margin). */}
-              <span className="" style={{ display: "inline-block" }}>
+              <span className="translate-x-20 translate-y-4 " style={{ display: "inline-block" }}>
                 ONE
               </span>{" "}
               {/* WORD 4: "STANDARD." — its color (text-coral) lives on the
                   INNER span, already used by the scroll animation. Add
                   translate-x-* or translate-y-* to the OUTER span instead, so
                   a manual nudge never fights the animated one. */}
-              <span className="" style={{ display: "inline-block" }}>
+              <span className="translate-x-20 translate-y-4" style={{ display: "inline-block" }}>
                 <span
                   ref={standardRef}
                   style={{ display: "inline-block" }}
