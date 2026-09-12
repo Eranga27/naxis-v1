@@ -194,7 +194,7 @@ export default function Hero() {
             <span
               ref={line1Ref}
               style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-cream"
+              className="text-white"
             >
               {/* WORD 1: "SIX" — edit the OUTER span's className to move
                   just this word: className="translate-x-4" (right),
@@ -204,14 +204,14 @@ export default function Hero() {
                   margin: margin on a word sharing a line pushes its
                   neighbors too; translate only moves this one, and
                   never fights the scroll animation on the inner span. */}
-              <span className="translate-y-52" style={{ display: "inline-block" }}>
+              <span className="translate-y-0 sm:translate-y-6 md:translate-y-12 lg:translate-y-52" style={{ display: "inline-block" }}>
                 <span ref={sixRef} style={{ display: "inline-block" }}>
                   SIX
                 </span>
               </span>{" "}
               {/* WORD 2: "COUNTRIES," — same idea: edit this span's
                   className with translate-x-* or translate-y-* (see WORD 1). */}
-              <span className="translate-y-52" style={{ display: "inline-block" }}>
+              <span className="translate-y-0 sm:translate-y-6 md:translate-y-12 lg:translate-y-52" style={{ display: "inline-block" }}>
                 COUNTRIES,
               </span>
             </span>
@@ -227,7 +227,7 @@ export default function Hero() {
               — the <p> is what the entrance animation fades/moves in on
               load, so a translate-y-* there gets silently overwritten
               once that finishes; this wrapper is never touched by it. */}
-          <div className="mb-6 mt-4 translate-y-48 translate-x-28 sm:mb-8 sm:mt-0 md:mb-10">
+          <div className="mb-6 mt-4 translate-x-0 translate-y-0 sm:mb-8 sm:mt-0 sm:translate-x-4 sm:translate-y-6 md:mb-10 md:translate-x-8 md:translate-y-12 lg:translate-x-28 lg:translate-y-48">
             <p
               ref={kickerRef}
               className="max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
@@ -244,19 +244,19 @@ export default function Hero() {
             <span
               ref={line2Ref}
               style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-cream"
+              className="text-white"
             >
               {/* WORD 3: "ONE" — edit this span's className with
                   translate-x-* or translate-y-* (see WORD 1's comment for
                   the full explanation of why translate, not margin). */}
-              <span className="translate-x-20 translate-y-12 " style={{ display: "inline-block" }}>
+              <span className="translate-x-0 translate-y-0 sm:translate-x-3 sm:translate-y-2 md:translate-x-6 md:translate-y-4 lg:translate-x-20 lg:translate-y-12" style={{ display: "inline-block" }}>
                 ONE
               </span>{" "}
               {/* WORD 4: "STANDARD." — its color (text-coral) lives on the
                   INNER span, already used by the scroll animation. Add
                   translate-x-* or translate-y-* to the OUTER span instead, so
                   a manual nudge never fights the animated one. */}
-              <span className="translate-x-20 translate-y-12" style={{ display: "inline-block" }}>
+              <span className="translate-x-0 translate-y-0 sm:translate-x-3 sm:translate-y-2 md:translate-x-6 md:translate-y-4 lg:translate-x-20 lg:translate-y-12" style={{ display: "inline-block" }}>
                 <span
                   ref={standardRef}
                   style={{ display: "inline-block" }}
