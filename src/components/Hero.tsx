@@ -55,16 +55,17 @@ export default function Hero() {
       };
 
       // The scroll interaction is armed only after the load-in settles.
-      // SIX and STANDARD sit naturally in place at rest ("SIX COUNTRIES,"
-      // and "ONE STANDARD." read as ordinary compact lines), then on
-      // scroll they pull apart from their neighbors — SIX left, STANDARD
-      // right — before the two lines (not either kicker, which stay put
-      // throughout) fade and lift away as the video keeps drifting inward,
-      // so the section's message is finished — not interrupted — by the
-      // time Mission takes over.
+      // SIX and STANDARD sit apart from their neighbors at rest (SIX away
+      // from COUNTRIES,, STANDARD away from ONE, near the second kicker),
+      // fully legible the whole time, then on scroll they slide inward and
+      // close that gap — SIX right, STANDARD left — settling into the
+      // compact "SIX COUNTRIES," / "ONE STANDARD." reading. Only once
+      // that's resolved do the two lines (not either kicker, which stay
+      // put throughout) fade and lift away as the video keeps drifting
+      // inward, so the section's message is finished — not interrupted —
+      // by the time Mission takes over.
       const armScrollInteraction = () => {
         releaseMasks();
-        const vw = window.innerWidth || 1024;
 
         gsap
           .timeline({
@@ -77,10 +78,10 @@ export default function Hero() {
               invalidateOnRefresh: true,
             },
           })
-          // First third of the pinned scroll: SIX and STANDARD pull apart
-          // from COUNTRIES,/ONE.
-          .to(sixEl, { x: -vw * 0.11, ease: "none", duration: 0.35 }, 0)
-          .to(standardEl, { x: vw * 0.18, ease: "none", duration: 0.35 }, 0)
+          // First third of the pinned scroll: SIX and STANDARD slide
+          // inward, closing the gap to COUNTRIES,/ONE.
+          .to(sixEl, { x: 0, ease: "none", duration: 0.35 }, 0)
+          .to(standardEl, { x: 0, ease: "none", duration: 0.35 }, 0)
           // Only once that's resolved does the headline fade and lift away.
           .to([line1, line2], { opacity: 0, y: -48, ease: "power1.in", duration: 0.65 }, 0.35)
           .to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
@@ -88,7 +89,7 @@ export default function Hero() {
 
       if (reduceMotion) {
         // No pin/scrub for reduced motion: the section is skipped straight
-        // to its final state with no scroll-hijacking at all.
+        // to its final (compact) state with no scroll-hijacking at all.
         gsap.set([kickerRef.current, kicker2Ref.current], { opacity: 1, y: 0 });
         gsap.set([line1, line2], { opacity: 1, y: 0 });
         gsap.set([sixEl, standardEl], { x: 0 });
@@ -97,6 +98,12 @@ export default function Hero() {
         return;
       }
 
+      // SIX starts pulled left, away from COUNTRIES,; STANDARD starts
+      // pulled right, away from ONE — both still fully on-screen and
+      // legible, just spaced apart, until scroll closes the gap.
+      const vw = window.innerWidth || 1024;
+      gsap.set(sixEl, { x: -vw * 0.13 });
+      gsap.set(standardEl, { x: vw * 0.18 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
       entrance = () => {
