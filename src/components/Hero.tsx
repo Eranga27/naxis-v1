@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { onReveal } from "@/lib/intro";
@@ -12,31 +12,40 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+// Four stacked lines, each its own left-indent — an editorial staircase
+// rather than words spread edge-to-edge. "SIX" and "STANDARD." (first and
+// last) also slide in horizontally on scroll; "COUNTRIES." and "ONE" only
+// get the vertical mask reveal.
+const WORDS = ["SIX", "COUNTRIES.", "ONE", "STANDARD."] as const;
+const INDENTS = [
+  "ml-0",
+  "ml-[10vw] sm:ml-[16vw] md:ml-[20vw] lg:ml-[24vw]",
+  "ml-0",
+  "ml-[16vw] sm:ml-[24vw] md:ml-[30vw] lg:ml-[36vw]",
+];
+
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const kickerRef = useRef<HTMLParagraphElement>(null);
-  const line1Ref = useRef<HTMLDivElement>(null);
-  const line2Ref = useRef<HTMLDivElement>(null);
-  const line1WrapRef = useRef<HTMLSpanElement>(null);
-  const line2WrapRef = useRef<HTMLSpanElement>(null);
-  const sixRef = useRef<HTMLSpanElement>(null);
-  const standardRef = useRef<HTMLSpanElement>(null);
+  const wrapRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const lineRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const mediaRef = useRef<HTMLDivElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
-    const line1 = line1Ref.current;
-    const line2 = line2Ref.current;
-    const line1Wrap = line1WrapRef.current;
-    const line2Wrap = line2WrapRef.current;
-    const sixEl = sixRef.current;
-    const standardEl = standardRef.current;
+    const lines = lineRefs.current;
+    const wraps = wrapRefs.current;
     const media = mediaRef.current;
     if (
-      !section || !line1 || !line2 || !line1Wrap || !line2Wrap ||
-      !sixEl || !standardEl || !media
+      !section ||
+      !media ||
+      lines.some((el) => !el) ||
+      wraps.some((el) => !el)
     )
       return;
+    const [line1, line2, line3, line4] = lines as HTMLSpanElement[];
+    const sixEl = line1;
+    const standardEl = line4;
 
     let entrance: (() => void) | null = null;
 
@@ -49,7 +58,7 @@ export default function Hero() {
       // clip the vertical reveal) are released so the horizontal slide
       // below isn't clipped by them.
       const releaseMasks = () => {
-        gsap.set([line1Wrap, line2Wrap], { overflow: "visible" });
+        gsap.set(wraps, { overflow: "visible" });
       };
 
       // The scroll-triggered slide is armed only after the load-in settles.
@@ -93,7 +102,7 @@ export default function Hero() {
         // No pin/scrub for reduced motion: the section is skipped straight
         // to its final state with no scroll-hijacking at all.
         gsap.set(kickerRef.current, { opacity: 1, y: 0 });
-        gsap.set([line1, line2], { opacity: 1, y: 0 });
+        gsap.set(lines, { opacity: 1, y: 0 });
         gsap.set([sixEl, standardEl], { x: 0 });
         gsap.set(media, { opacity: 1, scale: 1 });
         releaseMasks();
@@ -104,17 +113,16 @@ export default function Hero() {
       // `vw`-based inline transform: viewport metrics can be momentarily
       // unreliable at this synchronous pre-paint point in some browser
       // contexts, which would otherwise corrupt the captured start position.
-      // "SIX" is the first word on its line and "STANDARD." the last on
-      // its — sliding them in from outside the sentence, in opposite
-      // directions, so neither travels through a static neighbor.
+      // "SIX" is the first line and "STANDARD." the last — sliding them in
+      // from outside the frame, in opposite directions.
       const vw = window.innerWidth || 1024;
       gsap.set(sixEl, { x: vw * -0.1 });
       gsap.set(standardEl, { x: vw * 0.1 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
       entrance = () => {
-        gsap
-          .timeline({ onComplete: armScrollInteraction })
+        const tl = gsap.timeline({ onComplete: armScrollInteraction });
+        tl
           // Opacity rises early — while the veil is still opaque — so the
           // clearing white never exposes the bare dark background.
           .fromTo(
@@ -136,19 +144,15 @@ export default function Hero() {
             { opacity: 0, y: 12 },
             { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
             0.8
-          )
-          .fromTo(
-            line1,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-            0.95
-          )
-          .fromTo(
-            line2,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-            1.1
           );
+        lines.forEach((line, i) => {
+          tl.fromTo(
+            line,
+            { opacity: 0, y: "100%" },
+            { opacity: 1, y: "0%", duration: 0.7, ease: "power3.out" },
+            0.95 + i * 0.12
+          );
+        });
       };
     }, section);
 
@@ -185,65 +189,53 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14">
+      <div className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14">
         {/* Real accessible heading text — the visual lines below are
             decorative duplicates, individually aria-hidden. */}
         <h1 className="sr-only">Six countries. One standard.</h1>
 
-        <div className="font-headline w-full uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.5rem,10vw,9.5rem)] [text-shadow:0_2px_6px_rgba(0,0,0,0.3)]">
-          <span
-            ref={line1WrapRef}
-            aria-hidden="true"
-            className="block w-full overflow-hidden text-left"
-          >
-            <span
-              ref={line1Ref}
-              style={{ transform: "translateY(100%)" }}
-              className="flex w-full items-baseline justify-between text-cream"
-            >
+        <div className="font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.25rem,7.5vw,7rem)] [text-shadow:0_2px_6px_rgba(0,0,0,0.3)]">
+          {WORDS.map((word, i) => (
+            <Fragment key={word}>
               <span
-                ref={sixRef}
-                style={{ display: "inline-block", transform: "translateX(-10vw)" }}
-              >
-                SIX
-              </span>
-              <span>COUNTRIES.</span>
-            </span>
-          </span>
-
-          {/* Sits in the gap between the two headline lines — a real,
-              readable tagline (not aria-hidden), set apart from the
-              decorative lines around it with a rule and generous padding. */}
-          <p
-            ref={kickerRef}
-            className="my-6 max-w-[20ch] border-l-2 border-white/40 py-1 pl-5 font-body text-[0.65rem] font-bold uppercase leading-relaxed tracking-[0.3em] text-white opacity-0 sm:my-7 sm:text-xs sm:tracking-[0.35em] md:my-9 md:text-sm"
-          >
-            Delivering excellence through experience.
-          </p>
-
-          <span
-            ref={line2WrapRef}
-            aria-hidden="true"
-            className="block w-full overflow-hidden text-left"
-          >
-            <span
-              ref={line2Ref}
-              style={{ transform: "translateY(100%)" }}
-              className="flex w-full items-baseline justify-between text-cream"
-            >
-              <span>ONE</span>
-              <span
-                ref={standardRef}
-                style={{
-                  display: "inline-block",
-                  transform: "translateX(10vw)",
+                ref={(el) => {
+                  wrapRefs.current[i] = el;
                 }}
-                className="text-emerald"
+                aria-hidden="true"
+                className={`block overflow-hidden text-left ${INDENTS[i]}`}
               >
-                STANDARD.
+                <span
+                  ref={(el) => {
+                    lineRefs.current[i] = el;
+                  }}
+                  style={{
+                    display: "inline-block",
+                    transform:
+                      i === 0
+                        ? "translate(-10vw, 100%)"
+                        : i === 3
+                          ? "translate(10vw, 100%)"
+                          : "translateY(100%)",
+                  }}
+                  className={i === 3 ? "text-emerald" : "text-cream"}
+                >
+                  {word}
+                </span>
               </span>
-            </span>
-          </span>
+
+              {/* Small print tucked under the first line, plain and quiet
+                  rather than boxed — a real, readable tagline (not
+                  aria-hidden), not swallowed into the decorative lines. */}
+              {i === 0 && (
+                <p
+                  ref={kickerRef}
+                  className="mt-4 mb-3 max-w-[22ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:mt-5 sm:mb-4 sm:text-xs md:text-sm"
+                >
+                  Delivering excellence through experience.
+                </p>
+              )}
+            </Fragment>
+          ))}
         </div>
       </div>
     </section>
