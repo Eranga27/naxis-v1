@@ -179,22 +179,25 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
       </div>
 
-      {/* Sits to the right, roughly level with the gap between the two
-          headline lines — a second, quiet line of small print, mirroring
-          the first kicker's treatment. Stays put through the scroll, same
-          as the first kicker.
-          TODO: placeholder copy — replace with the real second line. */}
-      <p
-        ref={kicker2Ref}
-        className="absolute bottom-[40%] right-6 max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:right-10 sm:text-xs md:right-16 md:text-sm lg:right-20"
-      >
-        Certified partners. Uncompromising standards.
-      </p>
-
       <div
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
       >
+        {/* Sits inset from the right edge, its top aligned with the top of
+            the headline block (matching contentRef's own pt-24, which is
+            where the headline starts) — so it reads as level with the
+            "SIX COUNTRIES," row, not centered on the viewport. Positioned
+            as a percentage of the content box, not a fixed pixel/viewport
+            value, so the inset holds proportionally across screen sizes.
+            Stays put through the scroll, same as the first kicker.
+            TODO: placeholder copy — replace with the real second line. */}
+        <p
+          ref={kicker2Ref}
+          className="absolute right-[18%] top-24 max-w-[20ch] text-right font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:right-[20%] sm:text-xs md:right-[22%] md:text-sm"
+        >
+          Certified partners. Uncompromising standards.
+        </p>
+
         {/* Real accessible heading text — the visual lines below are
             decorative duplicates, individually aria-hidden. */}
         <h1 className="sr-only">Six countries. One standard.</h1>
