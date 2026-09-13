@@ -75,23 +75,29 @@ export default function Mission() {
       // — not a timed fade-in — so it un-reveals smoothly in reverse when
       // scrolling back up.
       //
-      // The trigger range spans from the wrapper entering at the bottom of
-      // the viewport to its bottom edge reaching a quarter of the way down
-      // — roughly 1.6 viewport-heights of scroll. That width is deliberate:
-      // an earlier, narrower range (~45% of one viewport) completed within
-      // a single normal scroll gesture, so it read as an instant snap to
-      // full color rather than a reveal tied to scroll — this is wide
-      // enough that it can't be blown through unnoticed.
+      // start is delayed well past the moment the wrapper's top merely
+      // touches the bottom of the screen ("top bottom", which fires while
+      // Hero still fills most of the view) — "top 45%" instead waits until
+      // the wrapper has already risen nearly to the middle of the screen,
+      // so the reveal only begins once the Hero-to-Mission handoff feels
+      // roughly half done, not the instant Mission starts peeking in.
       //
-      // stagger === duration below is also deliberate: each word gets its
-      // own exclusive slice of the scroll range (no overlap with its
+      // Kept to a single trigger element (sentenceWrap) for both start and
+      // end, rather than referencing the Mission section itself: doing the
+      // latter hit a real cross-component layout-timing bug (see the
+      // pin-spacer watcher below for the full story) where the percentage
+      // resolved as if Hero had no height at all. Anchoring purely to
+      // sentenceWrap's own position sidesteps that class of bug entirely.
+      //
+      // stagger === duration is deliberate: each word gets its own
+      // exclusive slice of the scroll range (no overlap with its
       // neighbors), so only one word is ever mid-fade at a time — one word
       // unlocks per increment of scroll, smoothly, while the rest hold
       // still — rather than several words all fading in a blur at once.
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
-          start: "top bottom",
+          start: "top 45%",
           end: "bottom 20%",
           scrub: true,
         },
@@ -130,7 +136,27 @@ export default function Mission() {
       });
     }, section);
 
-    return () => ctx.revert();
+    // Hero's own pin-spacer isn't inserted until its entrance animation
+    // finishes (timing that varies — it waits on the preloader, then plays
+    // an ~2s sequence), well after this effect runs. Until that spacer
+    // exists, the document is shorter by Hero's full pin distance, so the
+    // word-reveal trigger above locks in boundaries offset by exactly that
+    // amount. Rather than guess a fixed delay, watch for the pin-spacer to
+    // actually appear and refresh the instant it does.
+    let pinSpacerSeen = false;
+    const pinSpacerCheck = setInterval(() => {
+      if (pinSpacerSeen) return;
+      if (document.querySelector(".pin-spacer")) {
+        pinSpacerSeen = true;
+        ScrollTrigger.refresh();
+        clearInterval(pinSpacerCheck);
+      }
+    }, 200);
+
+    return () => {
+      clearInterval(pinSpacerCheck);
+      ctx.revert();
+    };
   }, []);
 
   return (
