@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-const NAV_LINKS = [
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Global Network", href: "#global-network" },
-  { label: "Certifications", href: "#certifications" },
-  { label: "Contact", href: "#contact" },
-];
+import { NAV_LINKS } from "@/lib/navLinks";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);

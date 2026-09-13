@@ -5,6 +5,7 @@ import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
 import ValueStrip from "@/components/ValueStrip";
 import ClosingCTA from "@/components/ClosingCTA";
+import Footer from "@/components/Footer";
 import HomeIntro from "@/components/HomeIntro";
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
         <ValueStrip />
         <ClosingCTA />
       </main>
+      <Footer />
     </>
   );
 }
