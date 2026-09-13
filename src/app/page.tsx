@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Mission from "@/components/Mission";
 import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
+import ValueStrip from "@/components/ValueStrip";
 import HomeIntro from "@/components/HomeIntro";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
         <Mission />
         <GlobalNetwork />
         <CinematicDivider />
+        <ValueStrip />
       </main>
     </>
   );
