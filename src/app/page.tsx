@@ -4,6 +4,7 @@ import Mission from "@/components/Mission";
 import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
 import ValueStrip from "@/components/ValueStrip";
+import ClosingCTA from "@/components/ClosingCTA";
 import HomeIntro from "@/components/HomeIntro";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
         <GlobalNetwork />
         <CinematicDivider />
         <ValueStrip />
+        <ClosingCTA />
       </main>
     </>
   );
