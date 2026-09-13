@@ -77,7 +77,7 @@ export default function CinematicDivider() {
   return (
     <section
       ref={sectionRef}
-      id="compliance"
+      id="certifications"
       className="relative flex min-h-[88vh] w-full items-center overflow-hidden bg-ink"
     >
       <video
