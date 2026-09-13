@@ -75,12 +75,14 @@ export default function Mission() {
       // — not a timed fade-in — so it un-reveals smoothly in reverse when
       // scrolling back up.
       //
-      // start is delayed well past the moment the wrapper's top merely
-      // touches the bottom of the screen ("top bottom", which fires while
-      // Hero still fills most of the view) — "top 45%" instead waits until
-      // the wrapper has already risen nearly to the middle of the screen,
-      // so the reveal only begins once the Hero-to-Mission handoff feels
-      // roughly half done, not the instant Mission starts peeking in.
+      // start fires almost as soon as the wrapper's top peeks into the
+      // viewport ("top 90%") so the first word is already lighting up
+      // while Mission is still arriving — no lag after the Hero handoff.
+      // From there it unfolds slowly across the rest of the scroll, word
+      // by word, only reaching full brightness once the wrapper's bottom
+      // is nearly at the top of the screen ("bottom 20%"), so the reveal
+      // spans almost the section's entire scroll distance before normal
+      // scrolling carries on into whatever follows.
       //
       // Kept to a single trigger element (sentenceWrap) for both start and
       // end, rather than referencing the Mission section itself: doing the
@@ -97,7 +99,7 @@ export default function Mission() {
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
-          start: "top 45%",
+          start: "top 90%",
           end: "bottom 20%",
           scrub: true,
         },
@@ -176,12 +178,12 @@ export default function Mission() {
         </p>
       </div>
 
-      {/* Centered independently of the label/list column above and below —
-          matches the reference site's centered paragraph treatment, unlike
-          the hero's left-aligned type. */}
+      {/* Centered independently of the label/list column above and below,
+          and deliberately wide with no flanking copy — a large, bold,
+          headline-weight statement rather than a narrow body paragraph. */}
       <div
         ref={sentenceWrapRef}
-        className="mx-auto max-w-3xl py-6 text-center font-body text-[clamp(1.25rem,3vw,2.6rem)] font-medium leading-[1.35] md:py-8"
+        className="mx-auto max-w-6xl py-10 text-center font-body text-[clamp(1.75rem,5.5vw,4.75rem)] font-bold leading-[1.15] tracking-tight md:py-14"
       >
         {WORDS.map((word, i) => (
           <span
@@ -190,7 +192,7 @@ export default function Mission() {
               wordRefs.current[i] = el;
             }}
             className="text-ink"
-            style={{ opacity: 0.15 }}
+            style={{ opacity: 0.1 }}
           >
             {word}{" "}
           </span>
