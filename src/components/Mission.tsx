@@ -82,6 +82,12 @@ export default function Mission() {
       // a single normal scroll gesture, so it read as an instant snap to
       // full color rather than a reveal tied to scroll — this is wide
       // enough that it can't be blown through unnoticed.
+      //
+      // stagger === duration below is also deliberate: each word gets its
+      // own exclusive slice of the scroll range (no overlap with its
+      // neighbors), so only one word is ever mid-fade at a time — one word
+      // unlocks per increment of scroll, smoothly, while the rest hold
+      // still — rather than several words all fading in a blur at once.
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
@@ -92,8 +98,8 @@ export default function Mission() {
       }).to(words, {
         opacity: 1,
         ease: "none",
-        stagger: 0.08,
-        duration: 0.3,
+        stagger: 0.4,
+        duration: 0.4,
       });
 
       if (items.length < 2) return;
