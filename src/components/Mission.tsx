@@ -9,10 +9,6 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Only categories confirmed by the client belong here. The placeholder is
-// deliberate — replace it once the remaining categories are supplied.
-const CATEGORIES = ["Sports fits", "Belts", "[CONFIRM WITH CLIENT]"];
-
 // The approved Mission statement — revealed word by word as the user
 // scrolls through it (see the scrub ScrollTrigger below), not on a timer.
 const SENTENCE =
@@ -21,53 +17,28 @@ const WORDS = SENTENCE.split(" ");
 
 export default function Mission() {
   const sectionRef = useRef<HTMLElement>(null);
-  const revealRefs = useRef<Array<HTMLElement | null>>([]);
-  const listRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const sentenceWrapRef = useRef<HTMLDivElement>(null);
   const wordRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
-    const list = listRef.current;
     const sentenceWrap = sentenceWrapRef.current;
-    if (!section || !list || !sentenceWrap) return;
+    if (!section || !sentenceWrap) return;
 
     const ctx = gsap.context(() => {
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      const reveals = revealRefs.current.filter(
-        (el): el is HTMLElement => el !== null
-      );
-      const items = itemRefs.current.filter(
-        (el): el is HTMLSpanElement => el !== null
-      );
       const words = wordRefs.current.filter(
         (el): el is HTMLSpanElement => el !== null
       );
 
       if (reduceMotion) {
-        // Static: every category stays listed, nothing auto-rotates, and
-        // the sentence reads fully solid with no scroll-linked reveal.
-        gsap.set(reveals, { opacity: 1, y: 0 });
+        // Static: the sentence reads fully solid with no scroll-linked reveal.
         gsap.set(words, { opacity: 1 });
         return;
       }
-
-      gsap.fromTo(
-        reveals,
-        { opacity: 0, y: 28 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.12,
-          scrollTrigger: { trigger: section, start: "top 72%", once: true },
-        }
-      );
 
       // The sentence: each word starts at low opacity (the faint, "not yet
       // read" tint) and lights up to full contrast in reading order as the
@@ -75,14 +46,15 @@ export default function Mission() {
       // — not a timed fade-in — so it un-reveals smoothly in reverse when
       // scrolling back up.
       //
-      // start fires almost as soon as the wrapper's top peeks into the
-      // viewport ("top 90%") so the first word is already lighting up
-      // while Mission is still arriving — no lag after the Hero handoff.
-      // From there it unfolds slowly across the rest of the scroll, word
-      // by word, only reaching full brightness once the wrapper's bottom
-      // is nearly at the top of the screen ("bottom 20%"), so the reveal
-      // spans almost the section's entire scroll distance before normal
-      // scrolling carries on into whatever follows.
+      // start waits until the wrapper's top has scrolled almost all the
+      // way to the top of the screen ("top 5%") before the first word
+      // lights up. end is pushed well past the wrapper itself
+      // ("bottom -50%", i.e. its bottom has to keep going 50% of a
+      // viewport-height further past the top of the screen) rather than
+      // stopping as soon as the wrapper clears the screen — stretching the
+      // reveal over a longer scroll distance so it reads as a slow,
+      // deliberate unfold rather than something that finishes in a quick
+      // flick of the wheel.
       //
       // Kept to a single trigger element (sentenceWrap) for both start and
       // end, rather than referencing the Mission section itself: doing the
@@ -99,8 +71,8 @@ export default function Mission() {
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
-          start: "top 90%",
-          end: "bottom 20%",
+          start: "top 5%",
+          end: "bottom -50%",
           scrub: true,
         },
       }).to(words, {
@@ -108,33 +80,6 @@ export default function Mission() {
         ease: "none",
         stagger: 0.4,
         duration: 0.4,
-      });
-
-      if (items.length < 2) return;
-
-      // Collapse the statically-stacked list into a single rotating slot.
-      gsap.set(list, { height: "1.2em", position: "relative" });
-      gsap.set(items, { position: "absolute", top: 0, left: 0, width: "100%" });
-      gsap.set(items, { yPercent: 100, opacity: 0 });
-      gsap.set(items[0], { yPercent: 0, opacity: 1 });
-
-      const rotate = gsap.timeline({ repeat: -1 });
-      items.forEach((item, i) => {
-        const next = items[(i + 1) % items.length];
-        rotate
-          .to({}, { duration: 2.4 })
-          .to(item, {
-            yPercent: -100,
-            opacity: 0,
-            duration: 0.55,
-            ease: "power2.inOut",
-          })
-          .fromTo(
-            next,
-            { yPercent: 100, opacity: 0 },
-            { yPercent: 0, opacity: 1, duration: 0.55, ease: "power2.inOut" },
-            "<"
-          );
       });
     }, section);
 
@@ -167,17 +112,6 @@ export default function Mission() {
       id="mission"
       className="relative w-full bg-cream px-6 py-28 sm:px-10 md:px-16 md:py-36 lg:px-20 lg:py-44"
     >
-      <div className="max-w-5xl">
-        <p
-          ref={(el) => {
-            revealRefs.current[0] = el;
-          }}
-          className="mb-8 font-body text-xs font-bold uppercase tracking-[0.35em] text-brown opacity-0 md:mb-10 md:text-sm"
-        >
-          Who we are
-        </p>
-      </div>
-
       {/* Centered independently of the label/list column above and below,
           and deliberately wide with no flanking copy — a large, bold,
           headline-weight statement rather than a narrow body paragraph. */}
@@ -197,36 +131,6 @@ export default function Mission() {
             {word}{" "}
           </span>
         ))}
-      </div>
-
-      <div className="max-w-5xl">
-        <div
-          ref={(el) => {
-            revealRefs.current[2] = el;
-          }}
-          className="mt-16 opacity-0 md:mt-20"
-        >
-          <p className="mb-4 font-body text-xs font-medium uppercase tracking-[0.3em] text-ink/60 md:text-sm">
-            What we make
-          </p>
-
-          <div
-            ref={listRef}
-            className="overflow-hidden font-headline text-[clamp(2rem,6vw,4.5rem)] uppercase leading-[1.2] tracking-[-0.01em] text-emerald"
-          >
-            {CATEGORIES.map((category, i) => (
-              <span
-                key={category}
-                ref={(el) => {
-                  itemRefs.current[i] = el;
-                }}
-                className="block"
-              >
-                {category}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );
