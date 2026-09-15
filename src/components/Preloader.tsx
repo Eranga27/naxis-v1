@@ -14,10 +14,32 @@ const GREETINGS = [
 ];
 const FINAL = "Welcome";
 
+// One gradient per greeting above, same order — a loose mood cue built from
+// each country's flag palette, not a literal reproduction of the flag's
+// geometry. Bangladesh/Vietnam/China lean on their flags' actual two-tone
+// field+emblem colors; Sri Lanka/India/Italy get a third stop for their
+// tricolore-style flags.
+const COUNTRY_GRADIENTS = [
+  "linear-gradient(135deg, #8D153A 0%, #FFB612 50%, #007847 100%)", // Sri Lanka
+  "linear-gradient(135deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)", // India
+  "linear-gradient(135deg, #006A4E 0%, #F42A41 100%)", // Bangladesh
+  "linear-gradient(135deg, #DA251D 0%, #FFCD00 100%)", // Vietnam
+  "linear-gradient(135deg, #DE2910 0%, #FFDE00 100%)", // China
+  "linear-gradient(135deg, #008C45 0%, #F4F5F0 50%, #CD212A 100%)", // Italy
+];
+
+// Cream text + a soft dark shadow keeps the greeting legible over every
+// gradient above, light bands included, without needing a bespoke text
+// color per country. Dropped back to plain black once "Welcome" settles
+// the background to white.
+const GREETING_TEXT_COLOR = "#FBF4E4";
+const GREETING_TEXT_SHADOW = "0 2px 10px rgba(0,0,0,0.35)";
+
 const CHAR_MS = 45; // per-character type / delete speed
 const WORD_HOLD_MS = 620; // pause once a greeting is fully typed
 const FINAL_HOLD_MS = 1500;
 const TEXT_FADE_MS = 400;
+const BG_FADE_MS = 650; // flag-gradient crossfade duration
 const VEIL_FADE_MS = 450; // quick clear, so the hero entrance plays in the open
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
@@ -50,6 +72,8 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
   const [done, setDone] = useState(false);
   const veilRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  const bgLayerARef = useRef<HTMLDivElement>(null);
+  const bgLayerBRef = useRef<HTMLDivElement>(null);
   const cancelled = useRef(false);
   const revealed = useRef(false);
 
@@ -58,10 +82,30 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
     const veil = veilRef.current;
     const text = textRef.current;
-    if (!veil || !text) return;
+    const bgLayerA = bgLayerARef.current;
+    const bgLayerB = bgLayerBRef.current;
+    if (!veil || !text || !bgLayerA || !bgLayerB) return;
 
     const write = (value: string) => {
       if (!cancelled.current) text.textContent = value;
+    };
+
+    // Two stacked full-bleed layers, crossfaded between each other — the
+    // standard trick for animating a gradient smoothly, since browsers
+    // can't interpolate between two multi-stop gradients directly.
+    let activeLayer: 0 | 1 = 0;
+    const crossfadeBg = (gradient: string) => {
+      const layers = [bgLayerA, bgLayerB];
+      const showing = layers[activeLayer];
+      const hidden = layers[1 - activeLayer];
+      hidden.style.backgroundImage = gradient;
+      hidden.style.opacity = "1";
+      showing.style.opacity = "0";
+      activeLayer = (1 - activeLayer) as 0 | 1;
+    };
+    const fadeOutBg = () => {
+      const showing = [bgLayerA, bgLayerB][activeLayer];
+      showing.style.opacity = "0";
     };
 
     const fireReveal = () => {
@@ -153,13 +197,18 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         return;
       }
 
-      // First greeting fades in rather than typing.
+      // First greeting fades in rather than typing, its flag gradient
+      // fading in alongside it.
+      text.style.color = GREETING_TEXT_COLOR;
+      text.style.textShadow = GREETING_TEXT_SHADOW;
+      crossfadeBg(COUNTRY_GRADIENTS[0]);
       write(GREETINGS[0]);
       text.style.opacity = "1";
       await sleep(TEXT_FADE_MS + WORD_HOLD_MS);
 
       for (let i = 1; i < GREETINGS.length; i++) {
         if (cancelled.current) return;
+        crossfadeBg(COUNTRY_GRADIENTS[i]);
         await deleteOut(GREETINGS[i - 1]);
         await typeIn(GREETINGS[i]);
         await sleep(WORD_HOLD_MS);
@@ -167,6 +216,11 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
       if (cancelled.current) return;
       await deleteOut(GREETINGS[GREETINGS.length - 1]);
+
+      // Settle back to the resting white/black look for "Welcome".
+      fadeOutBg();
+      text.style.color = "#000";
+      text.style.textShadow = "none";
       await typeIn(FINAL);
       await sleep(FINAL_HOLD_MS);
       if (cancelled.current) return;
@@ -192,10 +246,26 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
       style={{ transition: `opacity ${VEIL_FADE_MS}ms ease-out` }}
     >
+      {/* Two stacked layers crossfaded between each other to animate the
+          flag-gradient backdrop — see crossfadeBg above. */}
+      <div
+        ref={bgLayerARef}
+        className="absolute inset-0 z-0"
+        style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
+      />
+      <div
+        ref={bgLayerBRef}
+        className="absolute inset-0 z-0"
+        style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
+      />
+
       <span
         ref={textRef}
-        className="inline-block min-h-[1.3em] font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
-        style={{ opacity: 0, transition: `opacity ${TEXT_FADE_MS}ms ease-out` }}
+        className="relative z-10 inline-block min-h-[1.3em] font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
+        style={{
+          opacity: 0,
+          transition: `opacity ${TEXT_FADE_MS}ms ease-out, color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease`,
+        }}
       />
     </div>
   );
