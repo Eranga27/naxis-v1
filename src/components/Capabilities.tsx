@@ -31,6 +31,8 @@ const BACKDROP_IMAGES = [
 export default function Capabilities() {
   const sectionRef = useRef<HTMLElement>(null);
   const revealRefs = useRef<Array<HTMLElement | null>>([]);
+  const imageWrapRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const imageInnerRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
@@ -40,12 +42,19 @@ export default function Capabilities() {
       const reveals = revealRefs.current.filter(
         (el): el is HTMLElement => el !== null
       );
+      const imageWraps = imageWrapRefs.current.filter(
+        (el): el is HTMLDivElement => el !== null
+      );
+      const imageInners = imageInnerRefs.current.filter(
+        (el): el is HTMLDivElement => el !== null
+      );
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
       if (reduceMotion) {
         gsap.set(reveals, { opacity: 1, y: 0 });
+        gsap.set(imageWraps, { clipPath: "inset(0% 0 0 0)" });
         return;
       }
 
@@ -61,6 +70,42 @@ export default function Capabilities() {
           scrollTrigger: { trigger: section, start: "top 75%", once: true },
         }
       );
+
+      // This section's signature moment, deliberately different from the
+      // plain fade-up used everywhere else: each backdrop column rises
+      // into view like a curtain lifting (a masked clip-path reveal, the
+      // same technique behind Obys Agency's own image reveals), staggered
+      // left to right. Once revealed, the image inside keeps drifting at
+      // its own slower pace as the section scrolls past — real parallax
+      // depth, not just an entrance.
+      gsap.fromTo(
+        imageWraps,
+        { clipPath: "inset(100% 0 0 0)" },
+        {
+          clipPath: "inset(0% 0 0 0)",
+          duration: 1.1,
+          ease: "expo.out",
+          stagger: 0.15,
+          scrollTrigger: { trigger: section, start: "top 70%", once: true },
+        }
+      );
+
+      imageInners.forEach((inner) => {
+        gsap.fromTo(
+          inner,
+          { yPercent: -10 },
+          {
+            yPercent: 10,
+            ease: "none",
+            scrollTrigger: {
+              trigger: section,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+            },
+          }
+        );
+      });
     }, section);
 
     return () => ctx.revert();
@@ -73,21 +118,37 @@ export default function Capabilities() {
       className="relative w-full overflow-hidden bg-ink px-6 py-24 sm:px-10 md:px-16 md:py-32 lg:px-20"
     >
       {/* Ambient texture only — three generic, brand-free textile shots as
-          a backdrop, not a claim about specific product categories. */}
-      <div className="absolute inset-0 grid grid-cols-3 opacity-40">
-        {BACKDROP_IMAGES.map((src) => (
-          <div key={src} className="relative h-full w-full">
-            <Image
-              src={src}
-              alt=""
-              fill
-              sizes="34vw"
-              className="object-cover grayscale"
-            />
+          a backdrop, not a claim about specific product categories. Each
+          column is a clip mask (outer) around an oversized, parallax-
+          driven image (inner) — see the reveal/parallax tweens above. */}
+      <div className="absolute inset-0 grid grid-cols-3 opacity-55">
+        {BACKDROP_IMAGES.map((src, i) => (
+          <div
+            key={src}
+            ref={(el) => {
+              imageWrapRefs.current[i] = el;
+            }}
+            className="relative h-full w-full overflow-hidden"
+            style={{ clipPath: "inset(100% 0 0 0)" }}
+          >
+            <div
+              ref={(el) => {
+                imageInnerRefs.current[i] = el;
+              }}
+              className="absolute inset-[-12%]"
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="34vw"
+                className="object-cover grayscale"
+              />
+            </div>
           </div>
         ))}
       </div>
-      <div className="absolute inset-0 bg-ink/80" />
+      <div className="absolute inset-0 bg-ink/75" />
 
       <div className="relative z-10">
         <p
