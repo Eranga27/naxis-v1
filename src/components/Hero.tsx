@@ -125,50 +125,30 @@ export default function Hero() {
             { scale: 1, duration: 1.8, ease: "expo.out" },
             0.2
           )
-          // Kicker and headline lines add a soft blur-to-sharp focus pull on
-          // top of their existing slide — a quiet, premium "pop into focus"
-          // rather than a plain slide, still just one extra property, not a
-          // new effect layered on top. Kicker keeps expo.out (its 12px
-          // offset is small enough that the snap reads as crisp), but the
-          // headline lines stay on power3.out — expo.out resolves ~90% of
-          // its motion in the first third of its duration, and for a
-          // full-height text slide plus blur that read as a glitchy pop-in
-          // rather than a glide, especially with the two lines starting
-          // only 150ms apart.
+          // A blur-to-sharp filter was tried on these three (on top of the
+          // existing slide) for a "pop into focus" feel, but blur doesn't
+          // fade gradually the way opacity/position do — text has to cross
+          // a legibility threshold before it reads as text at all, so even
+          // with a smooth easing curve the *visual* effect is binary:
+          // illegible blur, then suddenly-readable text. That's what was
+          // still reading as a "pop" after the iris and easing fixes.
+          // Dropped back to the plain slide + fade.
           .fromTo(
             kickerRef.current,
-            { opacity: 0, y: 12, filter: "blur(6px)" },
-            {
-              opacity: 1,
-              y: 0,
-              filter: "blur(0px)",
-              duration: 0.7,
-              ease: "expo.out",
-            },
+            { opacity: 0, y: 12 },
+            { opacity: 1, y: 0, duration: 0.7, ease: "expo.out" },
             0.8
           )
           .fromTo(
             line1,
-            { opacity: 0, y: "100%", filter: "blur(10px)" },
-            {
-              opacity: 1,
-              y: "0%",
-              filter: "blur(0px)",
-              duration: 0.9,
-              ease: "power3.out",
-            },
+            { opacity: 0, y: "100%" },
+            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
             0.95
           )
           .fromTo(
             line2,
-            { opacity: 0, y: "100%", filter: "blur(10px)" },
-            {
-              opacity: 1,
-              y: "0%",
-              filter: "blur(0px)",
-              duration: 0.9,
-              ease: "power3.out",
-            },
+            { opacity: 0, y: "100%" },
+            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
             1.1
           );
       };
