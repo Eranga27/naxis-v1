@@ -58,7 +58,7 @@ const BG_FADE_MS = 650; // flag-gradient crossfade duration
 // fade, so the reveal feels like it's settling into place rather than
 // just dissolving.
 const PREMIUM_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
-const VEIL_EXIT_MS = 950; // iris-close duration
+const VEIL_EXIT_MS = 700; // exit fade duration
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
@@ -190,12 +190,19 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       await sleep(TEXT_FADE_MS);
       if (cancelled.current) return;
 
-      // Close like an iris rather than just dissolving — the veil shrinks
-      // to a point at screen-center (with a whisper of scale for a touch
-      // of "pop") instead of fading uniformly, which reads as far more
-      // deliberate and attractive while still being a single clean shape,
-      // not a busy effect.
-      veil.style.clipPath = "circle(0% at 50% 50%)";
+      // A clip-path iris was tried here, but circle() defines the region
+      // that STAYS visible — so a shrinking circle uncovers the screen
+      // from the outer edges inward, with dead-center (where the headline
+      // sits) revealed LAST. Hero's own entrance animation starts at the
+      // same moment as this exit and was playing the whole time, just
+      // hidden behind that still-opaque center — so by the time the iris
+      // finally cleared the text, it had already finished animating and
+      // just appeared fully-formed. A uniform opacity fade doesn't have a
+      // "last region revealed" at all — every point on screen clears at
+      // the same rate — so whatever Hero's entrance has reached at any
+      // instant is exactly what's shown, blending in naturally. Keeps the
+      // premium easing curve and a whisper of scale for the "pop".
+      veil.style.opacity = "0";
       veil.style.transform = "scale(1.04)";
       fireReveal();
       await sleep(VEIL_EXIT_MS);
@@ -282,9 +289,8 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       aria-hidden="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
       style={{
-        clipPath: "circle(150% at 50% 50%)",
         transform: "scale(1)",
-        transition: `clip-path ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
+        transition: `opacity ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
       }}
     >
       {/* Two stacked layers crossfaded between each other to animate the
