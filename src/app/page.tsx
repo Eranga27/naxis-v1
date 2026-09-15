@@ -1,8 +1,8 @@
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import Mission from "@/components/Mission";
-import GlobalNetwork from "@/components/GlobalNetwork";
 import Capabilities from "@/components/Capabilities";
+import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
 import ValueStrip from "@/components/ValueStrip";
 import ClosingCTA from "@/components/ClosingCTA";
@@ -17,8 +17,8 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Mission />
-        <GlobalNetwork />
         <Capabilities />
+        <GlobalNetwork />
         <CinematicDivider />
         <ValueStrip />
         <ClosingCTA />
