@@ -157,7 +157,7 @@ export default function Capabilities() {
     <section
       ref={sectionRef}
       id="capabilities"
-      className="relative w-full overflow-hidden bg-ink px-6 py-24 sm:px-10 md:px-16 md:py-32 lg:px-20"
+      className="relative w-full overflow-hidden bg-ink px-6 py-20 sm:px-10 md:px-16 md:py-24 lg:px-20"
     >
       {/* Ambient texture only — three generic, brand-free textile shots as
           a dim backdrop, not a claim about specific product categories
@@ -205,7 +205,7 @@ export default function Capabilities() {
           ref={(el) => {
             revealRefs.current[1] = el;
           }}
-          className="mb-6 max-w-3xl font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.25rem,6.5vw,5rem)] text-cream opacity-0 md:mb-8"
+          className="mb-6 max-w-3xl font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.75rem,7.5vw,5.75rem)] text-cream opacity-0 md:mb-8"
         >
           Built to spec, every time.
         </h2>
@@ -214,7 +214,7 @@ export default function Capabilities() {
           ref={(el) => {
             revealRefs.current[2] = el;
           }}
-          className="mb-14 max-w-xl font-body text-sm text-cream/70 opacity-0 md:mb-20 md:text-base"
+          className="mb-10 max-w-xl font-body text-sm text-cream/70 opacity-0 md:mb-14 md:text-base"
         >
           From concept to finished garment, every category we produce is
           scoped, sampled, and confirmed with the client before a single
