@@ -12,7 +12,11 @@ const GREETINGS = [
   "你好", // Simplified Chinese
   "Ciao", // Italian
 ];
-const FINAL = "Welcome";
+const FINAL = "Welcome to NAXIS Australia";
+// "NAXIS" gets a brand-gold accent once the phrase finishes typing — see
+// the reveal after typeIn(FINAL) below.
+const FINAL_ACCENT = "NAXIS";
+const FINAL_ACCENT_COLOR = "#FFC94A"; // --color-gold
 
 // One gradient per greeting above, same order — a loose mood cue built from
 // each country's flag palette, not a literal reproduction of the flag's
@@ -35,9 +39,17 @@ const COUNTRY_GRADIENTS = [
 const GREETING_TEXT_COLOR = "#FBF4E4";
 const GREETING_TEXT_SHADOW = "0 2px 10px rgba(0,0,0,0.35)";
 
+// Rather than cut straight from the last flag gradient to flat white, the
+// destination phrase gets one more crossfade — into a soft, low-saturation
+// warm wash (not another flag; this one's the brand, not a country) — so
+// the sequence still reads as one continuous fade rather than an abrupt
+// stop, right before the veil itself clears.
+const WELCOME_GRADIENT =
+  "linear-gradient(135deg, #FDF8ED 0%, #F4EFE4 55%, #FBEFD8 100%)";
+
 const CHAR_MS = 45; // per-character type / delete speed
 const WORD_HOLD_MS = 620; // pause once a greeting is fully typed
-const FINAL_HOLD_MS = 1500;
+const FINAL_HOLD_MS = 1800; // a beat longer — there's more to read now
 const TEXT_FADE_MS = 400;
 const BG_FADE_MS = 650; // flag-gradient crossfade duration
 const VEIL_FADE_MS = 450; // quick clear, so the hero entrance plays in the open
@@ -103,11 +115,6 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       showing.style.opacity = "0";
       activeLayer = (1 - activeLayer) as 0 | 1;
     };
-    const fadeOutBg = () => {
-      const showing = [bgLayerA, bgLayerB][activeLayer];
-      showing.style.opacity = "0";
-    };
-
     const fireReveal = () => {
       if (revealed.current) return;
       revealed.current = true;
@@ -217,11 +224,29 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       if (cancelled.current) return;
       await deleteOut(GREETINGS[GREETINGS.length - 1]);
 
-      // Settle back to the resting white/black look for "Welcome".
-      fadeOutBg();
-      text.style.color = "#000";
+      // One last crossfade into a soft brand wash rather than a hard cut
+      // to flat white — the destination phrase, not another country.
+      crossfadeBg(WELCOME_GRADIENT);
+      text.style.color = "#100d09"; // --color-ink
       text.style.textShadow = "none";
       await typeIn(FINAL);
+      if (cancelled.current) return;
+
+      // "NAXIS" gets its gold accent a beat after the phrase finishes
+      // typing, not mid-type — a quiet flourish on the brand name rather
+      // than a distraction while it's still being read.
+      const accentStart = FINAL.indexOf(FINAL_ACCENT);
+      if (accentStart !== -1) {
+        text.innerHTML =
+          FINAL.slice(0, accentStart) +
+          `<span style="color:inherit;transition:color ${BG_FADE_MS}ms ease">${FINAL_ACCENT}</span>` +
+          FINAL.slice(accentStart + FINAL_ACCENT.length);
+        await sleep(150);
+        if (cancelled.current) return;
+        const accentEl = text.querySelector("span");
+        if (accentEl) accentEl.style.color = FINAL_ACCENT_COLOR;
+      }
+
       await sleep(FINAL_HOLD_MS);
       if (cancelled.current) return;
 
@@ -261,7 +286,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
       <span
         ref={textRef}
-        className="relative z-10 inline-block min-h-[1.3em] font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
+        className="relative z-10 inline-block min-h-[1.3em] max-w-[90vw] text-center font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
         style={{
           opacity: 0,
           transition: `opacity ${TEXT_FADE_MS}ms ease-out, color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease`,
