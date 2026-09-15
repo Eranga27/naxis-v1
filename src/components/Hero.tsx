@@ -117,28 +117,52 @@ export default function Hero() {
           )
           // Scale settles slowly and starts slightly late, so the bulk of the
           // "flying in" is still visibly in motion once the white has gone.
+          // expo.out (a sharper deceleration than power2) gives the settle a
+          // touch more snap without changing its overall pace.
           .fromTo(
             media,
             { scale: 1.18 },
-            { scale: 1, duration: 1.8, ease: "power2.out" },
+            { scale: 1, duration: 1.8, ease: "expo.out" },
             0.2
           )
+          // Kicker and headline lines add a soft blur-to-sharp focus pull on
+          // top of their existing slide — a quiet, premium "pop into focus"
+          // rather than a plain slide, still just one extra property, not a
+          // new effect layered on top.
           .fromTo(
             kickerRef.current,
-            { opacity: 0, y: 12 },
-            { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
+            { opacity: 0, y: 12, filter: "blur(6px)" },
+            {
+              opacity: 1,
+              y: 0,
+              filter: "blur(0px)",
+              duration: 0.7,
+              ease: "expo.out",
+            },
             0.8
           )
           .fromTo(
             line1,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
+            { opacity: 0, y: "100%", filter: "blur(10px)" },
+            {
+              opacity: 1,
+              y: "0%",
+              filter: "blur(0px)",
+              duration: 0.9,
+              ease: "expo.out",
+            },
             0.95
           )
           .fromTo(
             line2,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
+            { opacity: 0, y: "100%", filter: "blur(10px)" },
+            {
+              opacity: 1,
+              y: "0%",
+              filter: "blur(0px)",
+              duration: 0.9,
+              ease: "expo.out",
+            },
             1.1
           );
       };
