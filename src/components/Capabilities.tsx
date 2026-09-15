@@ -205,7 +205,7 @@ export default function Capabilities() {
           ref={(el) => {
             revealRefs.current[1] = el;
           }}
-          className="mb-14 max-w-3xl font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2rem,6vw,4.5rem)] text-cream opacity-0 md:mb-20"
+          className="mb-6 max-w-3xl font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.25rem,6.5vw,5rem)] text-cream opacity-0 md:mb-8"
         >
           Built to spec, every time.
         </h2>
