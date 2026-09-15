@@ -75,27 +75,40 @@ export default function Capabilities() {
       // plain fade-up used everywhere else: each backdrop column rises
       // into view like a curtain lifting (a masked clip-path reveal, the
       // same technique behind Obys Agency's own image reveals), staggered
-      // left to right. Once revealed, the image inside keeps drifting at
-      // its own slower pace as the section scrolls past — real parallax
-      // depth, not just an entrance.
-      gsap.fromTo(
-        imageWraps,
-        { clipPath: "inset(100% 0 0 0)" },
-        {
-          clipPath: "inset(0% 0 0 0)",
-          duration: 1.1,
-          ease: "expo.out",
-          stagger: 0.15,
-          scrollTrigger: { trigger: section, start: "top 70%", once: true },
-        }
-      );
+      // left to right.
+      //
+      // This is scrubbed to scroll position, not a fixed-duration autoplay
+      // — a "once" trigger plays out over its own real-time duration the
+      // instant it fires, so scrolling at normal speed blows straight past
+      // it and the lift is never actually seen happening. Tying it to a
+      // single timeline under one scrubbed ScrollTrigger means its
+      // progress IS how far you've scrolled, so it can't be missed.
+      const curtainTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: section,
+          start: "top 90%",
+          end: "top 25%",
+          scrub: 0.6,
+        },
+      });
+      imageWraps.forEach((wrap, i) => {
+        curtainTl.fromTo(
+          wrap,
+          { clipPath: "inset(100% 0 0 0)" },
+          { clipPath: "inset(0% 0 0 0)", ease: "none", duration: 1 },
+          i * 0.4
+        );
+      });
 
+      // Wider drift than a typical parallax touch — this is the section's
+      // one big "look how alive this feels" moment, so it's spent here
+      // rather than spread thin everywhere.
       imageInners.forEach((inner) => {
         gsap.fromTo(
           inner,
-          { yPercent: -10 },
+          { yPercent: -13 },
           {
-            yPercent: 10,
+            yPercent: 13,
             ease: "none",
             scrollTrigger: {
               trigger: section,
@@ -135,7 +148,7 @@ export default function Capabilities() {
               ref={(el) => {
                 imageInnerRefs.current[i] = el;
               }}
-              className="absolute inset-[-12%]"
+              className="absolute inset-[-20%]"
             >
               <Image
                 src={src}
