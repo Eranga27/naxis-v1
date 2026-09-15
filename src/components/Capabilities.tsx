@@ -54,7 +54,6 @@ export default function Capabilities() {
   const cardInnerRefs = useRef<Array<HTMLDivElement | null>>([]);
   const galleryWrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const counterTrackRef = useRef<HTMLDivElement>(null);
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
   useIsomorphicLayoutEffect(() => {
@@ -175,7 +174,6 @@ export default function Capabilities() {
             Math.max(0, track.scrollWidth - galleryWrap.clientWidth);
 
           const tickCount = CATEGORIES.length;
-          const counterTrack = counterTrackRef.current;
           const ticks = tickRefs.current.filter(
             (el): el is HTMLSpanElement => el !== null
           );
@@ -197,20 +195,10 @@ export default function Capabilities() {
               pin: true,
               scrub: 1,
               invalidateOnRefresh: true,
-              // Cinematic-roll wayfinding, replacing a plain progress bar:
-              // a film-counter readout that rolls between frame numbers in
-              // exact lockstep with the strip (same progress value driving
-              // both), plus a sprocket-hole tick rail whose active mark
-              // advances the instant its card becomes the nearest one —
-              // together they read as one mechanism turning, not a
-              // decoration bolted onto the side.
+              // Sprocket-hole tick rail wayfinding: the active mark
+              // advances the instant its card becomes the nearest one,
+              // driven by the pin's own scroll progress.
               onUpdate: (self) => {
-                if (counterTrack) {
-                  gsap.set(counterTrack, {
-                    yPercent:
-                      -self.progress * ((tickCount - 1) * (100 / tickCount)),
-                  });
-                }
                 const activeIndex = Math.round(
                   self.progress * (tickCount - 1)
                 );
@@ -380,44 +368,20 @@ export default function Capabilities() {
 
         {/* Wayfinding for the pinned gallery — without it there's no cue
             that scrolling further moves the strip rather than the page.
-            A rolling frame-counter (an actual "cinematic roll": the frame
-            number ticks past in the exact same rhythm as the strip's own
-            scroll, like a film counter turning as the reel advances) paired
-            with a sprocket-hole tick rail — both driven by the one pin
-            ScrollTrigger's progress, so they read as a single mechanism
-            rather than a bolted-on bar. Desktop/tablet only, since mobile's
+            A sprocket-hole tick rail whose active mark advances with the
+            pin's own scroll progress. Desktop/tablet only, since mobile's
             native scroll-snap doesn't need one (the strip visibly
             continues past the viewport edge). */}
-        <div className="mt-8 hidden items-center gap-6 md:flex">
-          <div className="flex items-center gap-1.5 font-headline text-gold">
-            <div className="relative h-9 w-9 overflow-hidden">
-              <div ref={counterTrackRef} className="absolute inset-0">
-                {CATEGORIES.map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex h-9 items-center justify-center text-3xl leading-none"
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <span className="font-body text-sm text-cream/40">
-              / {String(CATEGORIES.length).padStart(2, "0")}
-            </span>
-          </div>
-
-          <div className="flex flex-1 items-center gap-2.5">
-            {CATEGORIES.map((_, i) => (
-              <span
-                key={i}
-                ref={(el) => {
-                  tickRefs.current[i] = el;
-                }}
-                className="h-3 w-[3px] shrink-0 rounded-full bg-cream/25"
-              />
-            ))}
-          </div>
+        <div className="mt-8 hidden items-center gap-2.5 md:flex">
+          {CATEGORIES.map((_, i) => (
+            <span
+              key={i}
+              ref={(el) => {
+                tickRefs.current[i] = el;
+              }}
+              className="h-3 w-[3px] shrink-0 rounded-full bg-cream/25"
+            />
+          ))}
         </div>
       </div>
     </section>
