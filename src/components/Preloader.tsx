@@ -52,7 +52,13 @@ const WORD_HOLD_MS = 620; // pause once a greeting is fully typed
 const FINAL_HOLD_MS = 1800; // a beat longer — there's more to read now
 const TEXT_FADE_MS = 400;
 const BG_FADE_MS = 650; // flag-gradient crossfade duration
-const VEIL_FADE_MS = 450; // quick clear, so the hero entrance plays in the open
+
+// The same smooth-decelerate curve behind most premium site-load reveals
+// (an expo-out shape) — used for the exit below instead of a flat linear
+// fade, so the reveal feels like it's settling into place rather than
+// just dissolving.
+const PREMIUM_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+const VEIL_EXIT_MS = 950; // iris-close duration
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
@@ -184,9 +190,15 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       await sleep(TEXT_FADE_MS);
       if (cancelled.current) return;
 
-      veil.style.opacity = "0";
+      // Close like an iris rather than just dissolving — the veil shrinks
+      // to a point at screen-center (with a whisper of scale for a touch
+      // of "pop") instead of fading uniformly, which reads as far more
+      // deliberate and attractive while still being a single clean shape,
+      // not a busy effect.
+      veil.style.clipPath = "circle(0% at 50% 50%)";
+      veil.style.transform = "scale(1.04)";
       fireReveal();
-      await sleep(VEIL_FADE_MS);
+      await sleep(VEIL_EXIT_MS);
       if (cancelled.current) return;
 
       document.body.style.overflow = prevOverflow;
@@ -269,7 +281,11 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       data-preloader
       aria-hidden="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
-      style={{ transition: `opacity ${VEIL_FADE_MS}ms ease-out` }}
+      style={{
+        clipPath: "circle(150% at 50% 50%)",
+        transform: "scale(1)",
+        transition: `clip-path ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
+      }}
     >
       {/* Two stacked layers crossfaded between each other to animate the
           flag-gradient backdrop — see crossfadeBg above. */}
