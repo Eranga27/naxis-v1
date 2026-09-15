@@ -128,7 +128,13 @@ export default function Hero() {
           // Kicker and headline lines add a soft blur-to-sharp focus pull on
           // top of their existing slide — a quiet, premium "pop into focus"
           // rather than a plain slide, still just one extra property, not a
-          // new effect layered on top.
+          // new effect layered on top. Kicker keeps expo.out (its 12px
+          // offset is small enough that the snap reads as crisp), but the
+          // headline lines stay on power3.out — expo.out resolves ~90% of
+          // its motion in the first third of its duration, and for a
+          // full-height text slide plus blur that read as a glitchy pop-in
+          // rather than a glide, especially with the two lines starting
+          // only 150ms apart.
           .fromTo(
             kickerRef.current,
             { opacity: 0, y: 12, filter: "blur(6px)" },
@@ -149,7 +155,7 @@ export default function Hero() {
               y: "0%",
               filter: "blur(0px)",
               duration: 0.9,
-              ease: "expo.out",
+              ease: "power3.out",
             },
             0.95
           )
@@ -161,7 +167,7 @@ export default function Hero() {
               y: "0%",
               filter: "blur(0px)",
               duration: 0.9,
-              ease: "expo.out",
+              ease: "power3.out",
             },
             1.1
           );
