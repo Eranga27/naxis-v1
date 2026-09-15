@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { onReveal } from "@/lib/intro";
+import { VEIL_EXIT_MS } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -104,6 +105,12 @@ export default function Hero() {
       gsap.set(standardEl, { x: vw * 0.03 });
       gsap.set(media, { opacity: 0, scale: 1.18 });
 
+      // The preloader's iris takes VEIL_EXIT_MS to close; the headline
+      // entrance waits until just after that so it's watched animating on
+      // an already-visible backdrop rather than playing out hidden behind
+      // the veil (see the note above the kicker/line tweens below).
+      const textStart = VEIL_EXIT_MS / 1000 + 0.1;
+
       entrance = () => {
         gsap
           .timeline({ onComplete: armScrollInteraction })
@@ -125,31 +132,53 @@ export default function Hero() {
             { scale: 1, duration: 1.8, ease: "expo.out" },
             0.2
           )
-          // A blur-to-sharp filter was tried on these three (on top of the
-          // existing slide) for a "pop into focus" feel, but blur doesn't
-          // fade gradually the way opacity/position do — text has to cross
-          // a legibility threshold before it reads as text at all, so even
-          // with a smooth easing curve the *visual* effect is binary:
-          // illegible blur, then suddenly-readable text. That's what was
-          // still reading as a "pop" after the iris and easing fixes.
-          // Dropped back to the plain slide + fade.
+          // Kicker and headline lines add a blur-to-sharp focus pull on top
+          // of their existing slide — a "pop into focus" rather than a
+          // plain slide. This only reads as smooth motion rather than a
+          // glitch if it's actually watched happening — so it (and the
+          // slide/fade under it) can't start until the preloader's iris
+          // has genuinely finished closing. Both this and the iris started
+          // concurrently before, so the text's whole entrance — position,
+          // opacity, AND blur — played out hidden behind the still-closing
+          // veil and only became visible once already fully resolved,
+          // which reads as a pop no matter how each property is eased.
+          // textStart adds a small buffer after the iris's own duration so
+          // there's no race between the two.
           .fromTo(
             kickerRef.current,
-            { opacity: 0, y: 12 },
-            { opacity: 1, y: 0, duration: 0.7, ease: "expo.out" },
-            0.8
+            { opacity: 0, y: 12, filter: "blur(6px)" },
+            {
+              opacity: 1,
+              y: 0,
+              filter: "blur(0px)",
+              duration: 0.7,
+              ease: "expo.out",
+            },
+            textStart
           )
           .fromTo(
             line1,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-            0.95
+            { opacity: 0, y: "100%", filter: "blur(10px)" },
+            {
+              opacity: 1,
+              y: "0%",
+              filter: "blur(0px)",
+              duration: 0.9,
+              ease: "power3.out",
+            },
+            textStart + 0.15
           )
           .fromTo(
             line2,
-            { opacity: 0, y: "100%" },
-            { opacity: 1, y: "0%", duration: 0.9, ease: "power3.out" },
-            1.1
+            { opacity: 0, y: "100%", filter: "blur(10px)" },
+            {
+              opacity: 1,
+              y: "0%",
+              filter: "blur(0px)",
+              duration: 0.9,
+              ease: "power3.out",
+            },
+            textStart + 0.3
           );
       };
     }, section);
