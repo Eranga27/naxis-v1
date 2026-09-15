@@ -11,7 +11,11 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Real category names aren't established yet — placeholders until the
-// client confirms what actually belongs here.
+// client confirms what actually belongs here. This list is intentionally
+// treated as open-ended: the gallery below is a horizontal, scroll-pinned
+// strip rather than a fixed grid specifically so it keeps working exactly
+// as-is whether there are 4 categories or 14 — adding a category is just
+// appending to this array and CATEGORY_IMAGES, nothing structural.
 const CATEGORIES = [
   "[CONFIRM WITH CLIENT]",
   "[CONFIRM WITH CLIENT]",
@@ -48,10 +52,15 @@ export default function Capabilities() {
   const bgInnerRefs = useRef<Array<HTMLDivElement | null>>([]);
   const cardWrapRefs = useRef<Array<HTMLDivElement | null>>([]);
   const cardInnerRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const galleryWrapRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
-    if (!section) return;
+    const galleryWrap = galleryWrapRef.current;
+    const track = trackRef.current;
+    if (!section || !galleryWrap || !track) return;
 
     const ctx = gsap.context(() => {
       const reveals = revealRefs.current.filter(
@@ -74,6 +83,9 @@ export default function Capabilities() {
       ).matches;
 
       if (reduceMotion) {
+        // No scroll-jacking, no drift — cards stay in their native,
+        // swipeable horizontal strip (see the track's own overflow-x-auto)
+        // and are simply visible, full stop.
         gsap.set(reveals, { opacity: 1, y: 0 });
         gsap.set([...bgWraps, ...cardWraps], { clipPath: "inset(0% 0 0 0)" });
         return;
@@ -92,25 +104,14 @@ export default function Capabilities() {
         }
       );
 
-      // This section's signature moment, deliberately different from the
-      // plain fade-up used everywhere else: every photo here — the dim
-      // background trio and the four category cards alike — rises into
-      // view like a curtain lifting (a masked clip-path reveal, the same
-      // technique behind Obys Agency's own image reveals), staggered
-      // left to right, then keeps drifting at its own slower pace as the
-      // section scrolls past. Both groups run through this same function
-      // so they move identically, just at different depths.
-      //
-      // Scrubbed to scroll position, not a fixed-duration autoplay — a
-      // "once" trigger plays out over its own real-time duration the
-      // instant it fires, so scrolling at normal speed blows straight
-      // past it and the lift is never actually seen happening. Tying it
-      // to a timeline under one scrubbed ScrollTrigger means its progress
-      // IS how far you've scrolled, so it can't be missed.
-      const setupCurtainAndParallax = (
-        wraps: HTMLDivElement[],
-        inners: HTMLDivElement[]
-      ) => {
+      // Every photo here — the dim background trio and the category
+      // cards alike — rises into view like a curtain lifting (a masked
+      // clip-path reveal, the same technique behind Obys Agency's own
+      // image reveals), staggered left to right. Both groups run through
+      // this same function so they move identically, just at different
+      // depths. Scrubbed to scroll position, not a fixed-duration
+      // autoplay, so it can't be scrolled past too fast to see.
+      const setupCurtainReveal = (wraps: HTMLDivElement[]) => {
         const curtainTl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
@@ -127,27 +128,96 @@ export default function Capabilities() {
             i * 0.4
           );
         });
-
-        inners.forEach((inner) => {
-          gsap.fromTo(
-            inner,
-            { yPercent: -13 },
-            {
-              yPercent: 13,
-              ease: "none",
-              scrollTrigger: {
-                trigger: section,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true,
-              },
-            }
-          );
-        });
       };
+      setupCurtainReveal(bgWraps);
+      setupCurtainReveal(cardWraps);
 
-      setupCurtainAndParallax(bgWraps, bgInners);
-      setupCurtainAndParallax(cardWraps, cardInners);
+      // Background trio keeps its own gentle vertical drift regardless of
+      // category count — pure ambience, unrelated to the gallery below.
+      bgInners.forEach((inner) => {
+        gsap.fromTo(
+          inner,
+          { yPercent: -13 },
+          {
+            yPercent: 13,
+            ease: "none",
+            scrollTrigger: {
+              trigger: section,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+            },
+          }
+        );
+      });
+
+      // The category gallery itself: this is the part built to scale past
+      // four. Rather than a grid that keeps growing taller as categories
+      // are added, the section PINS in place once its top reaches the
+      // viewport's top, and the vertical scroll you'd otherwise spend
+      // scrolling past a tall grid instead drives the strip sideways —
+      // the same "scroll-jacked horizontal gallery" technique behind most
+      // Awwwards case-study/work sections. However many cards there are,
+      // this scrolls the same way; only the pinned scroll DISTANCE grows.
+      //
+      // Only wired up at tablet width and above, and only without a
+      // reduced-motion preference (guarded by the early return above) —
+      // on a phone, scroll-jacking a horizontal gesture fights the
+      // natural swipe-to-scroll instinct, so mobile instead gets the
+      // track's native overflow-x-auto + scroll-snap for a normal
+      // swipeable strip, no JS involved.
+      ScrollTrigger.matchMedia({
+        "(min-width: 768px)": () => {
+          gsap.set(galleryWrap, { overflow: "visible" });
+
+          const getMaxScroll = () =>
+            Math.max(0, track.scrollWidth - galleryWrap.clientWidth);
+
+          const pinTween = gsap.to(track, {
+            x: () => -getMaxScroll(),
+            ease: "none",
+            scrollTrigger: {
+              trigger: galleryWrap,
+              start: "top top",
+              end: () => "+=" + getMaxScroll(),
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true,
+              onUpdate: (self) => {
+                if (progressBarRef.current) {
+                  gsap.set(progressBarRef.current, { scaleX: self.progress });
+                }
+              },
+            },
+          });
+
+          // Each card's photo drifts slightly against the direction of
+          // travel as the strip scrolls — the same inner/outer parallax
+          // split used elsewhere on this section, just running sideways
+          // to match the gallery's own axis.
+          cardInners.forEach((inner) => {
+            gsap.fromTo(
+              inner,
+              { xPercent: -8 },
+              {
+                xPercent: 8,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: galleryWrap,
+                  start: "top top",
+                  end: () => "+=" + getMaxScroll(),
+                  scrub: true,
+                },
+              }
+            );
+          });
+
+          return () => {
+            pinTween.scrollTrigger?.kill();
+            pinTween.kill();
+          };
+        },
+      });
     }, section);
 
     return () => ctx.revert();
@@ -220,15 +290,24 @@ export default function Capabilities() {
           scoped, sampled, and confirmed with the client before a single
           unit ships.
         </p>
+      </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* The gallery is deliberately OUTSIDE the z-10 text wrapper's own
+          padding-constrained flow so it can pin full-bleed — its own
+          horizontal padding matches the section's so the cards still line
+          up with the heading above at rest. */}
+      <div ref={galleryWrapRef} className="relative z-10 mt-2">
+        <div
+          ref={trackRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:pb-0 [&::-webkit-scrollbar]:hidden"
+        >
           {CATEGORIES.map((category, i) => (
             <div
               key={i}
               ref={(el) => {
                 revealRefs.current[3 + i] = el;
               }}
-              className="opacity-0"
+              className="w-[260px] flex-shrink-0 snap-center opacity-0 sm:w-[320px]"
             >
               <div
                 ref={(el) => {
@@ -247,7 +326,7 @@ export default function Capabilities() {
                     src={CATEGORY_IMAGES[i]}
                     alt=""
                     fill
-                    sizes="(min-width: 1024px) 23vw, (min-width: 640px) 46vw, 90vw"
+                    sizes="(min-width: 640px) 320px, 78vw"
                     className="object-cover"
                   />
                 </div>
@@ -263,6 +342,18 @@ export default function Capabilities() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Wayfinding for the pinned gallery — without it there's no cue
+            that scrolling further moves the strip rather than the page.
+            Desktop/tablet only, since mobile's native scroll-snap doesn't
+            need one (the strip visibly continues past the viewport edge). */}
+        <div className="mt-8 hidden h-[2px] w-full overflow-hidden rounded-full bg-cream/10 md:block">
+          <div
+            ref={progressBarRef}
+            className="h-full w-full origin-left rounded-full bg-gold"
+            style={{ transform: "scaleX(0)" }}
+          />
         </div>
       </div>
     </section>
