@@ -58,7 +58,10 @@ const BG_FADE_MS = 650; // flag-gradient crossfade duration
 // fade, so the reveal feels like it's settling into place rather than
 // just dissolving.
 const PREMIUM_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
-const VEIL_EXIT_MS = 700; // exit fade duration
+// Exported so Hero can delay its headline entrance until this iris has
+// actually finished closing — see the note above VEIL_EXIT_MS's usage
+// below for why that matters.
+export const VEIL_EXIT_MS = 950;
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
@@ -190,19 +193,21 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       await sleep(TEXT_FADE_MS);
       if (cancelled.current) return;
 
-      // A clip-path iris was tried here, but circle() defines the region
-      // that STAYS visible — so a shrinking circle uncovers the screen
-      // from the outer edges inward, with dead-center (where the headline
-      // sits) revealed LAST. Hero's own entrance animation starts at the
-      // same moment as this exit and was playing the whole time, just
-      // hidden behind that still-opaque center — so by the time the iris
-      // finally cleared the text, it had already finished animating and
-      // just appeared fully-formed. A uniform opacity fade doesn't have a
-      // "last region revealed" at all — every point on screen clears at
-      // the same rate — so whatever Hero's entrance has reached at any
-      // instant is exactly what's shown, blending in naturally. Keeps the
-      // premium easing curve and a whisper of scale for the "pop".
-      veil.style.opacity = "0";
+      // Close like an iris — the veil shrinks to a point at screen-center
+      // (with a whisper of scale for a touch of "pop") instead of fading
+      // uniformly. Reads as far more deliberate than a plain dissolve.
+      //
+      // clip-path: circle() defines the region that STAYS visible, so as
+      // it shrinks, the screen uncovers from the outer edges inward, with
+      // dead-center — where the headline sits — revealed LAST. That's
+      // deliberate, not a bug: the video (which starts fading/scaling in
+      // immediately on reveal) is what shows through the shrinking ring
+      // first, and Hero's headline entrance is timed to only start once
+      // this iris has fully closed (see VEIL_EXIT_MS in Hero.tsx), so the
+      // text animates into view on an already-visible backdrop instead of
+      // playing out hidden behind the still-opaque center and only
+      // appearing once already fully resolved.
+      veil.style.clipPath = "circle(0% at 50% 50%)";
       veil.style.transform = "scale(1.04)";
       fireReveal();
       await sleep(VEIL_EXIT_MS);
@@ -289,8 +294,9 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       aria-hidden="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
       style={{
+        clipPath: "circle(150% at 50% 50%)",
         transform: "scale(1)",
-        transition: `opacity ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
+        transition: `clip-path ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
       }}
     >
       {/* Two stacked layers crossfaded between each other to animate the
