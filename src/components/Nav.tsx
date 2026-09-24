@@ -13,29 +13,39 @@ export default function Nav() {
   // ink bar from Mission onward, so section headings scrolling underneath
   // stop colliding with the logo and buttons. Keyed off Mission's top
   // edge rather than a scroll offset, since the hero's pin changes how
-  // far down Mission actually starts. Pages without a Mission section
-  // (the service pages) go solid after a short scroll instead.
+  // far down Mission actually starts. The hero also reports when its
+  // frame has closed in to a card on cream ("hero:framed"), where the
+  // logo would otherwise sit on cream with nothing behind it. Pages
+  // without a Mission section (the service pages) go solid after a short
+  // scroll instead.
   useEffect(() => {
     const mission = document.getElementById("mission");
+    let heroFramed = false;
     let frame = 0;
     const update = () => {
       frame = 0;
       setSolid(
         mission
-          ? mission.getBoundingClientRect().top <= 80
+          ? heroFramed || mission.getBoundingClientRect().top <= 80
           : window.scrollY > 40
       );
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
+    const onHeroFramed = (event: Event) => {
+      heroFramed = (event as CustomEvent<boolean>).detail;
+      onScroll();
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    window.addEventListener("hero:framed", onHeroFramed);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("hero:framed", onHeroFramed);
     };
   }, []);
 
