@@ -348,7 +348,7 @@ export default function Capabilities() {
                 >
                   <Image
                     src={CATEGORY_IMAGES[i]}
-                    alt=""
+                    alt={`${category} garments`}
                     fill
                     sizes="(min-width: 640px) 320px, 78vw"
                     className="object-cover"

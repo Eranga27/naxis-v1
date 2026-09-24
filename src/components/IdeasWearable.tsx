@@ -334,6 +334,10 @@ export default function IdeasWearable() {
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/65 to-ink/75" />
       <div className="absolute inset-0 bg-radial-[circle_at_center] from-transparent via-ink/30 to-ink/80" />
 
+      {/* The per-letter lines below are aria-hidden (a screen reader would
+          otherwise spell them out), so the phrase is given once here. */}
+      <h2 className="sr-only">We make ideas wearable.</h2>
+
       {/* Main Kinetic Typography Block */}
       <div
         ref={linesWrapRef}
@@ -351,7 +355,7 @@ export default function IdeasWearable() {
               fontFamily: "var(--font-bebas-neue)",
               lineHeight: 0.92,
             }}
-            aria-label={chars.map((c) => c.char).join("")}
+            aria-hidden="true"
           >
             {chars.map((c, charIdx) =>
               c.char === " " ? (

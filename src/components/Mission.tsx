@@ -17,7 +17,7 @@ const WORDS = SENTENCE.split(" ");
 
 export default function Mission() {
   const sectionRef = useRef<HTMLElement>(null);
-  const sentenceWrapRef = useRef<HTMLDivElement>(null);
+  const sentenceWrapRef = useRef<HTMLParagraphElement>(null);
   const wordRefs = useRef<Array<HTMLSpanElement | null>>([]);
 
   useIsomorphicLayoutEffect(() => {
@@ -124,7 +124,10 @@ export default function Mission() {
       {/* Centered independently of the label/list column above and below,
           and deliberately wide with no flanking copy — a large, bold,
           headline-weight statement rather than a narrow body paragraph. */}
-      <div
+      {/* The statement itself is a paragraph; this gives heading
+          navigation a landmark for the section. */}
+      <h2 className="sr-only">Our mission</h2>
+      <p
         ref={sentenceWrapRef}
         className="mx-auto max-w-6xl py-10 text-center font-body text-[clamp(1.75rem,5.5vw,4.75rem)] font-bold leading-[1.15] tracking-tight md:py-14"
       >
@@ -140,7 +143,7 @@ export default function Mission() {
             {word}{" "}
           </span>
         ))}
-      </div>
+      </p>
     </section>
   );
 }
