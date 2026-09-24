@@ -130,8 +130,16 @@ export default function Hero() {
       // Initial gap offset at rest:
       // SIX starts pulled left from COUNTRIES,; STANDARD starts pulled right from ONE.
       // Both are fully legible and on-screen, spaced apart until scroll closes them.
+      // Capped to the content's own left padding (less a small margin) so
+      // SIX can never be pushed past the viewport edge — on phones the
+      // 32px floor alone exceeded the 24px mobile padding.
       const vw = window.innerWidth || 1024;
-      const initialOffset = Math.min(Math.max(vw * 0.045, 32), 65);
+      const padLeft = parseFloat(getComputedStyle(content).paddingLeft) || 24;
+      const initialOffset = Math.min(
+        Math.max(vw * 0.045, 32),
+        65,
+        padLeft - 8
+      );
 
       gsap.set(sixEl, { x: -initialOffset });
       gsap.set(standardEl, { x: initialOffset });
@@ -250,13 +258,14 @@ export default function Hero() {
         ref={contentRef}
         className="relative z-10 w-full px-6 pb-8 pt-24 sm:px-10 sm:pb-10 md:px-16 md:pb-12 lg:px-20 lg:pb-14"
       >
-        <div
-          aria-hidden="true"
-          className="font-display font-black uppercase text-cream tracking-[-0.04em] leading-[0.94] select-none text-[clamp(2.75rem,7.5vw,7.5rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]"
-        >
+        {/* Only the two split headline lines are aria-hidden (the sr-only h1
+            above already reads them) — the kicker between them is real
+            copy that screen readers must still reach. */}
+        <div className="font-display font-black uppercase text-cream tracking-[-0.04em] leading-[0.94] select-none text-[clamp(2.75rem,7.5vw,7.5rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]">
           {/* LINE 1: "SIX COUNTRIES," */}
           <div
             ref={line1WrapRef}
+            aria-hidden="true"
             className="block overflow-hidden text-left"
           >
             <span
@@ -294,6 +303,7 @@ export default function Hero() {
           {/* LINE 2: "ONE STANDARD." */}
           <div
             ref={line2WrapRef}
+            aria-hidden="true"
             className="block overflow-hidden text-left"
           >
             <span
