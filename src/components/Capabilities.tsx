@@ -10,17 +10,17 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Real category names aren't established yet — placeholders until the
-// client confirms what actually belongs here. This list is intentionally
-// treated as open-ended: the gallery below is a horizontal, scroll-pinned
-// strip rather than a fixed grid specifically so it keeps working exactly
-// as-is whether there are 4 categories or 14 — adding a category is just
-// appending to this array and CATEGORY_IMAGES, nothing structural.
+// Product categories sourced from the NAXIS Australia client PDF and
+// network specialisation data. This list is intentionally open-ended:
+// the gallery below is a horizontal, scroll-pinned strip rather than a
+// fixed grid so it keeps working as-is whether there are 4 categories
+// or 14 — adding a category is just appending to this array and
+// CATEGORY_IMAGES, nothing structural.
 const CATEGORIES = [
-  "[CONFIRM WITH CLIENT]",
-  "[CONFIRM WITH CLIENT]",
-  "[CONFIRM WITH CLIENT]",
-  "[CONFIRM WITH CLIENT]",
+  "Activewear",
+  "Teamwear",
+  "Casualwear",
+  "Workwear",
 ];
 
 // TEMPORARY stand-ins, not cleared for production: cat2 and cat3 carry
@@ -169,6 +169,7 @@ export default function Capabilities() {
       ScrollTrigger.matchMedia({
         "(min-width: 768px)": () => {
           gsap.set(galleryWrap, { overflow: "visible" });
+          gsap.set(track, { overflow: "visible" });
 
           const getMaxScroll = () =>
             Math.max(0, track.scrollWidth - galleryWrap.clientWidth);
@@ -321,7 +322,7 @@ export default function Capabilities() {
       <div ref={galleryWrapRef} className="relative z-10 mt-2">
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:pb-0 [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
         >
           {CATEGORIES.map((category, i) => (
             <div

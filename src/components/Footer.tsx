@@ -1,9 +1,8 @@
 import Image from "next/image";
 import { NAV_LINKS } from "@/lib/navLinks";
 
-// Placeholder contact details — replace once the client confirms real ones.
-const CONTACT_EMAIL = "[CONFIRM WITH CLIENT]";
-const CONTACT_PHONE = "[CONFIRM WITH CLIENT]";
+// Contact email — update once the client confirms their preferred address.
+const CONTACT_EMAIL = "info@naxisaustralia.com.au";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -44,9 +43,6 @@ export default function Footer() {
         <div className="flex flex-col gap-2 font-body text-sm text-cream/70">
           <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-cream">
             {CONTACT_EMAIL}
-          </a>
-          <a href={`tel:${CONTACT_PHONE}`} className="transition-colors hover:text-cream">
-            {CONTACT_PHONE}
           </a>
         </div>
       </div>

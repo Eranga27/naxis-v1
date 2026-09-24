@@ -71,25 +71,27 @@ export default function Mission() {
       gsap.timeline({
         scrollTrigger: {
           trigger: sentenceWrap,
-          start: "top 5%",
-          end: "bottom -50%",
+          start: "top 62%",
+          end: "bottom 20%",
           scrub: true,
         },
       }).to(words, {
         opacity: 1,
         ease: "none",
-        stagger: 0.4,
-        duration: 0.4,
+        stagger: 0.35,
+        duration: 0.35,
       });
     }, section);
 
     // Hero's own pin-spacer isn't inserted until its entrance animation
-    // finishes (timing that varies — it waits on the preloader, then plays
-    // an ~2s sequence), well after this effect runs. Until that spacer
-    // exists, the document is shorter by Hero's full pin distance, so the
-    // word-reveal trigger above locks in boundaries offset by exactly that
-    // amount. Rather than guess a fixed delay, watch for the pin-spacer to
-    // actually appear and refresh the instant it does.
+    // finishes, well after this effect runs. Until that spacer exists, the
+    // document is shorter by Hero's full pin distance. We listen to Hero's
+    // custom event and poll for the pin-spacer to ensure coordinates are exact.
+    const handleHeroPinned = () => {
+      ScrollTrigger.refresh();
+    };
+    window.addEventListener("hero:pinned", handleHeroPinned);
+
     let pinSpacerSeen = false;
     const pinSpacerCheck = setInterval(() => {
       if (pinSpacerSeen) return;
@@ -98,10 +100,17 @@ export default function Mission() {
         ScrollTrigger.refresh();
         clearInterval(pinSpacerCheck);
       }
-    }, 200);
+    }, 150);
+
+    const safetyTimeout = setTimeout(() => {
+      clearInterval(pinSpacerCheck);
+      ScrollTrigger.refresh();
+    }, 6000);
 
     return () => {
+      window.removeEventListener("hero:pinned", handleHeroPinned);
       clearInterval(pinSpacerCheck);
+      clearTimeout(safetyTimeout);
       ctx.revert();
     };
   }, []);
@@ -110,7 +119,7 @@ export default function Mission() {
     <section
       ref={sectionRef}
       id="mission"
-      className="relative w-full bg-cream px-6 py-28 sm:px-10 md:px-16 md:py-36 lg:px-20 lg:py-44"
+      className="relative z-20 w-full rounded-t-[24px] bg-cream px-6 py-28 shadow-[0_-25px_60px_rgba(16,13,9,0.55)] sm:rounded-t-[32px] sm:px-10 md:rounded-t-[44px] md:px-16 md:py-36 lg:px-20 lg:py-44"
     >
       {/* Centered independently of the label/list column above and below,
           and deliberately wide with no flanking copy — a large, bold,

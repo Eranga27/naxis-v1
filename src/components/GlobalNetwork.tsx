@@ -9,15 +9,32 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Per-country specialization copy isn't established yet — placeholder until
-// the client confirms what belongs here.
+// Country specializations sourced from the NAXIS Australia client materials.
 const COUNTRIES = [
-  { name: "Sri Lanka", note: "[CONFIRM WITH CLIENT]" },
-  { name: "India", note: "[CONFIRM WITH CLIENT]" },
-  { name: "Bangladesh", note: "[CONFIRM WITH CLIENT]" },
-  { name: "Vietnam", note: "[CONFIRM WITH CLIENT]" },
-  { name: "China", note: "[CONFIRM WITH CLIENT]" },
-  { name: "Italy", note: "[CONFIRM WITH CLIENT]" },
+  {
+    name: "Sri Lanka",
+    note: "Apparel & Activewear",
+  },
+  {
+    name: "India",
+    note: "Knits & Workwear",
+  },
+  {
+    name: "Bangladesh",
+    note: "Woven & Denim",
+  },
+  {
+    name: "Vietnam",
+    note: "Sportswear & Outerwear",
+  },
+  {
+    name: "China",
+    note: "Technical Fabrics",
+  },
+  {
+    name: "Italy",
+    note: "Luxury & Technical",
+  },
 ];
 
 export default function GlobalNetwork() {

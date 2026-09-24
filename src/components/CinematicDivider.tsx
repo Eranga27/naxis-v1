@@ -9,7 +9,14 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-const CERTIFICATIONS = ["SEDEX", "WRAP", "CT-PAT"];
+// Certifications confirmed in the NAXIS Australia client PDF (page 6).
+const CERTIFICATIONS = [
+  "WRAP",
+  "SMETA (SEDEX)",
+  "BSCI",
+  "C-TPAT",
+  "OEKO-TEX Standard 100",
+];
 
 export default function CinematicDivider() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -126,9 +133,19 @@ export default function CinematicDivider() {
           </span>
         </h2>
 
-        <ul
+        <p
           ref={(el) => {
             revealRefs.current[3] = el;
+          }}
+          className="mt-8 max-w-lg font-body text-sm leading-relaxed text-cream/60 opacity-0 md:mt-10 md:text-base"
+        >
+          All NAXIS partner factories operate to internationally recognised ethical
+          trading and product safety standards — audited and verified.
+        </p>
+
+        <ul
+          ref={(el) => {
+            revealRefs.current[4] = el;
           }}
           className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-4 opacity-0 md:mt-16 md:gap-x-14"
         >

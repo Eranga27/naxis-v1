@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { onReveal } from "@/lib/intro";
-import { VEIL_EXIT_MS } from "@/components/Preloader";
+import { VEIL_EXIT_MS, INTRO_SESSION_KEY } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,29 +17,44 @@ export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const kickerRef = useRef<HTMLParagraphElement>(null);
+
+  const line1WrapRef = useRef<HTMLDivElement>(null);
   const line1Ref = useRef<HTMLSpanElement>(null);
-  const line2Ref = useRef<HTMLSpanElement>(null);
-  const line1WrapRef = useRef<HTMLSpanElement>(null);
-  const line2WrapRef = useRef<HTMLSpanElement>(null);
   const sixRef = useRef<HTMLSpanElement>(null);
+
+  const kickerWrapRef = useRef<HTMLDivElement>(null);
+  const kickerRef = useRef<HTMLParagraphElement>(null);
+
+  const line2WrapRef = useRef<HTMLDivElement>(null);
+  const line2Ref = useRef<HTMLSpanElement>(null);
   const standardRef = useRef<HTMLSpanElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
     const media = mediaRef.current;
     const content = contentRef.current;
-    const line1 = line1Ref.current;
-    const line2 = line2Ref.current;
     const line1Wrap = line1WrapRef.current;
-    const line2Wrap = line2WrapRef.current;
+    const line1 = line1Ref.current;
     const sixEl = sixRef.current;
+    const kickerEl = kickerRef.current;
+    const line2Wrap = line2WrapRef.current;
+    const line2 = line2Ref.current;
     const standardEl = standardRef.current;
+
     if (
-      !section || !media || !content || !line1 || !line2 ||
-      !line1Wrap || !line2Wrap || !sixEl || !standardEl
-    )
+      !section ||
+      !media ||
+      !content ||
+      !line1Wrap ||
+      !line1 ||
+      !sixEl ||
+      !kickerEl ||
+      !line2Wrap ||
+      !line2 ||
+      !standardEl
+    ) {
       return;
+    }
 
     let entrance: (() => void) | null = null;
 
@@ -48,143 +63,153 @@ export default function Hero() {
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      // Once the load-in reveal has run, the per-line masks (used only to
-      // clip the vertical reveal) are released — nothing else needs them.
+      // Release masks once entrance completes so shadows/descenders never clip
       const releaseMasks = () => {
         gsap.set([line1Wrap, line2Wrap], { overflow: "visible" });
       };
 
-      // The scroll interaction is armed only after the load-in settles.
+      // The scroll interaction is armed once the entrance finishes.
       // SIX and STANDARD sit apart from their neighbors at rest (SIX away
-      // from COUNTRIES,, STANDARD away from ONE), fully legible the whole
-      // time, then on scroll they slide inward and close that gap — SIX
-      // right, STANDARD left — settling into the compact
-      // "SIX COUNTRIES," / "ONE STANDARD." reading, with the video
-      // continuing a slow zoom alongside them. The pin is short — just
-      // long enough for that settle — and nothing fades: once settled, the
-      // pin releases and the page keeps scrolling straight into Mission,
-      // so the transition reads as one continuous scroll rather than a
-      // stall-then-fade.
+      // from COUNTRIES,, STANDARD away from ONE). On scroll, the section
+      // pins, and they smoothly glide inward to close the gap into the
+      // compact "SIX COUNTRIES, ONE STANDARD." statement.
+      //
+      // Once aligned (around ~50% of the pin), a deliberate reading delay
+      // keeps them locked in place so the user can comfortably read and
+      // digest the message before the pin releases into Mission.
       const armScrollInteraction = () => {
         releaseMasks();
 
-        gsap
-          .timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: () => "+=" + window.innerHeight * 0.6,
-              pin: true,
-              scrub: true,
-              invalidateOnRefresh: true,
-            },
-          })
-          // A brief hold, then SIX and STANDARD slide inward, closing the
-          // gap to COUNTRIES,/ONE, finishing exactly as the pin releases.
-          .to(sixEl, { x: 0, ease: "none", duration: 0.85 }, 0.15)
-          .to(standardEl, { x: 0, ease: "none", duration: 0.85 }, 0.15)
-          .to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
+        const pinDuration = window.innerHeight * 0.65;
+
+        const scrollTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: () => "+=" + pinDuration,
+            pin: true,
+            scrub: 0.8,
+            invalidateOnRefresh: true,
+            refreshPriority: 10,
+          },
+        });
+
+        // Slow cinematic background zoom across the pin
+        scrollTl.to(media, { scale: 1.08, ease: "none", duration: 1 }, 0);
+
+        // Words slide inward to close the gap into crisp alignment
+        scrollTl.to(
+          sixEl,
+          { x: 0, ease: "power2.out", duration: 0.75 },
+          0.1
+        );
+        scrollTl.to(
+          standardEl,
+          { x: 0, ease: "power2.out", duration: 0.75 },
+          0.1
+        );
+
+        // Notify downstream triggers and refresh ScrollTrigger
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("hero:pinned"));
+        }
+        ScrollTrigger.sort();
+        ScrollTrigger.refresh();
       };
 
       if (reduceMotion) {
-        // No pin/scrub for reduced motion: the section is skipped straight
-        // to its final (compact) state with no scroll-hijacking at all.
-        gsap.set(kickerRef.current, { opacity: 1, y: 0 });
-        gsap.set([line1, line2], { opacity: 1, y: 0 });
-        gsap.set([sixEl, standardEl], { x: 0 });
+        // Instant static layout for reduced-motion preference
         gsap.set(media, { opacity: 1, scale: 1 });
+        gsap.set([line1, line2], { y: "0%", opacity: 1, filter: "none" });
+        gsap.set([sixEl, standardEl], { x: 0 });
+        gsap.set(kickerEl, { opacity: 1, y: 0 });
         releaseMasks();
         return;
       }
 
-      // SIX starts pulled left, away from COUNTRIES,; STANDARD starts
-      // pulled right, away from ONE — both still fully on-screen and
-      // legible, just spaced apart, until scroll closes the gap.
+      // Initial gap offset at rest:
+      // SIX starts pulled left from COUNTRIES,; STANDARD starts pulled right from ONE.
+      // Both are fully legible and on-screen, spaced apart until scroll closes them.
       const vw = window.innerWidth || 1024;
-      gsap.set(sixEl, { x: -vw * 0.03 });
-      gsap.set(standardEl, { x: vw * 0.03 });
-      gsap.set(media, { opacity: 0, scale: 1.18 });
+      const initialOffset = Math.min(Math.max(vw * 0.045, 32), 65);
 
-      // The preloader's iris takes VEIL_EXIT_MS to close; the headline
-      // entrance waits until just after that so it's watched animating on
-      // an already-visible backdrop rather than playing out hidden behind
-      // the veil (see the note above the kicker/line tweens below).
-      const textStart = VEIL_EXIT_MS / 1000 + 0.1;
+      gsap.set(sixEl, { x: -initialOffset });
+      gsap.set(standardEl, { x: initialOffset });
+      gsap.set(media, { opacity: 0, scale: 1.15 });
+
+      // If already seen in this session, entrance fires immediately;
+      // otherwise it waits for the preloader iris to close.
+      let alreadySeen = false;
+      try {
+        alreadySeen = sessionStorage.getItem(INTRO_SESSION_KEY) === "done";
+      } catch {
+        // storage disabled / private mode
+      }
+
+      const textStart = alreadySeen ? 0.05 : VEIL_EXIT_MS / 1000 + 0.08;
 
       entrance = () => {
-        gsap
-          .timeline({ onComplete: armScrollInteraction })
-          // Opacity rises early — while the veil is still opaque — so the
-          // clearing white never exposes the bare dark background.
-          .fromTo(
-            media,
-            { opacity: 0 },
-            { opacity: 1, duration: 0.35, ease: "power1.out" },
-            0
-          )
-          // Scale settles slowly and starts slightly late, so the bulk of the
-          // "flying in" is still visibly in motion once the white has gone.
-          // expo.out (a sharper deceleration than power2) gives the settle a
-          // touch more snap without changing its overall pace.
-          .fromTo(
-            media,
-            { scale: 1.18 },
-            { scale: 1, duration: 1.8, ease: "expo.out" },
-            0.2
-          )
-          // Kicker and headline lines add a blur-to-sharp focus pull on top
-          // of their existing slide — a "pop into focus" rather than a
-          // plain slide. This only reads as smooth motion rather than a
-          // glitch if it's actually watched happening — so it (and the
-          // slide/fade under it) can't start until the preloader's iris
-          // has genuinely finished closing. Both this and the iris started
-          // concurrently before, so the text's whole entrance — position,
-          // opacity, AND blur — played out hidden behind the still-closing
-          // veil and only became visible once already fully resolved,
-          // which reads as a pop no matter how each property is eased.
-          // textStart adds a small buffer after the iris's own duration so
-          // there's no race between the two.
-          .fromTo(
-            kickerRef.current,
-            { opacity: 0, y: 12, filter: "blur(6px)" },
-            {
-              opacity: 1,
-              y: 0,
-              filter: "blur(0px)",
-              duration: 0.7,
-              ease: "expo.out",
-            },
-            textStart
-          )
-          .fromTo(
-            line1,
-            { opacity: 0, y: "100%", filter: "blur(10px)" },
-            {
-              opacity: 1,
-              y: "0%",
-              filter: "blur(0px)",
-              duration: 0.9,
-              ease: "power3.out",
-            },
-            textStart + 0.15
-          )
-          .fromTo(
-            line2,
-            { opacity: 0, y: "100%", filter: "blur(10px)" },
-            {
-              opacity: 1,
-              y: "0%",
-              filter: "blur(0px)",
-              duration: 0.9,
-              ease: "power3.out",
-            },
-            textStart + 0.3
-          );
+        const tl = gsap.timeline({ onComplete: armScrollInteraction });
+
+        // Video reveals and settles
+        tl.fromTo(
+          media,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.4, ease: "power1.out" },
+          0
+        ).fromTo(
+          media,
+          { scale: 1.15 },
+          { scale: 1, duration: 1.8, ease: "expo.out" },
+          0.1
+        );
+
+        // Kicker / Subhead reveal
+        tl.fromTo(
+          kickerEl,
+          { opacity: 0, y: 14, filter: "blur(6px)" },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.75,
+            ease: "expo.out",
+          },
+          textStart
+        );
+
+        // Line 1: "SIX COUNTRIES,"
+        tl.fromTo(
+          line1,
+          { opacity: 0, y: "100%", filter: "blur(10px)" },
+          {
+            opacity: 1,
+            y: "0%",
+            filter: "blur(0px)",
+            duration: 0.9,
+            ease: "power3.out",
+          },
+          textStart + 0.12
+        );
+
+        // Line 2: "ONE STANDARD."
+        tl.fromTo(
+          line2,
+          { opacity: 0, y: "100%", filter: "blur(10px)" },
+          {
+            opacity: 1,
+            y: "0%",
+            filter: "blur(0px)",
+            duration: 0.9,
+            ease: "power3.out",
+          },
+          textStart + 0.24
+        );
       };
     }, section);
 
     // Held back until the intro veil lifts, so the entrance isn't spent
-    // playing behind a white screen. Fires immediately if already revealed.
+    // playing behind an opaque screen. Fires immediately if already revealed.
     const unsubscribe = onReveal(() => {
       if (entrance) ctx.add(entrance);
     });
@@ -201,11 +226,11 @@ export default function Hero() {
       id="top"
       className="relative flex h-screen w-full items-end overflow-hidden bg-ink"
     >
-      {/* Video + grade move as one unit so the entrance is a single transform. */}
+      {/* Cinematic video backdrop + multi-stop contrast vignette */}
       <div ref={mediaRef} className="absolute inset-0">
         <video
           data-hero-video
-          className="absolute inset-0 h-full w-full object-cover"
+          className="h-full w-full object-cover"
           src="/videos/hero-compressed-video.mp4"
           autoPlay
           muted
@@ -213,99 +238,84 @@ export default function Hero() {
           playsInline
           preload="auto"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-brown/55 via-ink/15 to-transparent" />
+        {/* Balanced gradient grade so footage details and text contrast remain clean */}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/35 to-ink/20" />
+        <div className="absolute inset-0 bg-radial-[circle_at_center] from-transparent via-ink/20 to-ink/65" />
       </div>
+
+      {/* Accessible heading text for screen readers & SEO */}
+      <h1 className="sr-only">Six countries. One standard.</h1>
 
       <div
         ref={contentRef}
-        className="relative z-10 w-full px-6 pb-6 pt-24 sm:px-10 sm:pb-8 md:px-16 md:pb-10 lg:px-20 lg:pb-14"
+        className="relative z-10 w-full px-6 pb-8 pt-24 sm:px-10 sm:pb-10 md:px-16 md:pb-12 lg:px-20 lg:pb-14"
       >
-        {/* Real accessible heading text — the visual lines below are
-            decorative duplicates, individually aria-hidden. */}
-        <h1 className="sr-only">Six countries. One standard.</h1>
-
-        <div className="font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.75rem,10.5vw,9.5rem)] [text-shadow:0_2px_6px_rgba(0,0,0,0.3)]">
-          <span
+        <div
+          aria-hidden="true"
+          className="font-display font-black uppercase text-cream tracking-[-0.04em] leading-[0.94] select-none text-[clamp(2.75rem,7.5vw,7.5rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]"
+        >
+          {/* LINE 1: "SIX COUNTRIES," */}
+          <div
             ref={line1WrapRef}
-            aria-hidden="true"
-            className="block overflow-hidden text-left ml-[6vw] sm:ml-[8vw] md:ml-[15vw] lg:ml-[7vw]"
+            className="block overflow-hidden text-left"
           >
             <span
               ref={line1Ref}
               style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-white"
+              className="text-cream"
             >
-              {/* WORD 1: "SIX" — edit the OUTER span's className to move
-                  just this word: className="translate-x-4" (right),
-                  "-translate-x-4" (left), "translate-y-4" (down),
-                  "-translate-y-4" (up) — combine two, e.g.
-                  "translate-x-4 translate-y-4". Use translate-*, not
-                  margin: margin on a word sharing a line pushes its
-                  neighbors too; translate only moves this one, and
-                  never fights the scroll animation on the inner span. */}
-              <span className="translate-y-0 sm:translate-y-6 md:translate-y-12 lg:translate-y-52" style={{ display: "inline-block" }}>
-                <span ref={sixRef} style={{ display: "inline-block" }}>
-                  SIX
-                </span>
-              </span>{" "}
-              {/* WORD 2: "COUNTRIES," — same idea: edit this span's
-                  className with translate-x-* or translate-y-* (see WORD 1). */}
-              <span className="translate-y-0 sm:translate-y-6 md:translate-y-12 lg:translate-y-52" style={{ display: "inline-block" }}>
+              <span
+                ref={sixRef}
+                style={{ display: "inline-block" }}
+                className="will-change-transform text-cream mr-3 sm:mr-4 md:mr-6"
+              >
+                SIX
+              </span>
+              <span style={{ display: "inline-block" }} className="text-cream">
                 COUNTRIES,
               </span>
             </span>
-          </span>
+          </div>
 
-          {/* KICKER 1: "DELIVERING EXCELLENCE..." — mt-* and mb-* on THIS
-              wrapper reserve the actual GAP between "SIX COUNTRIES," and
-              "ONE STANDARD.", so changing those also moves "ONE STANDARD."
-              down/up with it (usually what you want when adjusting space
-              between the two lines). translate-x-* or translate-y-* on
-              THIS wrapper nudge it without moving "ONE STANDARD.". Put
-              both kinds of classes on THIS wrapper, NOT the <p> inside it
-              — the <p> is what the entrance animation fades/moves in on
-              load, so a translate-y-* there gets silently overwritten
-              once that finishes; this wrapper is never touched by it. */}
-          <div className="mb-6 mt-4 translate-x-0 translate-y-0 sm:mb-8 sm:mt-0 sm:translate-x-4 sm:translate-y-6 md:mb-10 md:translate-x-8 md:translate-y-12 lg:translate-x-28 lg:translate-y-48">
+          {/* EDITORIAL SUBHEAD / KICKER */}
+          <div
+            ref={kickerWrapRef}
+            className="my-3 sm:my-4 md:my-5 max-w-xl"
+          >
             <p
               ref={kickerRef}
-              className="max-w-[26ch] font-body text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white opacity-0 sm:text-xs md:text-sm"
+              className="font-body text-xs sm:text-sm md:text-[0.95rem] font-normal normal-case tracking-normal leading-relaxed text-cream/80 opacity-0"
             >
-              Delivering excellence through experience.
+              Offshore garment manufacturing engineered for global brands across
+              certified partner facilities.
             </p>
           </div>
 
-          <span
+          {/* LINE 2: "ONE STANDARD." */}
+          <div
             ref={line2WrapRef}
-            aria-hidden="true"
-            className="block overflow-hidden text-left ml-[6vw] sm:ml-[8vw] md:ml-[10vw] lg:ml-[12vw]"
+            className="block overflow-hidden text-left"
           >
             <span
               ref={line2Ref}
               style={{ display: "block", transform: "translateY(100%)" }}
-              className="text-white"
+              className="text-cream"
             >
-              {/* WORD 3: "ONE" — edit this span's className with
-                  translate-x-* or translate-y-* (see WORD 1's comment for
-                  the full explanation of why translate, not margin). */}
-              <span className="translate-x-0 translate-y-0 sm:translate-x-3 sm:translate-y-2 md:translate-x-6 md:translate-y-4 lg:translate-x-20 lg:translate-y-12" style={{ display: "inline-block" }}>
+              <span
+                style={{ display: "inline-block" }}
+                className="text-cream mr-3 sm:mr-4 md:mr-6"
+              >
                 ONE
-              </span>{" "}
-              {/* WORD 4: "STANDARD." — its color (text-coral) lives on the
-                  INNER span, already used by the scroll animation. Add
-                  translate-x-* or translate-y-* to the OUTER span instead, so
-                  a manual nudge never fights the animated one. */}
-              <span className="translate-x-0 translate-y-0 sm:translate-x-3 sm:translate-y-2 md:translate-x-6 md:translate-y-4 lg:translate-x-20 lg:translate-y-12" style={{ display: "inline-block" }}>
-                <span
-                  ref={standardRef}
-                  style={{ display: "inline-block" }}
-                  className="text-coral"
-                >
-                  STANDARD.
-                </span>
+              </span>
+              <span
+                ref={standardRef}
+                style={{ display: "inline-block" }}
+                className="will-change-transform text-coral"
+              >
+                STANDARD.
               </span>
             </span>
-          </span>
+          </div>
         </div>
       </div>
     </section>
