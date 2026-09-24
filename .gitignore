@@ -42,3 +42,8 @@ dev-server.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# raw/unprocessed source media (118MB+ of stock footage staged before
+# cropping into public/) — not referenced by any component, not meant
+# to ship; the actual used assets live under public/images and public/videos
+/new-media/
