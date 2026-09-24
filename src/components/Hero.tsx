@@ -92,6 +92,8 @@ export default function Hero() {
   const countryListRef = useRef<HTMLDivElement>(null);
   const countryRefs = useRef<Array<HTMLLIElement | null>>([]);
   const countryNameRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const rollerRef = useRef<HTMLDivElement>(null);
+  const rollerNameRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const railRef = useRef<HTMLDivElement>(null);
 
   useIsomorphicLayoutEffect(() => {
@@ -108,6 +110,7 @@ export default function Hero() {
     const line2 = line2Ref.current;
     const rail = railRef.current;
     const countryList = countryListRef.current;
+    const roller = rollerRef.current;
 
     if (
       !section ||
@@ -122,7 +125,8 @@ export default function Hero() {
       !line2Wrap ||
       !line2 ||
       !rail ||
-      !countryList
+      !countryList ||
+      !roller
     ) {
       return;
     }
@@ -131,6 +135,9 @@ export default function Hero() {
       (el): el is HTMLLIElement => el !== null
     );
     const countryNames = countryNameRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null
+    );
+    const rollerNames = rollerNameRefs.current.filter(
       (el): el is HTMLSpanElement => el !== null
     );
 
@@ -147,8 +154,10 @@ export default function Hero() {
       };
 
       // A slow gold sweep down the country list, one country at a time —
-      // a quiet sign of life once the headline has settled. Paused while
-      // the hero is off screen.
+      // a quiet sign of life once the headline has settled. Below lg,
+      // where the list doesn't fit, the roller under the headline turns
+      // over to the next country on the same beat. Both pause while the
+      // hero is off screen.
       const startCountryCycle = () => {
         if (!countryNames.length) return;
         const step = 1.4;
@@ -162,11 +171,39 @@ export default function Hero() {
               i * step + 1.1
             );
         });
+        // The roller turns over from a self-rescheduling call rather than
+        // the looping timeline: its first country has to both leave and
+        // come back within one loop, which a repeating timeline renders
+        // unreliably at the loop point. Routed through ctx.add so tweens
+        // made in the later callback are still reverted on unmount.
+        let shown = 0;
+        const turnRoller = gsap.delayedCall(step, () => {
+          ctx.add(() => {
+            const leaving = rollerNames[shown];
+            shown = (shown + 1) % rollerNames.length;
+            const arriving = rollerNames[shown];
+            gsap.to(leaving, { yPercent: -110, duration: 0.5, ease: "power2.inOut" });
+            gsap.fromTo(
+              arriving,
+              { yPercent: 110 },
+              { yPercent: 0, duration: 0.5, ease: "power2.inOut" }
+            );
+          });
+          turnRoller.restart(true);
+        });
         ScrollTrigger.create({
           trigger: section,
           start: "top bottom",
           end: "bottom top",
-          onToggle: (self) => (self.isActive ? cycle.play() : cycle.pause()),
+          onToggle: (self) => {
+            if (self.isActive) {
+              cycle.play();
+              turnRoller.resume();
+            } else {
+              cycle.pause();
+              turnRoller.pause();
+            }
+          },
         });
       };
 
@@ -245,7 +282,7 @@ export default function Hero() {
 
         // Phase 1 (0 -> 0.45)
         scrollTl.to(
-          [kickerEl, rail],
+          [kickerEl, roller, rail],
           { opacity: 0, y: 24, duration: 0.25, ease: "power1.in" },
           0
         );
@@ -297,12 +334,15 @@ export default function Hero() {
         gsap.set(media, { opacity: 1, scale: 1 });
         gsap.set([line1, line2], { y: "0%", opacity: 1, filter: "none" });
         gsap.set(kickerEl, { opacity: 1, y: 0 });
-        gsap.set([...countries, rail], { opacity: 1, x: 0, y: 0 });
+        gsap.set([...countries, roller, rail], { opacity: 1, x: 0, y: 0 });
         releaseMasks();
         return;
       }
 
       gsap.set(media, { opacity: 0, scale: 1.15 });
+      // The roller shows one country at a time, starting on the first.
+      gsap.set(rollerNames, { yPercent: 110 });
+      if (rollerNames[0]) gsap.set(rollerNames[0], { yPercent: 0 });
 
       // If already seen in this session, entrance fires immediately.
       // Otherwise the reveal fires as the preloader's name turns into a
@@ -398,10 +438,10 @@ export default function Hero() {
           textStart + 0.45
         );
         tl.fromTo(
-          rail,
+          [roller, rail],
           { opacity: 0, y: 12 },
-          { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
-          textStart + 0.6
+          { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", stagger: 0.08 },
+          textStart + 0.55
         );
       };
     }, section);
@@ -595,10 +635,41 @@ export default function Hero() {
             </div>
           </div>
 
+          {/* The six countries below lg, where the list beside the
+              headline doesn't fit: one at a time, turning over on the
+              list's own beat. Under reduced motion it's the whole list,
+              static. */}
+          <div
+            ref={rollerRef}
+            className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-cream/50 opacity-0 lg:hidden"
+          >
+            <span>Operating across</span>
+            <span className="sr-only">{COUNTRIES.join(", ")}</span>
+            <span
+              aria-hidden="true"
+              className="relative inline-block h-[1.35em] w-32 overflow-hidden text-lg motion-reduce:hidden"
+            >
+              {COUNTRIES.map((country, i) => (
+                <span
+                  key={country}
+                  ref={(el) => {
+                    rollerNameRefs.current[i] = el;
+                  }}
+                  className="absolute inset-x-0 top-0 whitespace-nowrap font-headline leading-[1.35] tracking-[0.06em] text-gold"
+                >
+                  {country}
+                </span>
+              ))}
+            </span>
+            <span aria-hidden="true" className="hidden text-cream/70 motion-reduce:inline">
+              {COUNTRIES.join(" · ")}
+            </span>
+          </div>
+
           {/* Bottom rail: scroll cue + certifications */}
           <div
             ref={railRef}
-            className="mt-6 flex items-center justify-between gap-6 border-t border-cream/15 pt-4 opacity-0 md:mt-8 md:pt-5"
+            className="mt-4 flex items-center justify-between gap-6 border-t border-cream/15 pt-4 opacity-0 md:pt-5 lg:mt-8"
           >
             <div className="flex items-center gap-3 font-body text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-cream/60">
               <span className="relative block h-7 w-px overflow-hidden bg-cream/20">
