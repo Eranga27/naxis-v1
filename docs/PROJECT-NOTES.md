@@ -88,11 +88,37 @@ scroll. No backend, no env vars.
   pages. `src/content/networkMap.ts` + `public/images/network-map.svg` are
   **generated** by `scripts/build-world-map.mjs` — edit the script, not them.
 - `src/lib/pinnedGallery.ts` + `TickRail.tsx` — shared scroll-pinned
-  horizontal gallery (Capabilities, ProcessTimeline).
+  horizontal gallery (Capabilities, ProcessTimeline) at md and up, plus
+  the shared tick painter.
+- `src/lib/swipeDeck.ts` — the phone counterpart: native swipe strip with
+  depth (centred card flat, neighbours turned/shrunk/dimmed), centring
+  padding, the same tick rail, and a one-off nudge. Wayfinding only under
+  reduced motion.
 - `src/lib/intro.ts` — preloader ↔ hero entrance handshake.
 - `media-library/` — tracked masters not served (hero 4K master, retired
   media). `new-media/` — **git-ignored**, 118MB of local stock, only on the
   owner's machine.
+
+## Motion map (what plays where)
+
+- **Preloader** (`Preloader.tsx`): six greetings on flag backdrops, each
+  with its own ink/cream text tone (cream alone vanished on India's and
+  Italy's white centres). Finale: "Welcome to" types, then steps up over
+  a big Bebas NAXIS and an AUSTRALIA line. Exit: NAXIS turns black, the
+  veil switches to `mix-blend-mode: lighten` so the letters show the hero,
+  then it scales about the centre of the X until the hero fills the
+  screen. `VEIL_EXIT_MS` is reveal → veil gone; Hero times its headline
+  off it. Reduced motion: static lockup, then fade.
+- **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase
+  exit on every size. The statement moves to centre and grows, then the
+  full-bleed frame clip-paths to a rounded card on cream, handing over to
+  Mission seamlessly. It fires `hero:pinned` (Mission refreshes) and
+  `hero:framed` (Nav goes solid over the cream). Below lg an "Operating
+  across" roller turns through the six countries.
+- **Phones**: Hero and Ideas Wearable pin (shorter pins); Capabilities and
+  Process use the swipe deck; Services cards are dealt in (no sticky:
+  tall cards would hide their links). Full-screen pinned sections use
+  `h-svh`.
 
 ## GSAP / scroll gotchas learned the hard way
 
@@ -102,8 +128,24 @@ scroll. No backend, no env vars.
 - Tweens/triggers created in a later callback (e.g. `onComplete`) aren't
   recorded by `gsap.context` — wrap them in `ctx.add(...)`.
 - `gsap.matchMedia()` instances: keep a reference and `mm.revert()` in
-  cleanup. Some components still use the deprecated
-  `ScrollTrigger.matchMedia` (works; migrate when touched).
+  cleanup. Nothing uses the deprecated `ScrollTrigger.matchMedia` any more.
+  Use a conditions object (`{ isPhone, isWide, reduce }`) when branches
+  differ by size and reduced motion.
+- Reveal masks around text that sits offset sideways: an overflow-hidden
+  wrapper clips it (the hero read "IX" / "STANDARI" until the masks were
+  released). Mask vertically only, e.g. `clip-path: inset(-0.3em -100vw
+  -0.25em -100vw)`, and start the text low enough to clear the reach.
+- Don't give an element GSAP will animate an inline percentage transform
+  (`translateY(110%)`); GSAP can read it back as px and add to it. Set the
+  hidden start state with `gsap.set` instead.
+- A CSS animation on a property (e.g. the caret's opacity blink) beats
+  GSAP's inline writes to it; set `animation: none` before tweening.
+- A repeating timeline that tweens the same element out and back in
+  misrenders at the loop point; use a self-rescheduling `delayedCall`.
+- Measurements inside scrubbed pins: use layout offsets (`offsetTop`/
+  `offsetLeft`), which transforms don't affect, inside function values
+  with `invalidateOnRefresh`, so they're right whatever the progress is at
+  refresh.
 - Pin lengths must be functions (`end: () => ...`) with
   `invalidateOnRefresh`, never numbers captured at load.
 - Hero pins only after its entrance finishes; Mission listens for the
@@ -125,6 +167,14 @@ scroll. No backend, no env vars.
   `scripts/visual-check.mjs` (headless Chrome over CDP) instead — it
   screenshots sections at any viewport and reports horizontal overflow
   and console errors.
+- Cloud sessions: Chromium is at `/opt/pw-browsers/chromium`, but the
+  container runs as root, where Chrome needs `--no-sandbox`. Point
+  `CHROME_PATH` at a two-line wrapper script that adds it. That Chromium
+  can't decode H.264, so the hero video never plays (poster only) and the
+  intro waits out its 6s media timeout; for timing checks, stub
+  `HTMLMediaElement.prototype.readyState` to 4 before load. Animations are
+  best checked with a CDP screencast (`Page.startScreencast`) turned into
+  contact sheets, not single screenshots.
 
 ## Next up
 
@@ -136,3 +186,7 @@ scroll. No backend, no env vars.
   first/last-frame, subject centred, no faces/hands/readable text.
 - Client questions above; "Delivering excellence through experience" is a
   sign-off lockup, not a headline.
+- The owner cited yarnity.com (a Webflow site) as the feel for the hero's
+  scroll exit. It's blocked from cloud sessions, so the centre-stage +
+  card sequence was built from the brief; revisit once the owner says
+  what to match.
