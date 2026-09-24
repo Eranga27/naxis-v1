@@ -30,6 +30,16 @@ const CERTIFICATIONS = ["WRAP", "SMETA", "BSCI", "C-TPAT", "OEKO-TEX"];
 
 const COUNTRY_REST_COLOR = "rgba(244, 239, 228, 0.55)"; // cream/55
 
+// Each headline line rises out of a mask during the entrance. The mask
+// clips vertically only: SIX and STANDARD rest pushed sideways, and an
+// overflow-hidden mask cut them to "IX" and "STANDARI" until it was
+// released, when the missing letters popped in. It also reaches a little
+// above and below the line box (tight 0.94 leading), which used to shave
+// the comma's tail and the text shadow. The hidden start sits far enough
+// down to clear that extra reach.
+const LINE_MASK = "inset(-0.3em -100vw -0.25em -100vw)";
+const LINE_HIDDEN_Y = "135%";
+
 // Static film grain, as an inline SVG turbulence tile. Breaks up the flat
 // digital gradient over the video so the hero reads as footage, not a
 // screen.
@@ -99,9 +109,9 @@ export default function Hero() {
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      // Release masks once entrance completes so shadows/descenders never clip
+      // Release masks once entrance completes so nothing stays clipped
       const releaseMasks = () => {
-        gsap.set([line1Wrap, line2Wrap], { overflow: "visible" });
+        gsap.set([line1Wrap, line2Wrap], { clipPath: "none" });
       };
 
       // Resting gap between SIX/STANDARD and their neighbors. A function,
@@ -269,7 +279,7 @@ export default function Hero() {
         // Line 1: "SIX COUNTRIES,"
         tl.fromTo(
           line1,
-          { opacity: 0, y: "100%", filter: "blur(10px)" },
+          { opacity: 0, y: LINE_HIDDEN_Y, filter: "blur(10px)" },
           {
             opacity: 1,
             y: "0%",
@@ -283,7 +293,7 @@ export default function Hero() {
         // Line 2: "ONE STANDARD."
         tl.fromTo(
           line2,
-          { opacity: 0, y: "100%", filter: "blur(10px)" },
+          { opacity: 0, y: LINE_HIDDEN_Y, filter: "blur(10px)" },
           {
             opacity: 1,
             y: "0%",
@@ -389,11 +399,12 @@ export default function Hero() {
             <div
               ref={line1WrapRef}
               aria-hidden="true"
-              className="block overflow-hidden text-left"
+              className="block text-left"
+              style={{ clipPath: LINE_MASK }}
             >
               <span
                 ref={line1Ref}
-                style={{ display: "block", transform: "translateY(100%)" }}
+                style={{ display: "block", transform: `translateY(${LINE_HIDDEN_Y})` }}
                 className="text-cream"
               >
                 <span
@@ -428,11 +439,12 @@ export default function Hero() {
             <div
               ref={line2WrapRef}
               aria-hidden="true"
-              className="block overflow-hidden text-left"
+              className="block text-left"
+              style={{ clipPath: LINE_MASK }}
             >
               <span
                 ref={line2Ref}
-                style={{ display: "block", transform: "translateY(100%)" }}
+                style={{ display: "block", transform: `translateY(${LINE_HIDDEN_Y})` }}
                 className="text-cream"
               >
                 <span
