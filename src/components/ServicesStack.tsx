@@ -91,6 +91,41 @@ export default function ServicesStack() {
         });
       });
 
+      // Phones: no sticky stack — a card taller than the screen would
+      // stick with its bottom (and its Learn more link) never shown.
+      // Instead each card is dealt onto the page as it scrolls in: tipped
+      // back from its bottom edge, low and dim, and settling flat, full
+      // size and full strength by the time its top is a little above the
+      // middle of the screen. Scrubbed, so it reverses on the way back up.
+      mm.add("(max-width: 767px)", () => {
+        cards.forEach((card) => {
+          gsap.fromTo(
+            card,
+            {
+              transformPerspective: 1100,
+              transformOrigin: "50% 100%",
+              rotationX: 16,
+              y: 70,
+              scale: 0.94,
+              opacity: 0.4,
+            },
+            {
+              rotationX: 0,
+              y: 0,
+              scale: 1,
+              opacity: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: card,
+                start: "top bottom",
+                end: "top 55%",
+                scrub: 0.6,
+              },
+            }
+          );
+        });
+      });
+
       // Every size: each card's photo drifts slightly inside its frame.
       imgs.forEach((img) => {
         gsap.fromTo(
