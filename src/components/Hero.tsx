@@ -263,7 +263,7 @@ export default function Hero() {
         {/* Only the two split headline lines are aria-hidden (the sr-only h1
             above already reads them) — the kicker between them is real
             copy that screen readers must still reach. */}
-        <div className="font-display font-black uppercase text-cream tracking-[-0.04em] leading-[0.94] select-none text-[clamp(2.75rem,7.5vw,7.5rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]">
+        <div className="font-headline uppercase text-cream tracking-[-0.01em] leading-[0.94] select-none text-[clamp(3.5rem,10vw,10rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]">
           {/* LINE 1: "SIX COUNTRIES," */}
           <div
             ref={line1WrapRef}
