@@ -6,6 +6,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { EMERALD, GOLD } from "@/lib/brand";
 import { createPinnedGallery } from "@/lib/pinnedGallery";
+import { createSwipeDeck } from "@/lib/swipeDeck";
 import TickRail from "@/components/TickRail";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -88,6 +89,8 @@ export default function ProcessTimeline() {
   const tickRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const cardImgRefs = useRef<Array<HTMLDivElement | null>>([]);
   const cardImgInnerRefs = useRef<Array<HTMLDivElement | null>>([]);
+  // One per card, success card included — the phone swipe deck's cards.
+  const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
   const stepLabelRef = useRef<HTMLSpanElement>(null);
   const statusHintRef = useRef<HTMLSpanElement>(null);
 
@@ -97,6 +100,7 @@ export default function ProcessTimeline() {
     const track = trackRef.current;
     if (!section || !galleryWrap || !track) return;
 
+    let mm: gsap.MatchMedia | null = null;
     const ctx = gsap.context(() => {
       const reveals = revealRefs.current.filter(
         (el): el is HTMLElement => el !== null
@@ -110,9 +114,73 @@ export default function ProcessTimeline() {
       const cardImgInners = cardImgInnerRefs.current.filter(
         (el): el is HTMLDivElement => el !== null
       );
+      const steps = stepRefs.current.filter(
+        (el): el is HTMLDivElement => el !== null
+      );
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
+
+      const showStage = (activeIndex: number) => {
+        const step =
+          activeIndex < STEPS.length ? STEPS[activeIndex] : SUCCESS_STEP;
+        if (stepLabelRef.current) {
+          stepLabelRef.current.textContent = `Stage ${step.number} / 08 — ${step.label}`;
+        }
+      };
+
+      // Tablet and up: pin the full section so header and wayfinding stay
+      // framed while the strip scrolls. Phones keep the native swipe,
+      // given depth and the same wayfinding by the swipe deck (tick rail
+      // and stage label; wayfinding only under reduced motion).
+      mm = gsap.matchMedia();
+      mm.add(
+        {
+          isPhone: "(max-width: 767px)",
+          isWide: "(min-width: 768px)",
+          reduce: "(prefers-reduced-motion: reduce)",
+        },
+        (context) => {
+          const { isPhone, reduce } = context.conditions as {
+            isPhone: boolean;
+            reduce: boolean;
+          };
+          if (isPhone) {
+            return createSwipeDeck({
+              track,
+              cards: steps,
+              ticks,
+              tickIdle: "rgba(16, 13, 9, 0.2)",
+              tickDone: EMERALD,
+              onChange: showStage,
+              motion: !reduce,
+            });
+          }
+          if (reduce) return;
+          return createPinnedGallery({
+            pin: section,
+            viewport: galleryWrap,
+            track,
+            ticks,
+            tickIdle: "rgba(16, 13, 9, 0.2)",
+            tickDone: EMERALD,
+            // Dwell so Card 07 and the transition card are easily read
+            // before unpinning
+            dwell: () => Math.min(window.innerHeight * 0.45, 420),
+            parallax: cardImgInners,
+            parallaxRange: 7,
+            onUpdate: (activeIndex, trackProgress) => {
+              showStage(activeIndex);
+              if (statusHintRef.current) {
+                statusHintRef.current.textContent =
+                  trackProgress >= 0.95
+                    ? "Keep scrolling ↓"
+                    : "Scroll to explore stages →";
+              }
+            },
+          });
+        }
+      );
 
       if (reduceMotion) {
         gsap.set(reveals, { opacity: 1, y: 0 });
@@ -153,41 +221,12 @@ export default function ProcessTimeline() {
           }
         );
       });
-
-      // Pin the full section on desktop/tablet so header & wayfinding
-      // remain framed while the strip scrolls
-      ScrollTrigger.matchMedia({
-        "(min-width: 768px)": () =>
-          createPinnedGallery({
-            pin: section,
-            viewport: galleryWrap,
-            track,
-            ticks,
-            tickIdle: "rgba(16, 13, 9, 0.2)",
-            tickDone: EMERALD,
-            // Dwell so Card 07 and the transition card are easily read
-            // before unpinning
-            dwell: () => Math.min(window.innerHeight * 0.45, 420),
-            parallax: cardImgInners,
-            parallaxRange: 7,
-            onUpdate: (activeIndex, trackProgress) => {
-              const step =
-                activeIndex < STEPS.length ? STEPS[activeIndex] : SUCCESS_STEP;
-              if (stepLabelRef.current) {
-                stepLabelRef.current.textContent = `Stage ${step.number} / 08 — ${step.label}`;
-              }
-              if (statusHintRef.current) {
-                statusHintRef.current.textContent =
-                  trackProgress >= 0.95
-                    ? "Keep scrolling ↓"
-                    : "Scroll to explore stages →";
-              }
-            },
-          }),
-      });
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      mm?.revert();
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -239,12 +278,17 @@ export default function ProcessTimeline() {
           // the whole strip. Below md it has to stay the width of the
           // screen so it can scroll: an inline max-content made it 2,380px
           // wide inside a clipped section, so phones could never swipe past
-          // the first stage.
-          className="flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto pb-4 will-change-transform [-ms-overflow-style:none] [scrollbar-width:none] md:w-max md:gap-6 md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
+          // the first stage. On phones it also bleeds to the screen edges
+          // (negative margins undo the section padding) for the swipe
+          // deck, which measures its cards against it — hence relative.
+          className="relative -mx-6 flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto py-3 will-change-transform [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-10 md:mx-0 md:w-max md:gap-6 md:overflow-visible md:py-0 [&::-webkit-scrollbar]:hidden"
         >
           {STEPS.map((step, i) => (
             <div
               key={step.number}
+              ref={(el) => {
+                stepRefs.current[i] = el;
+              }}
               className="flex w-[280px] shrink-0 snap-center flex-col sm:w-[320px] md:w-[350px] lg:w-[370px]"
             >
               {/* Card */}
@@ -324,7 +368,12 @@ export default function ProcessTimeline() {
           ))}
 
           {/* 08 — Your Success: the client's own final stage */}
-          <div className="flex w-[280px] shrink-0 snap-center flex-col sm:w-[320px] md:w-[350px] lg:w-[370px]">
+          <div
+            ref={(el) => {
+              stepRefs.current[STEPS.length] = el;
+            }}
+            className="flex w-[280px] shrink-0 snap-center flex-col sm:w-[320px] md:w-[350px] lg:w-[370px]"
+          >
             <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-ink p-6 text-cream shadow-md md:p-7">
               <div
                 aria-hidden="true"
@@ -366,8 +415,9 @@ export default function ProcessTimeline() {
         </div>
       </div>
 
-      {/* Bottom Wayfinding & Transition Cue */}
-      <div className="relative z-10 hidden shrink-0 items-center justify-between border-t border-ink/10 pt-4 md:flex">
+      {/* Bottom Wayfinding & Transition Cue — ticks and stage label on
+          every size; the scroll hint only where the gallery is pinned. */}
+      <div className="relative z-10 mt-4 flex shrink-0 items-center justify-between border-t border-ink/10 pt-4 md:mt-0">
         {/* Left: Sprocket ticks + Current Stage Indicator */}
         <div className="flex items-center gap-4">
           <TickRail count={TOTAL_STEPS} tickRefs={tickRefs} tone="dark" />
@@ -380,7 +430,7 @@ export default function ProcessTimeline() {
         </div>
 
         {/* Right: Progress Hint */}
-        <div className="flex items-center gap-2 font-body text-xs font-medium text-ink/60">
+        <div className="hidden items-center gap-2 font-body text-xs font-medium text-ink/60 md:flex">
           <span ref={statusHintRef}>Scroll to explore stages →</span>
         </div>
       </div>

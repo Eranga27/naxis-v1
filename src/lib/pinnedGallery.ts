@@ -29,6 +29,31 @@ type PinnedGalleryOptions = {
 };
 
 /**
+ * Colors a TickRail for the card now in view: passed cards read
+ * tickDone, the current one gold (and taller), the rest tickIdle. Shared
+ * by the desktop pinned gallery and the phone swipe deck. Returns a
+ * painter that skips repaints when the active card hasn't changed.
+ */
+export function createTickPainter(
+  ticks: HTMLElement[],
+  tickIdle: string,
+  tickDone: string
+): (active: number) => void {
+  let lastIndex = -1;
+  return (active: number) => {
+    if (active === lastIndex) return;
+    lastIndex = active;
+    ticks.forEach((tick, i) => {
+      gsap.set(tick, {
+        backgroundColor:
+          i === active ? GOLD : i < active ? tickDone : tickIdle,
+        scaleY: i === active ? 1.8 : 1,
+      });
+    });
+  };
+}
+
+/**
  * Scroll-jacked horizontal gallery: the pin element holds in place while
  * vertical scroll drives the track sideways, with a sprocket-tick rail as
  * wayfinding. Shared by Capabilities and ProcessTimeline.
@@ -57,19 +82,7 @@ export function createPinnedGallery({
     Math.max(0, track.scrollWidth - viewport.clientWidth);
   const getDwell = () => (dwell ? dwell() : 0);
 
-  // Passed cards read emerald, the current one gold, the rest idle.
-  let lastIndex = -1;
-  const paintTicks = (active: number) => {
-    if (active === lastIndex) return;
-    lastIndex = active;
-    ticks.forEach((tick, i) => {
-      gsap.set(tick, {
-        backgroundColor:
-          i === active ? GOLD : i < active ? tickDone : tickIdle,
-        scaleY: i === active ? 1.8 : 1,
-      });
-    });
-  };
+  const paintTicks = createTickPainter(ticks, tickIdle, tickDone);
   // Rest state — the first tick reads as active before the pin engages.
   paintTicks(0);
 

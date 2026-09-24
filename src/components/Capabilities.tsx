@@ -6,6 +6,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { EMERALD_BRIGHT } from "@/lib/brand";
 import { createPinnedGallery } from "@/lib/pinnedGallery";
+import { createSwipeDeck } from "@/lib/swipeDeck";
 import TickRail from "@/components/TickRail";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -67,6 +68,7 @@ export default function Capabilities() {
     const track = trackRef.current;
     if (!section || !galleryWrap || !track) return;
 
+    let mm: gsap.MatchMedia | null = null;
     const ctx = gsap.context(() => {
       const reveals = revealRefs.current.filter(
         (el): el is HTMLElement => el !== null
@@ -86,11 +88,65 @@ export default function Capabilities() {
       const reduceMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
+      const ticks = tickRefs.current.filter(
+        (el): el is HTMLSpanElement => el !== null
+      );
+
+      // The category gallery itself, built to scale past four. Rather
+      // than a grid that keeps growing taller as categories are added, at
+      // tablet width and up the gallery PINS once its top reaches the
+      // viewport's top, and the vertical scroll you'd otherwise spend
+      // scrolling past a tall grid drives the strip sideways instead —
+      // the "scroll-jacked horizontal gallery" behind most Awwwards
+      // case-study sections. However many cards there are, it scrolls the
+      // same way; only the pinned distance grows.
+      //
+      // On a phone, scroll-jacking a horizontal gesture fights the swipe
+      // instinct, so the strip stays natively swipeable (overflow-x-auto +
+      // scroll-snap) and the swipe deck gives it depth and the same tick
+      // rail. Under reduced motion there's no pin, and phones keep the
+      // tick rail without the depth.
+      mm = gsap.matchMedia();
+      mm.add(
+        {
+          isPhone: "(max-width: 767px)",
+          isWide: "(min-width: 768px)",
+          reduce: "(prefers-reduced-motion: reduce)",
+        },
+        (context) => {
+          const { isPhone, reduce } = context.conditions as {
+            isPhone: boolean;
+            reduce: boolean;
+          };
+          if (isPhone) {
+            return createSwipeDeck({
+              track,
+              cards: cardWraps,
+              ticks,
+              tickIdle: "rgba(244,239,228,0.25)",
+              tickDone: EMERALD_BRIGHT,
+              motion: !reduce,
+            });
+          }
+          if (reduce) return;
+          return createPinnedGallery({
+            pin: galleryWrap,
+            viewport: galleryWrap,
+            track,
+            ticks,
+            tickIdle: "rgba(244,239,228,0.25)",
+            tickDone: EMERALD_BRIGHT,
+            // Each card's photo drifts slightly against the direction of
+            // travel — the same inner/outer parallax split used elsewhere
+            // on this section, just running sideways.
+            parallax: cardInners,
+          });
+        }
+      );
 
       if (reduceMotion) {
-        // No scroll-jacking, no drift — cards stay in their native,
-        // swipeable horizontal strip (see the track's own overflow-x-auto)
-        // and are simply visible, full stop.
+        // No scroll-jacking, no drift — cards are simply visible, full
+        // stop.
         gsap.set(reveals, { opacity: 1, y: 0 });
         gsap.set([...bgWraps, ...cardWraps], { clipPath: "inset(0% 0 0 0)" });
         return;
@@ -155,42 +211,12 @@ export default function Capabilities() {
           }
         );
       });
-
-      // The category gallery itself: this is the part built to scale past
-      // four. Rather than a grid that keeps growing taller as categories
-      // are added, the section PINS in place once its top reaches the
-      // viewport's top, and the vertical scroll you'd otherwise spend
-      // scrolling past a tall grid instead drives the strip sideways —
-      // the same "scroll-jacked horizontal gallery" technique behind most
-      // Awwwards case-study/work sections. However many cards there are,
-      // this scrolls the same way; only the pinned scroll DISTANCE grows.
-      //
-      // Only wired up at tablet width and above, and only without a
-      // reduced-motion preference (guarded by the early return above) —
-      // on a phone, scroll-jacking a horizontal gesture fights the
-      // natural swipe-to-scroll instinct, so mobile instead gets the
-      // track's native overflow-x-auto + scroll-snap for a normal
-      // swipeable strip, no JS involved.
-      ScrollTrigger.matchMedia({
-        "(min-width: 768px)": () =>
-          createPinnedGallery({
-            pin: galleryWrap,
-            viewport: galleryWrap,
-            track,
-            ticks: tickRefs.current.filter(
-              (el): el is HTMLSpanElement => el !== null
-            ),
-            tickIdle: "rgba(244,239,228,0.25)",
-            tickDone: EMERALD_BRIGHT,
-            // Each card's photo drifts slightly against the direction of
-            // travel — the same inner/outer parallax split used elsewhere
-            // on this section, just running sideways.
-            parallax: cardInners,
-          }),
-      });
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      mm?.revert();
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -267,9 +293,13 @@ export default function Capabilities() {
           horizontal padding matches the section's so the cards still line
           up with the heading above at rest. */}
       <div ref={galleryWrapRef} data-cursor="Scroll" className="relative z-10 mt-2">
+        {/* On phones the strip bleeds to the screen edges (the negative
+            margins undo the section padding) so cards can travel edge to
+            edge through the swipe deck. Positioned so the deck can measure
+            its cards against it. */}
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
+          className="relative -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-10 md:mx-0 md:overflow-visible md:py-0 [&::-webkit-scrollbar]:hidden"
         >
           {CATEGORIES.map((category, i) => (
             <div
@@ -314,17 +344,15 @@ export default function Capabilities() {
           ))}
         </div>
 
-        {/* Wayfinding for the pinned gallery — without it there's no cue
-            that scrolling further moves the strip rather than the page.
-            A sprocket-hole tick rail whose active mark advances with the
-            pin's own scroll progress. Desktop/tablet only, since mobile's
-            native scroll-snap doesn't need one (the strip visibly
-            continues past the viewport edge). */}
+        {/* Wayfinding — without it there's no cue that scrolling further
+            moves the strip rather than the page. A sprocket-hole tick rail
+            whose active mark follows the pinned scroll on desktop, and
+            the centred card on phones. */}
         <TickRail
           count={CATEGORIES.length}
           tickRefs={tickRefs}
           tone="light"
-          className="mt-8 hidden md:flex"
+          className="mt-6 md:mt-8"
         />
       </div>
     </section>
