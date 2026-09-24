@@ -39,7 +39,10 @@ export default function Nav() {
             aria-label="Open menu"
             aria-expanded={open}
             onClick={() => setOpen(true)}
-            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-cream/[0.07] transition-colors hover:bg-cream/15"
+            // A dark pill behind the cream bars, not a faint cream tint —
+            // the header floats over both ink and cream sections, and a
+            // cream-on-cream button vanished entirely over the latter.
+            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-ink/70 backdrop-blur-md transition-colors hover:bg-ink/90"
           >
             <span className="block h-px w-4 bg-cream" />
             <span className="block h-px w-4 bg-cream" />
