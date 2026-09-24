@@ -6,9 +6,6 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
-if (typeof window !== "undefined") {
-  (window as any).__ScrollTrigger = ScrollTrigger;
-}
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -373,7 +370,7 @@ export default function ProcessTimeline() {
                   e.preventDefault();
                   document.getElementById("global-network")?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="mt-6 flex items-center justify-between rounded-xl border border-cream/20 bg-cream/10 px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-cream transition-all hover:border-gold hover:bg-gold hover:text-ink md:text-sm"
+                className="group mt-6 flex items-center justify-between rounded-xl border border-cream/20 bg-cream/10 px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-cream transition-all hover:border-gold hover:bg-gold hover:text-ink md:text-sm"
               >
                 <span>Explore Facilities</span>
                 <span className="text-base text-gold transition-transform duration-200 group-hover:translate-x-1">
