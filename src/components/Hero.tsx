@@ -214,8 +214,10 @@ export default function Hero() {
       gsap.set(standardEl, { x: getOffset() });
       gsap.set(media, { opacity: 0, scale: 1.15 });
 
-      // If already seen in this session, entrance fires immediately;
-      // otherwise it waits for the preloader iris to close.
+      // If already seen in this session, entrance fires immediately.
+      // Otherwise the reveal fires as the preloader's name turns into a
+      // window onto this hero, and the headline is timed to rise just as
+      // the zoom through that name lands (see VEIL_EXIT_MS).
       let alreadySeen = false;
       try {
         alreadySeen = sessionStorage.getItem(INTRO_SESSION_KEY) === "done";
@@ -223,7 +225,7 @@ export default function Hero() {
         // storage disabled / private mode
       }
 
-      const textStart = alreadySeen ? 0.05 : VEIL_EXIT_MS / 1000 + 0.08;
+      const textStart = alreadySeen ? 0.05 : VEIL_EXIT_MS / 1000 - 0.15;
 
       entrance = () => {
         // Routed through ctx.add: tweens and triggers created in a later

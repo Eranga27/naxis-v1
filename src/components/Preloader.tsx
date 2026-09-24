@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 
 // Each greeting in its own script. Vietnamese and Italian are natively
 // Latin, so they stay as written.
@@ -12,13 +13,16 @@ const GREETINGS = [
   "你好", // Simplified Chinese
   "Ciao", // Italian
 ];
-const FINAL = "Welcome to NAXIS Australia";
-// "NAXIS" gets a gold -> emerald accent once the phrase finishes typing —
-// see the reveal after typeIn(FINAL) below. The deep variant of the brand
-// gradient, since plain gold is too faint on the light welcome wash.
-const FINAL_ACCENT = "NAXIS";
-const FINAL_ACCENT_GRADIENT =
-  "linear-gradient(100deg, #b8860b 0%, #1f6f4a 70%, #0d4230 100%)";
+// The destination is a lockup rather than one typed line: "Welcome to" is
+// typed like the greetings, then steps up to make room for the name set
+// large in the hero's own face, with the place underneath.
+const WELCOME = "Welcome to";
+const BRAND = "NAXIS";
+const PLACE = "Australia";
+// The letter the exit zooms through — its two strokes cross in a solid
+// patch at the glyph's centre, so scaling about that point fills the
+// screen with the letter itself.
+const ZOOM_LETTER = BRAND.indexOf("X");
 // Longest wait for the greeting webfonts before the sequence starts
 // anyway — see preloadFonts below.
 const FONT_WAIT_MS = 1500;
@@ -51,28 +55,25 @@ const COUNTRY_BACKDROPS: Array<{ gradient: string; tone: Tone }> = [
 ];
 
 // Rather than cut straight from the last flag gradient to flat white, the
-// destination phrase gets one more crossfade — into a soft, low-saturation
-// warm wash (not another flag; this one's the brand, not a country) — so
-// the sequence still reads as one continuous fade rather than an abrupt
-// stop, right before the veil itself clears.
+// destination gets one more crossfade — into a soft, low-saturation warm
+// wash (not another flag; this one's the brand, not a country) — so the
+// sequence still reads as one continuous fade rather than an abrupt stop.
 const WELCOME_GRADIENT =
   "linear-gradient(135deg, #FDF8ED 0%, #F4EFE4 55%, #FBEFD8 100%)";
 
 const CHAR_MS = 45; // per-character type / delete speed
 const WORD_HOLD_MS = 620; // pause once a greeting is fully typed
-const FINAL_HOLD_MS = 1800; // a beat longer — there's more to read now
+const LOCKUP_HOLD_MS = 1300; // time to read the finished lockup
 const TEXT_FADE_MS = 400;
 const BG_FADE_MS = 650; // flag-gradient crossfade duration
 
-// The same smooth-decelerate curve behind most premium site-load reveals
-// (an expo-out shape) — used for the exit below instead of a flat linear
-// fade, so the reveal feels like it's settling into place rather than
-// just dissolving.
-const PREMIUM_EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
-// Exported so Hero can delay its headline entrance until this iris has
-// actually finished closing — see the note above VEIL_EXIT_MS's usage
-// below for why that matters.
-export const VEIL_EXIT_MS = 950;
+// The exit, in seconds from the moment the hero is revealed: the name's
+// letters fill with the hero footage, hold a beat, then the camera pushes
+// through the X into the hero.
+const FILL_BEAT = 0.3;
+const ZOOM_DURATION = 1.25;
+// Exported so Hero can time its headline to land as the zoom does.
+export const VEIL_EXIT_MS = (FILL_BEAT + ZOOM_DURATION) * 1000;
 
 export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
@@ -93,8 +94,37 @@ const chars = (word: string): string[] =>
     ? Array.from(segmenter.segment(word), (s) => s.segment)
     : Array.from(word);
 
+/**
+ * Where the capitals actually sit inside a line-height:1 text box. The
+ * box's own rect includes the font's ascent/descent padding, which would
+ * space the lockup off the empty band above and below the letters rather
+ * than off the letters themselves.
+ */
+function capBand(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+  const size = parseFloat(style.fontSize);
+  // Fallback for engines without font metrics on canvas: caps roughly
+  // fill the middle 70% of the em box.
+  let top = rect.top + size * 0.15;
+  let bottom = rect.top + size * 0.85;
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (ctx) {
+    ctx.font = `${style.fontWeight} ${size}px ${style.fontFamily}`;
+    const m = ctx.measureText(el.textContent || "X");
+    if (m.fontBoundingBoxAscent !== undefined) {
+      const halfLeading =
+        (size - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2;
+      const baseline = rect.top + halfLeading + m.fontBoundingBoxAscent;
+      top = baseline - m.actualBoundingBoxAscent;
+      bottom = baseline + m.actualBoundingBoxDescent;
+    }
+  }
+  return { top, bottom, size };
+}
+
 type Props = {
-  /** Fired the moment the white veil starts clearing. */
+  /** Fired the moment the hero starts showing through the veil. */
   onReveal?: () => void;
   /** Resolves when the hero video is buffered; the veil waits on it. */
   waitForMedia?: () => Promise<void>;
@@ -105,9 +135,17 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
   const veilRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  const caretRef = useRef<HTMLSpanElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const bgLayerARef = useRef<HTMLDivElement>(null);
   const bgLayerBRef = useRef<HTMLDivElement>(null);
+  const lockupRef = useRef<HTMLDivElement>(null);
+  const markRef = useRef<HTMLDivElement>(null);
+  const maskRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const placeRef = useRef<HTMLDivElement>(null);
+  const placeTextRef = useRef<HTMLSpanElement>(null);
+  const ruleRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const cancelled = useRef(false);
   const revealed = useRef(false);
 
@@ -117,10 +155,49 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     const veil = veilRef.current;
     const box = boxRef.current;
     const text = textRef.current;
+    const caret = caretRef.current;
     const measure = measureRef.current;
     const bgLayerA = bgLayerARef.current;
     const bgLayerB = bgLayerBRef.current;
-    if (!veil || !box || !text || !measure || !bgLayerA || !bgLayerB) return;
+    const lockup = lockupRef.current;
+    const mark = markRef.current;
+    const place = placeRef.current;
+    const placeText = placeTextRef.current;
+    const masks = maskRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null
+    );
+    const letters = letterRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null
+    );
+    const rules = ruleRefs.current.filter(
+      (el): el is HTMLSpanElement => el !== null
+    );
+    if (
+      !veil ||
+      !box ||
+      !text ||
+      !caret ||
+      !measure ||
+      !bgLayerA ||
+      !bgLayerB ||
+      !lockup ||
+      !mark ||
+      !place ||
+      !placeText ||
+      masks.length !== BRAND.length ||
+      letters.length !== BRAND.length
+    ) {
+      return;
+    }
+
+    // Every tween this intro starts, so an unmount mid-sequence kills them.
+    // The lockup's hidden start states are set here rather than inline, so
+    // GSAP owns those transforms from the outset (an inline percentage
+    // translate would be read back as a pixel offset and stick).
+    const tweens = gsap.context(() => {
+      gsap.set(letters, { yPercent: 110 });
+      gsap.set(rules, { scaleX: 0 });
+    });
 
     const write = (value: string) => {
       if (!cancelled.current) text.textContent = value;
@@ -129,9 +206,9 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     // A centered line that grows one character at a time re-centers on
     // every keystroke, so the whole word visibly shuffles left as it types.
     // Instead the box is locked to the full word's width up front and the
-    // text types left-to-right inside it. Words too wide for the screen
-    // (the final phrase on phones) get their font size scaled down to fit
-    // on one line, rather than wrapping mid-type.
+    // text types left-to-right inside it. Words too wide for the screen get
+    // their font size scaled down to fit on one line, rather than wrapping
+    // mid-type.
     const lockWidth = (word: string) => {
       box.style.fontSize = "";
       measure.style.fontSize = "";
@@ -151,14 +228,20 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     // The greeting fonts are unicode-range subsets, which the browser only
     // fetches once a glyph from that script is first on screen — so each
     // greeting used to type its first characters in a fallback face and
-    // then visibly swap mid-word. Load every one before starting instead,
-    // capped so a slow network can't hold the intro on a blank screen.
+    // then visibly swap mid-word. Load every one (and the name's headline
+    // face) before starting instead, capped so a slow network can't hold
+    // the intro on a blank screen.
     const preloadFonts = async () => {
       if (!document.fonts?.load) return;
       const family = getComputedStyle(text).fontFamily;
-      const loads = [...GREETINGS, FINAL].map((word) =>
-        document.fonts.load(`300 48px ${family}`, word).catch(() => [])
-      );
+      const markFamily = getComputedStyle(mark).fontFamily;
+      const loads = [...GREETINGS, WELCOME, PLACE]
+        .map((word) =>
+          document.fonts.load(`300 48px ${family}`, word).catch(() => [])
+        )
+        .concat(
+          document.fonts.load(`400 48px ${markFamily}`, BRAND).catch(() => [])
+        );
       await Promise.race([Promise.all(loads), sleep(FONT_WAIT_MS)]);
     };
 
@@ -256,56 +339,84 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       }
     };
 
-    const finish = async () => {
-      // Hold on "Welcome" until the hero media is actually ready, so the
-      // reveal never lands on an unloaded video.
-      if (waitForMedia) {
-        try {
-          await waitForMedia();
-        } catch {
-          // fall through and reveal anyway
-        }
-      }
-      if (cancelled.current) return;
+    // Positions the lockup around the name, which sits dead centre:
+    // "Welcome to" (the typed box) above it, the place below it, both
+    // spaced off the capitals themselves. Returns how far the box has to
+    // travel up from the centre, where it was typed.
+    const layoutLockup = () => {
+      const caps = capBand(mark);
+      const gap = Math.max(12, (caps.bottom - caps.top) * 0.14);
+      const boxRect = box.getBoundingClientRect();
+      // The box is 1.5em tall with the text centred in it; its baseline
+      // sits about 0.36em above the box's bottom edge.
+      const baseline =
+        boxRect.bottom - parseFloat(getComputedStyle(box).fontSize) * 0.36;
+      place.style.top = `${Math.round(caps.bottom + gap)}px`;
+      lockup.style.visibility = "visible";
+      place.style.visibility = "visible";
+      return caps.top - gap - baseline;
+    };
 
-      box.style.opacity = "0";
-      await sleep(TEXT_FADE_MS);
-      if (cancelled.current) return;
+    // The zoom's origin and scale: the X's centre, and enough scale for
+    // the solid patch where its strokes cross (conservatively 3% of the
+    // font size across) to cover the farthest corner of the screen.
+    const zoomTarget = () => {
+      const caps = capBand(mark);
+      const markRect = mark.getBoundingClientRect();
+      const xRect = masks[ZOOM_LETTER].getBoundingClientRect();
+      const cx = xRect.left + xRect.width / 2;
+      const cy = (caps.top + caps.bottom) / 2;
+      const reach = Math.hypot(
+        Math.max(cx, window.innerWidth - cx),
+        Math.max(cy, window.innerHeight - cy)
+      );
+      return {
+        origin: `${cx - markRect.left}px ${cy - markRect.top}px`,
+        scale: reach / (caps.size * 0.03),
+      };
+    };
 
-      // Close like an iris — the veil shrinks to a point at screen-center
-      // (with a whisper of scale for a touch of "pop") instead of fading
-      // uniformly. Reads as far more deliberate than a plain dissolve.
-      //
-      // clip-path: circle() defines the region that STAYS visible, so as
-      // it shrinks, the screen uncovers from the outer edges inward, with
-      // dead-center — where the headline sits — revealed LAST. That's
-      // deliberate, not a bug: the video (which starts fading/scaling in
-      // immediately on reveal) is what shows through the shrinking ring
-      // first, and Hero's headline entrance is timed to only start once
-      // this iris has fully closed (see VEIL_EXIT_MS in Hero.tsx), so the
-      // text animates into view on an already-visible backdrop instead of
-      // playing out hidden behind the still-opaque center and only
-      // appearing once already fully resolved.
-      veil.style.clipPath = "circle(0% at 50% 50%)";
-      veil.style.transform = "scale(1.04)";
-      fireReveal();
-      await sleep(VEIL_EXIT_MS);
-      if (cancelled.current) return;
+    const holdForMedia = async (minMs: number) => {
+      await Promise.all([
+        sleep(minMs),
+        waitForMedia ? waitForMedia().catch(() => {}) : Promise.resolve(),
+      ]);
+    };
 
+    const release = () => {
       document.body.style.overflow = prevOverflow;
       releaseInert();
       setDone(true);
     };
 
+    const runReduced = async () => {
+      // No cycling, no typewriter, no zoom — the finished lockup, briefly,
+      // then a plain fade. The name's face still has to be loaded before
+      // the lockup is measured around it.
+      await preloadFonts();
+      if (cancelled.current) return;
+      lockWidth(WELCOME);
+      write(WELCOME);
+      caret.style.display = "none";
+      crossfadeBg(WELCOME_GRADIENT);
+      const lift = layoutLockup();
+      gsap.set(box, { y: lift, opacity: 1 });
+      gsap.set(letters, { yPercent: 0 });
+      gsap.set(rules, { scaleX: 1 });
+      gsap.set(placeText, { opacity: 1 });
+      await holdForMedia(900);
+      if (cancelled.current) return;
+      fireReveal();
+      veil.style.transition = `opacity ${TEXT_FADE_MS}ms ease`;
+      veil.style.opacity = "0";
+      await sleep(TEXT_FADE_MS);
+      if (cancelled.current) return;
+      release();
+    };
+
     const run = async () => {
       if (reduceMotion) {
-        // No cycling, no typewriter — just the destination word, briefly.
-        lockWidth(FINAL);
-        write(FINAL);
-        box.style.opacity = "1";
-        await sleep(700);
-        if (cancelled.current) return;
-        await finish();
+        await runReduced();
         return;
       }
 
@@ -332,40 +443,106 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       await deleteOut(GREETINGS[GREETINGS.length - 1]);
 
       // One last crossfade into a soft brand wash rather than a hard cut
-      // to flat white — the destination phrase, not another country.
+      // to flat white — the destination, not another country.
       crossfadeBg(WELCOME_GRADIENT);
-      box.style.color = "#100d09"; // --color-ink
-      box.style.textShadow = "none";
-      await typeIn(FINAL);
+      setTone("ink");
+      await typeIn(WELCOME);
       if (cancelled.current) return;
 
-      // "NAXIS" gets its gold accent a beat after the phrase finishes
-      // typing, not mid-type — a quiet flourish on the brand name rather
-      // than a distraction while it's still being read.
-      const accentStart = FINAL.indexOf(FINAL_ACCENT);
-      if (accentStart !== -1) {
-        // The gradient is clipped to the glyphs from the start, hidden under
-        // a solid ink fill; fading that fill to transparent reveals it.
-        text.innerHTML =
-          FINAL.slice(0, accentStart) +
-          `<span style="color:#100d09;background-image:${FINAL_ACCENT_GRADIENT};-webkit-background-clip:text;background-clip:text;transition:color ${BG_FADE_MS}ms ease">${FINAL_ACCENT}</span>` +
-          FINAL.slice(accentStart + FINAL_ACCENT.length);
-        await sleep(150);
-        if (cancelled.current) return;
-        const accentEl = text.querySelector("span");
-        if (accentEl) accentEl.style.color = "transparent";
-      }
-
-      await sleep(FINAL_HOLD_MS);
+      // The lockup: "Welcome to" steps up as the name rises letter by
+      // letter beneath it, then the place and its gold -> emerald rules
+      // open out underneath. From here on GSAP owns the box, so its CSS
+      // transitions are dropped rather than left to fight the tweens.
+      box.style.transition = "none";
+      caret.style.animation = "none";
+      const lift = layoutLockup();
+      await new Promise<void>((resolve) => {
+        tweens.add(() => {
+          gsap
+            .timeline({ onComplete: resolve })
+            .to(caret, { opacity: 0, duration: 0.25 }, 0)
+            .to(box, { y: lift, duration: 1, ease: "expo.inOut" }, 0.1)
+            .fromTo(
+              letters,
+              { yPercent: 110 },
+              { yPercent: 0, duration: 1.1, ease: "expo.out", stagger: 0.07 },
+              0.35
+            )
+            .fromTo(
+              rules,
+              { scaleX: 0 },
+              { scaleX: 1, duration: 1, ease: "expo.inOut" },
+              0.75
+            )
+            .fromTo(
+              placeText,
+              { opacity: 0, letterSpacing: "1.1em", marginRight: "-1.1em" },
+              {
+                opacity: 1,
+                letterSpacing: "0.55em",
+                marginRight: "-0.55em",
+                duration: 1.2,
+                ease: "expo.out",
+              },
+              0.8
+            );
+        });
+      });
       if (cancelled.current) return;
 
-      await finish();
+      // Hold on the lockup until the hero media is actually ready, so the
+      // exit never lands on an unloaded video.
+      await holdForMedia(LOCKUP_HOLD_MS);
+      if (cancelled.current) return;
+
+      // The exit. The words around the name step aside and the name turns
+      // pure black; the veil then switches to a lighten blend, which keeps
+      // whichever is lighter per channel — the pale wash beats the dark,
+      // graded hero, while black letters give way to it entirely. (Screen
+      // would do the same for black, but lets the hero ghost through a
+      // wash that isn't pure white.) So the letters become windows onto
+      // the hero, which starts its entrance right then and fills them
+      // with footage. Finally the name
+      // scales up about the centre of its X until the crossing strokes
+      // fill the screen: the camera pushes through the letter into the
+      // hero. expo.in on the scale reads as a steady push, since perceived
+      // zoom follows the log of the scale. The last few frames also fade
+      // the veil, in case an engine can't blend it over the video.
+      gsap.set(masks, { clipPath: "none" });
+      const zoom = zoomTarget();
+      gsap.set(mark, { transformOrigin: zoom.origin });
+      await new Promise<void>((resolve) => {
+        tweens.add(() => {
+          gsap
+            .timeline({ onComplete: resolve })
+            .to([box, place], { opacity: 0, duration: 0.35, ease: "power2.in" }, 0)
+            .to(mark, { color: "#000", duration: 0.35 }, 0)
+            .add(() => {
+              veil.style.mixBlendMode = "lighten";
+              fireReveal();
+            }, 0.35)
+            .to(
+              mark,
+              { scale: zoom.scale, duration: ZOOM_DURATION, ease: "expo.in" },
+              0.35 + FILL_BEAT
+            )
+            .to(
+              veil,
+              { opacity: 0, duration: 0.2, ease: "none" },
+              0.35 + FILL_BEAT + ZOOM_DURATION - 0.2
+            );
+        });
+      });
+      if (cancelled.current) return;
+
+      release();
     };
 
     void run();
 
     return () => {
       cancelled.current = true;
+      tweens.revert();
       document.body.style.overflow = prevOverflow;
       releaseInert();
     };
@@ -378,12 +555,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       ref={veilRef}
       data-preloader
       aria-hidden="true"
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
-      style={{
-        clipPath: "circle(150% at 50% 50%)",
-        transform: "scale(1)",
-        transition: `clip-path ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}, transform ${VEIL_EXIT_MS}ms ${PREMIUM_EASE}`,
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-white"
     >
       {/* Two stacked layers crossfaded between each other to animate the
           flag-gradient backdrop — see crossfadeBg above. */}
@@ -398,19 +570,84 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
       />
 
+      {/* The name, dead centre, set in the hero's headline face. Each
+          letter rises out of its own mask; the masks clip only below the
+          baseline, so nothing above the capitals is ever cut. Hidden until
+          the lockup is laid out. */}
+      <div
+        ref={lockupRef}
+        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+        style={{ visibility: "hidden" }}
+      >
+        <div
+          ref={markRef}
+          className="flex font-headline text-[clamp(6rem,30vw,19rem)] font-normal leading-none text-ink"
+        >
+          {BRAND.split("").map((letter, i) => (
+            <span
+              key={i}
+              ref={(el) => {
+                maskRefs.current[i] = el;
+              }}
+              className="inline-block"
+              style={{ clipPath: "inset(-50% -20% 0 -20%)" }}
+            >
+              <span
+                ref={(el) => {
+                  letterRefs.current[i] = el;
+                }}
+                className="inline-block"
+              >
+                {letter}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* The place, under the name — its top is set in layoutLockup. */}
+      <div
+        ref={placeRef}
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-4 sm:gap-7"
+        style={{ visibility: "hidden" }}
+      >
+        <span
+          ref={(el) => {
+            ruleRefs.current[0] = el;
+          }}
+          className="bg-gradient-brand-deep h-px w-10 origin-right sm:w-28"
+        />
+        <span
+          ref={placeTextRef}
+          className="text-gradient-brand-deep font-body text-[clamp(0.75rem,1.5vw,1.3rem)] font-semibold uppercase"
+          style={{ opacity: 0, letterSpacing: "0.55em", marginRight: "-0.55em" }}
+        >
+          {PLACE}
+        </span>
+        <span
+          ref={(el) => {
+            ruleRefs.current[1] = el;
+          }}
+          className="bg-gradient-brand-deep h-px w-10 origin-left sm:w-28"
+        />
+      </div>
+
       {/* Fixed height and line-height so switching between scripts with
           different vertical metrics never nudges the line up or down; the
           width is locked per word in lockWidth above. */}
       <span
         ref={boxRef}
-        className="relative z-10 inline-flex h-[1.5em] items-center justify-start whitespace-nowrap font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.5] tracking-[-0.02em] text-black"
+        className="relative z-20 inline-flex h-[1.5em] items-center justify-start whitespace-nowrap font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.5] tracking-[-0.02em] text-black"
         style={{
           opacity: 0,
           transition: `opacity ${TEXT_FADE_MS}ms ease-out, color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease`,
         }}
       >
         <span ref={textRef} />
-        <span className="preloader-caret ml-[0.08em] inline-block h-[0.9em] w-[2px] shrink-0 bg-current motion-reduce:hidden" />
+        <span
+          ref={caretRef}
+          className="preloader-caret ml-[0.08em] inline-block h-[0.9em] w-[2px] shrink-0 bg-current motion-reduce:hidden"
+        />
       </span>
       {/* Off-screen twin of the box's type styles, used only to measure a
           word's full width before it's typed. */}
