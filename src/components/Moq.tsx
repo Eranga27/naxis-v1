@@ -74,12 +74,12 @@ export default function Moq() {
     <section
       ref={sectionRef}
       id="moq"
-      className="relative w-full bg-ink px-6 py-24 sm:px-10 md:px-16 md:py-36 lg:px-20"
+      className="relative w-full bg-cream px-6 py-24 text-center sm:px-10 md:px-16 md:py-36 lg:px-20"
     >
       {/* Gold expanding rule */}
       <div
         ref={lineRef}
-        className="bg-gradient-brand mb-10 h-px w-full md:mb-14"
+        className="bg-gradient-brand-deep mx-auto mb-10 h-px w-full max-w-5xl md:mb-14"
         style={{ transform: "scaleX(0)", transformOrigin: "left center" }}
       />
 
@@ -89,7 +89,7 @@ export default function Moq() {
           ref={(el) => {
             revealRefs.current[0] = el;
           }}
-          className="mb-8 font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand w-fit opacity-0 md:text-sm"
+          className="mx-auto mb-8 w-fit font-body text-xs font-bold uppercase tracking-[0.35em] text-brown opacity-0 md:text-sm"
         >
           Minimum Order Quantity
         </p>
@@ -99,11 +99,11 @@ export default function Moq() {
           ref={(el) => {
             revealRefs.current[1] = el;
           }}
-          className="mb-4 font-headline uppercase leading-[1.02] tracking-[-0.01em] text-[clamp(3rem,11vw,9.5rem)] text-cream opacity-0"
+          className="mb-6 font-serif font-bold leading-[1] tracking-[-0.03em] text-[clamp(3rem,10vw,8.5rem)] text-brown opacity-0"
           aria-label="MOQ? Let's Talk."
         >
           MOQ?{" "}
-          <span className="text-gradient-brand pr-[0.04em]">Let&apos;s Talk.</span>
+          <span className="text-gradient-brand-deep pr-[0.04em]">Let&apos;s Talk.</span>
         </h2>
 
         {/* Sub-headline */}
@@ -111,7 +111,7 @@ export default function Moq() {
           ref={(el) => {
             revealRefs.current[2] = el;
           }}
-          className="mb-2 font-body text-sm font-medium italic text-cream/60 opacity-0 md:text-base"
+          className="mb-3 font-serif text-base italic text-ink/70 opacity-0 md:text-xl"
         >
           Everything is possible when there&apos;s a willingness to find a way.
         </p>
@@ -121,20 +121,20 @@ export default function Moq() {
           ref={(el) => {
             revealRefs.current[3] = el;
           }}
-          className="mb-12 font-headline text-[clamp(1.5rem,4.5vw,3.5rem)] uppercase leading-[1.1] text-cream opacity-0 md:mb-16"
+          className="mb-12 font-serif text-[clamp(1.6rem,4.2vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-brown opacity-0 md:mb-16"
         >
           Don&apos;t let MOQ hold your idea back.
         </p>
 
         {/* Body paragraphs */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
+        <div className="mx-auto flex max-w-3xl flex-col gap-5 md:gap-6">
           {BODY_PARAS.map((para, i) => (
             <p
               key={i}
               ref={(el) => {
                 revealRefs.current[4 + i] = el;
               }}
-              className="font-body text-sm leading-relaxed text-cream/65 opacity-0 md:text-base md:leading-loose"
+              className="font-serif text-base leading-relaxed text-ink/75 opacity-0 md:text-lg"
             >
               {para}
             </p>
@@ -151,7 +151,7 @@ export default function Moq() {
           <a
             href="#contact"
             data-magnetic
-            className="inline-flex items-center gap-3 rounded-full bg-gold px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-gold-light"
+            className="inline-flex items-center gap-3 rounded-full bg-brown px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:bg-emerald"
           >
             Start the Conversation
             <svg
@@ -171,7 +171,17 @@ export default function Moq() {
       </div>
 
       {/* Bottom rule */}
-      <div className="mt-16 h-px w-full bg-cream/10 md:mt-20" />
+      {/* The client's sign-off lockup, as on their MOQ artboard */}
+      <div className="mx-auto mt-16 flex max-w-5xl items-center gap-5 md:mt-20">
+        <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold" />
+        <span className="text-gradient-brand-deep font-body text-base font-semibold uppercase tracking-[0.3em] md:text-lg">
+          NAXIS Australia
+        </span>
+        <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold" />
+      </div>
+      <p className="mt-2 font-body text-[0.65rem] uppercase tracking-[0.3em] text-ink/60 md:text-xs">
+        Delivering excellence through experience.
+      </p>
     </section>
   );
 }

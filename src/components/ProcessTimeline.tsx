@@ -13,9 +13,11 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// 7-step manufacturing process from the NAXIS Australia PDF.
-// Confirmed count: Design → Pattern Making → Sampling → Sourcing
-//                  → Sewing → Quality Control → Order Shipment
+// The manufacturing process from the NAXIS Australia PDF (page 1):
+// Design → Pattern Making → Sampling → Sourcing → Sewing
+// → Quality Control → Order Shipment → Your Success.
+// The first seven are photo cards; "Your Success" is the closing card
+// below the list (SUCCESS_STEP), as in the client's own diagram.
 const STEPS = [
   {
     number: "01",
@@ -53,7 +55,7 @@ const STEPS = [
     number: "05",
     label: "Sewing",
     description:
-      "Production is managed through certified partner factories operating to strict quality and ethical standards. Every line, every stitch — supervised and on-spec.",
+      "Production runs through our own facilities and specialist partner factories, operating to strict quality and ethical standards. Every line, every stitch — supervised and on-spec.",
     image: "/images/process-sewing.jpg",
     imageAlt: "Garment sewing and production",
   },
@@ -74,6 +76,9 @@ const STEPS = [
     imageAlt: "Packing and order shipment",
   },
 ];
+
+const SUCCESS_STEP = { number: "08", label: "Your Success" };
+const TOTAL_STEPS = STEPS.length + 1;
 
 export default function ProcessTimeline() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -166,16 +171,16 @@ export default function ProcessTimeline() {
             parallax: cardImgInners,
             parallaxRange: 7,
             onUpdate: (activeIndex, trackProgress) => {
-              const done = trackProgress >= 0.95;
+              const step =
+                activeIndex < STEPS.length ? STEPS[activeIndex] : SUCCESS_STEP;
               if (stepLabelRef.current) {
-                stepLabelRef.current.textContent = done
-                  ? "7 Stages Complete · Next: Global Network"
-                  : `Stage ${STEPS[activeIndex].number} / 07 — ${STEPS[activeIndex].label}`;
+                stepLabelRef.current.textContent = `Stage ${step.number} / 08 — ${step.label}`;
               }
               if (statusHintRef.current) {
-                statusHintRef.current.textContent = done
-                  ? "Scroll into Global Network ↓"
-                  : "Scroll to explore stages →";
+                statusHintRef.current.textContent =
+                  trackProgress >= 0.95
+                    ? "Keep scrolling ↓"
+                    : "Scroll to explore stages →";
               }
             },
           }),
@@ -217,7 +222,7 @@ export default function ProcessTimeline() {
             }}
             className="max-w-md font-body text-sm text-ink/65 opacity-0 md:text-right md:text-base"
           >
-            Seven precision stages. One seamless supply chain.
+            Every stage managed. One seamless supply chain.
           </p>
         </div>
       </div>
@@ -276,7 +281,31 @@ export default function ProcessTimeline() {
                       <span className="font-body text-xs font-bold text-brown">
                         {step.number}
                       </span>
-                      <div className="h-px flex-1 bg-ink/10" />
+                      {/* Gold dashed arrow, as in the client's diagram */}
+                      <svg
+                        viewBox="0 0 100 10"
+                        preserveAspectRatio="none"
+                        className="h-2.5 flex-1"
+                        aria-hidden="true"
+                      >
+                        <line
+                          x1="0"
+                          y1="5"
+                          x2="94"
+                          y2="5"
+                          stroke="var(--color-gold)"
+                          strokeWidth="1.5"
+                          strokeDasharray="4 4"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        <path
+                          d="M92 1 L 99 5 L 92 9"
+                          fill="none"
+                          stroke="var(--color-gold)"
+                          strokeWidth="1.5"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </svg>
                     </div>
                     <h3 className="font-headline text-xl uppercase tracking-[-0.01em] text-ink md:text-2xl">
                       {step.label}
@@ -290,35 +319,42 @@ export default function ProcessTimeline() {
             </div>
           ))}
 
-          {/* Transition Card into Global Network */}
+          {/* 08 — Your Success: the client's own final stage */}
           <div className="flex w-[280px] shrink-0 snap-center flex-col sm:w-[320px] md:w-[350px] lg:w-[370px]">
-            <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-ink/15 bg-ink p-6 text-cream shadow-md md:p-7">
-              <div className="flex flex-col gap-3">
+            <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-ink p-6 text-cream shadow-md md:p-7">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald/30 blur-3xl"
+              />
+              <div className="relative flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <span className="font-body text-xs font-bold text-gold">
-                    NEXT CHAPTER
+                    {SUCCESS_STEP.number}
                   </span>
-                  <div className="h-px flex-1 bg-cream/20" />
+                  <span className="bg-gradient-brand h-px flex-1 opacity-50" />
                 </div>
-                <h3 className="font-headline text-2xl uppercase tracking-[-0.01em] text-cream md:text-3xl">
-                  Global Network
+                {/* Flag, echoing the finish marker in the client's diagram */}
+                <svg viewBox="0 0 48 48" className="h-12 w-12" aria-hidden="true">
+                  <circle cx="24" cy="24" r="23" fill="none" stroke="var(--color-emerald-bright)" strokeOpacity="0.5" />
+                  <path d="M18 36 V 12" stroke="var(--color-cream)" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M18 13 C 24 10, 28 16, 34 13 V 24 C 28 27, 24 21, 18 24 Z" fill="var(--color-emerald-bright)" />
+                </svg>
+                <h3 className="text-gradient-brand w-fit font-headline text-3xl uppercase tracking-[-0.01em] md:text-4xl">
+                  {SUCCESS_STEP.label}
                 </h3>
                 <p className="font-body text-xs leading-relaxed text-cream/75 sm:text-sm md:text-base">
-                  From design room to international dispatch — explore the 6 specialized manufacturing hubs powering our 7-stage process.
+                  Every stage leads here — a finished product, delivered to
+                  your door, ready for your customers.
                 </p>
               </div>
 
               <a
-                href="#global-network"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("global-network")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="group mt-6 flex items-center justify-between rounded-xl border border-cream/20 bg-cream/10 px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-cream transition-all hover:border-gold hover:bg-gold hover:text-ink md:text-sm"
+                href="#contact"
+                className="group relative mt-6 flex items-center justify-between rounded-xl border border-cream/20 bg-cream/10 px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-cream transition-all hover:border-gold hover:bg-gold hover:text-ink md:text-sm"
               >
-                <span>Explore Facilities</span>
-                <span className="text-base text-gold transition-transform duration-200 group-hover:translate-x-1">
-                  ↓
+                <span>Start your project</span>
+                <span className="text-base text-gold transition-transform duration-200 group-hover:translate-x-1 group-hover:text-ink">
+                  →
                 </span>
               </a>
             </div>
@@ -330,12 +366,12 @@ export default function ProcessTimeline() {
       <div className="relative z-10 hidden shrink-0 items-center justify-between border-t border-ink/10 pt-4 md:flex">
         {/* Left: Sprocket ticks + Current Stage Indicator */}
         <div className="flex items-center gap-4">
-          <TickRail count={STEPS.length} tickRefs={tickRefs} tone="dark" />
+          <TickRail count={TOTAL_STEPS} tickRefs={tickRefs} tone="dark" />
           <span
             ref={stepLabelRef}
             className="font-body text-xs font-semibold uppercase tracking-wider text-brown"
           >
-            Stage 01 / 07 — Design
+            Stage 01 / 08 — Design
           </span>
         </div>
 

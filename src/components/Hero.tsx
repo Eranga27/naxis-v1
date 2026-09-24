@@ -337,7 +337,12 @@ export default function Hero() {
         <video
           data-hero-video
           className="h-full w-full object-cover"
-          src="/videos/hero-compressed-video.mp4"
+          // 1080p re-encode (~1.7MB) of the 4K master kept in
+          // media-library/ — the 4K file was ~7MB for a background that
+          // sits under a dark grade. The poster paints instantly while the
+          // video buffers.
+          src="/videos/hero-1080.mp4"
+          poster="/images/hero-poster.jpg"
           autoPlay
           muted
           loop
@@ -411,8 +416,9 @@ export default function Hero() {
                 ref={kickerRef}
                 className="font-body text-xs sm:text-sm md:text-[0.95rem] font-normal normal-case tracking-normal leading-relaxed text-cream/80 opacity-0"
               >
-                Offshore garment manufacturing engineered for global brands across
-                certified partner facilities.
+                Australian-based private label apparel development and
+                manufacturing — through our own facilities and a trusted
+                global network of specialised partner factories.
               </p>
             </div>
 

@@ -6,6 +6,8 @@ import {
   Noto_Sans_Sinhala,
   Noto_Sans_Devanagari,
   Noto_Sans_Bengali,
+  Source_Serif_4,
+  Allura,
 } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
@@ -36,6 +38,26 @@ const inter = Inter({
   display: "swap",
 });
 
+// Editorial serif for the sections that mirror the client's own artboards
+// (About, MOQ, service pages). A stand-in until the client confirms the
+// exact face used in their brand material. Variable, with the optical-size
+// axis so large headlines get the tighter display cut.
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  axes: ["opsz"],
+  display: "swap",
+});
+
+// Handwritten accent for the client's "every detail matters." line — also
+// a stand-in for the script in their company profile.
+const allura = Allura({
+  variable: "--font-allura",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
 // Native scripts for the intro greetings. Script subsets only — Latin comes
 // from Inter, which sits first in the greeting stack. Chinese deliberately
 // falls back to the system CJK face rather than pulling a multi-megabyte
@@ -62,9 +84,12 @@ const notoBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "NAXIS — Offshore Garment Manufacturing",
+  title: {
+    default: "NAXIS Australia — Private Label Apparel Manufacturing",
+    template: "%s — NAXIS Australia",
+  },
   description:
-    "NAXIS is an offshore garment manufacturing service provider with operations across six countries.",
+    "NAXIS Australia is an Australian-based apparel product development, manufacturing and complete supply chain solutions company, supported by our own facilities and a trusted global network of specialised partner factories.",
 };
 
 export const viewport: Viewport = {
@@ -76,7 +101,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} antialiased`}
+      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} ${sourceSerif.variable} ${allura.variable} antialiased`}
     >
       <head>
         {/*

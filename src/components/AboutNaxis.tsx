@@ -197,9 +197,9 @@ export default function AboutNaxis() {
               ref={(el) => {
                 revealRefs.current[1] = el;
               }}
-              className="mb-10 font-headline uppercase leading-[1.05] tracking-[-0.01em] text-[clamp(2.5rem,5.5vw,4.25rem)] text-ink opacity-0"
+              className="mb-10 font-serif font-semibold leading-[1.08] tracking-[-0.015em] text-[clamp(2.1rem,4.6vw,3.75rem)] text-brown opacity-0"
             >
-              Delivering excellence through experience.
+              We take responsibility for the entire journey.
             </h2>
 
             {/* Paragraphs */}
@@ -210,7 +210,7 @@ export default function AboutNaxis() {
                   ref={(el) => {
                     revealRefs.current[2 + i] = el;
                   }}
-                  className="font-body text-sm leading-relaxed text-ink/75 opacity-0 md:text-base md:leading-loose"
+                  className="font-serif text-base leading-relaxed text-ink/80 opacity-0 md:text-lg md:leading-relaxed"
                 >
                   {para}
                 </p>
@@ -226,7 +226,7 @@ export default function AboutNaxis() {
               />
               <p
                 ref={taglineRef}
-                className="font-body text-sm font-bold uppercase tracking-[0.2em] text-brown opacity-0"
+                className="text-center font-serif text-base font-semibold text-brown opacity-0 md:text-xl"
               >
                 From Concept to Creation. Factory to You.
               </p>
@@ -235,6 +235,21 @@ export default function AboutNaxis() {
                 className="h-px flex-1 bg-gradient-to-r from-gold to-emerald"
                 style={{ transform: "scaleX(0)", transformOrigin: "right center" }}
               />
+            </div>
+
+            {/* The client's sign-off lockup, as on their artboards */}
+            <div
+              ref={(el) => {
+                revealRefs.current[2 + PARAGRAPHS.length] = el;
+              }}
+              className="mt-8 text-center opacity-0"
+            >
+              <p className="font-body text-lg font-semibold uppercase tracking-[0.3em] text-gradient-brand-deep mx-auto w-fit md:text-xl">
+                NAXIS Australia
+              </p>
+              <p className="mt-2 font-body text-[0.65rem] uppercase tracking-[0.3em] text-ink/60 md:text-xs">
+                Delivering excellence through experience.
+              </p>
             </div>
           </div>
         </div>

@@ -9,16 +9,24 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// The approved Mission statement — revealed word by word as the user
-// scrolls through it (see the scrub ScrollTrigger below), not on a timer.
+// The client's own positioning line (company profile, page 1) — revealed
+// word by word as the user scrolls through it (see the scrub
+// ScrollTrigger below), not on a timer.
 const SENTENCE =
-  "An offshore garment manufacturing service provider, operating through certified partner factories across six countries.";
+  "We work one on one with clients to help them create their own private label clothing line.";
 const WORDS = SENTENCE.split(" ");
+// Words carrying the brand gradient once lit.
+const ACCENT_WORDS = new Set(["private", "label"]);
 
 export default function Mission() {
   const sectionRef = useRef<HTMLElement>(null);
   const sentenceWrapRef = useRef<HTMLParagraphElement>(null);
   const wordRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const leadRef = useRef<HTMLParagraphElement>(null);
+  const scriptRef = useRef<HTMLSpanElement>(null);
+  const swooshRef = useRef<SVGPathElement>(null);
+  const followRef = useRef<HTMLParagraphElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
@@ -34,10 +42,54 @@ export default function Mission() {
         (el): el is HTMLSpanElement => el !== null
       );
 
+      const detail = detailRef.current;
+      const lead = leadRef.current;
+      const script = scriptRef.current;
+      const swoosh = swooshRef.current;
+      const follow = followRef.current;
+      const swooshLength = swoosh ? swoosh.getTotalLength() : 0;
+      if (swoosh) {
+        swoosh.style.strokeDasharray = `${swooshLength}`;
+        swoosh.style.strokeDashoffset = `${swooshLength}`;
+      }
+
       if (reduceMotion) {
         // Static: the sentence reads fully solid with no scroll-linked reveal.
         gsap.set(words, { opacity: 1 });
+        gsap.set([lead, follow], { opacity: 1, y: 0 });
+        gsap.set(script, { clipPath: "inset(0 0% 0 0)" });
+        if (swoosh) swoosh.style.strokeDashoffset = "0";
         return;
+      }
+
+      // "every detail matters." — the script is wiped on left to right as
+      // if being handwritten, then the gold underline draws beneath it.
+      // Scrubbed, like the sentence above, so it writes and un-writes with
+      // the scroll.
+      if (detail && lead && script && follow) {
+        const detailTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: detail,
+            start: "top 78%",
+            end: "bottom 55%",
+            scrub: 0.6,
+          },
+        });
+        detailTl
+          .fromTo(lead, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.25 })
+          .fromTo(
+            script,
+            { clipPath: "inset(0 100% 0 0)" },
+            { clipPath: "inset(0 0% 0 0)", ease: "none", duration: 0.6 }
+          );
+        if (swoosh) {
+          detailTl.to(swoosh, { strokeDashoffset: 0, ease: "none", duration: 0.35 });
+        }
+        detailTl.fromTo(
+          follow,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.25 }
+        );
       }
 
       // The sentence: each word starts at low opacity (the faint, "not yet
@@ -126,7 +178,7 @@ export default function Mission() {
           headline-weight statement rather than a narrow body paragraph. */}
       {/* The statement itself is a paragraph; this gives heading
           navigation a landmark for the section. */}
-      <h2 className="sr-only">Our mission</h2>
+      <h2 className="sr-only">How we work with you</h2>
       <p
         ref={sentenceWrapRef}
         className="mx-auto max-w-6xl py-10 text-center font-body text-[clamp(1.75rem,5.5vw,4.75rem)] font-bold leading-[1.15] tracking-tight md:py-14"
@@ -137,13 +189,67 @@ export default function Mission() {
             ref={(el) => {
               wordRefs.current[i] = el;
             }}
-            className="text-ink"
+            className={
+              ACCENT_WORDS.has(word) ? "text-gradient-brand-deep" : "text-ink"
+            }
             style={{ opacity: 0.1 }}
           >
             {word}{" "}
           </span>
         ))}
       </p>
+
+      {/* The client's "every detail matters." line, from their profile */}
+      <div
+        ref={detailRef}
+        className="mx-auto mt-10 flex max-w-3xl flex-col items-center text-center md:mt-16"
+      >
+        <p
+          ref={leadRef}
+          className="font-serif text-lg text-ink/70 opacity-0 md:text-2xl"
+        >
+          In apparel production,
+        </p>
+        <div className="relative px-4">
+          <span
+            ref={scriptRef}
+            // One line at every width — the left-to-right wipe reads as
+            // handwriting only if the phrase doesn't wrap.
+            className="block whitespace-nowrap px-3 pb-2 pt-1 font-script text-[clamp(2.3rem,9.6vw,7.5rem)] leading-[1.15] text-brown"
+            style={{ clipPath: "inset(0 100% 0 0)" }}
+          >
+            every detail matters.
+          </span>
+          <svg
+            viewBox="0 0 600 40"
+            preserveAspectRatio="none"
+            className="absolute -bottom-1 left-[6%] h-5 w-[88%] md:h-7"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="swoosh-gradient" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stopColor="var(--color-gold)" />
+                <stop offset="100%" stopColor="var(--color-emerald)" />
+              </linearGradient>
+            </defs>
+            <path
+              ref={swooshRef}
+              d="M6 30 C 140 12, 330 4, 594 14"
+              fill="none"
+              stroke="url(#swoosh-gradient)"
+              strokeWidth={4}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+        <p
+          ref={followRef}
+          className="mt-8 max-w-md font-body text-base text-ink/75 opacity-0 md:text-lg"
+        >
+          We focus on the details so you can focus on your customers.
+        </p>
+      </div>
     </section>
   );
 }

@@ -13,8 +13,10 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Product categories sourced from the NAXIS Australia client PDF and
-// network specialisation data. This list is intentionally open-ended:
+// Product categories — PLACEHOLDERS, not from the client: their company
+// profile only says "a diverse range of apparel" and lists no categories.
+// Replace with the client's confirmed list. This list is intentionally
+// open-ended:
 // the gallery below is a horizontal, scroll-pinned strip rather than a
 // fixed grid so it keeps working as-is whether there are 4 categories
 // or 14 — adding a category is just appending to this array and

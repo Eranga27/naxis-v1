@@ -15,13 +15,16 @@
      accent, not a UI color. */
   --color-coral: #f2705c;
   --color-brown: #4a2a1c;
+  /* Ground of the client's "We make ideas wearable" artboard. */
+  --color-bark: #2a1206;
   /* Letter palette of the client's "We make ideas wearable" phrase asset
      (IdeasWearable) — used only there, alongside gold. */
-  --color-phrase-green: #0b8a44;
-  --color-phrase-red: #e53c3c;
-  --color-phrase-blue: #1976d2;
-  --color-phrase-brown: #8d4c1f;
-  --color-phrase-purple: #7b1fa2;
+  --color-phrase-green: #008c4d;
+  --color-phrase-yellow: #fdda17;
+  --color-phrase-red: #f90406;
+  --color-phrase-blue: #004bfd;
+  --color-phrase-brown: #a85008;
+  --color-phrase-purple: #7d02fa;
 }
 
 @theme inline {
@@ -34,9 +37,12 @@
   --color-emerald-dark: var(--color-emerald-dark);
   --color-coral: var(--color-coral);
   --color-brown: var(--color-brown);
+  --color-bark: var(--color-bark);
   --font-display: var(--font-poppins);
   --font-headline: var(--font-bebas-neue);
   --font-body: var(--font-inter);
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-script: var(--font-allura), cursive;
   /* Multi-script stack for the intro greetings. The browser resolves per
      glyph, so Latin renders in Inter while each native script falls through
      to its own Noto face; Chinese uses the system CJK font. */
@@ -155,6 +161,31 @@ html.custom-cursor-active * {
 
 .hero-scroll-cue {
   animation: hero-scroll-cue 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* Global Network: slow breathing ring around the Australia marker. */
+@keyframes network-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.35;
+  }
+}
+
+.network-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: network-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-pulse {
+    animation: none;
+  }
 }
 
 /* Set by the inline head script when the intro has already played this
