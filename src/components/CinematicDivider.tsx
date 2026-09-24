@@ -104,7 +104,7 @@ export default function CinematicDivider() {
           ref={(el) => {
             revealRefs.current[0] = el;
           }}
-          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:mb-8 md:text-sm"
+          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand w-fit opacity-0 md:mb-8 md:text-sm"
         >
           Compliance
         </p>
@@ -127,7 +127,9 @@ export default function CinematicDivider() {
               revealRefs.current[2] = el;
             }}
             aria-hidden="true"
-            className="block text-gold opacity-0 sm:ml-[7vw]"
+            // Gradient-clipped text can't carry the h2's text-shadow (it
+            // would show through the transparent fill) — drop-shadow instead.
+            className="text-gradient-brand block w-fit pr-[0.04em] opacity-0 [text-shadow:none] [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.35))] sm:ml-[7vw]"
           >
             Fully compliant.
           </span>
@@ -152,8 +154,12 @@ export default function CinematicDivider() {
           {CERTIFICATIONS.map((cert) => (
             <li
               key={cert}
-              className="font-body text-sm font-semibold uppercase tracking-[0.25em] text-cream/85 md:text-base"
+              className="flex items-center gap-3 font-body text-sm font-semibold uppercase tracking-[0.25em] text-cream/85 md:text-base"
             >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-emerald-bright shadow-[0_0_10px_rgba(47,208,138,0.7)]"
+              />
               {cert}
             </li>
           ))}

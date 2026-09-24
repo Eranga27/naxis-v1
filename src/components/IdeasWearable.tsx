@@ -12,33 +12,34 @@ const useIsomorphicLayoutEffect =
 // The client's brand phrase — multi-colored bold letters per the approved
 // client asset. Each letter is assigned its brand color individually.
 // Massive Bebas Neue letters fill the viewport, each a distinct brand color.
+// The palette lives in globals.css as --color-phrase-* tokens.
 const LINES: Array<Array<{ char: string; color: string }>> = [
   [
-    { char: "W", color: "#0b8a44" }, // green
-    { char: "E", color: "#ffc94a" }, // gold/yellow
+    { char: "W", color: "var(--color-phrase-green)" },
+    { char: "E", color: "var(--color-gold)" },
     { char: " ", color: "transparent" },
-    { char: "M", color: "#e53c3c" }, // red
-    { char: "A", color: "#1976d2" }, // blue
-    { char: "K", color: "#8d4c1f" }, // brown
-    { char: "E", color: "#7b1fa2" }, // purple
+    { char: "M", color: "var(--color-phrase-red)" },
+    { char: "A", color: "var(--color-phrase-blue)" },
+    { char: "K", color: "var(--color-phrase-brown)" },
+    { char: "E", color: "var(--color-phrase-purple)" },
   ],
   [
-    { char: "I", color: "#7b1fa2" }, // purple
-    { char: "D", color: "#1976d2" }, // blue
-    { char: "E", color: "#0b8a44" }, // green
-    { char: "A", color: "#ffc94a" }, // gold
-    { char: "S", color: "#e53c3c" }, // red
+    { char: "I", color: "var(--color-phrase-purple)" },
+    { char: "D", color: "var(--color-phrase-blue)" },
+    { char: "E", color: "var(--color-phrase-green)" },
+    { char: "A", color: "var(--color-gold)" },
+    { char: "S", color: "var(--color-phrase-red)" },
   ],
   [
-    { char: "W", color: "#1976d2" }, // blue
-    { char: "E", color: "#ffc94a" }, // gold
-    { char: "A", color: "#e53c3c" }, // red
-    { char: "R", color: "#8d4c1f" }, // brown
-    { char: "A", color: "#7b1fa2" }, // purple
-    { char: "B", color: "#0b8a44" }, // green
-    { char: "L", color: "#1976d2" }, // blue
-    { char: "E", color: "#e53c3c" }, // red
-    { char: ".", color: "#ffc94a" }, // gold
+    { char: "W", color: "var(--color-phrase-blue)" },
+    { char: "E", color: "var(--color-gold)" },
+    { char: "A", color: "var(--color-phrase-red)" },
+    { char: "R", color: "var(--color-phrase-brown)" },
+    { char: "A", color: "var(--color-phrase-purple)" },
+    { char: "B", color: "var(--color-phrase-green)" },
+    { char: "L", color: "var(--color-phrase-blue)" },
+    { char: "E", color: "var(--color-phrase-red)" },
+    { char: ".", color: "var(--color-gold)" },
   ],
 ];
 
@@ -94,13 +95,12 @@ export default function IdeasWearable() {
       ScrollTrigger.matchMedia({
         // DESKTOP & TABLET: Innovative pinned kinetic typography & optical portal
         "(min-width: 768px)": () => {
-          const pinDuration = window.innerHeight * 1.35;
-
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: section,
               start: "top top",
-              end: () => "+=" + pinDuration,
+              // Read live on every refresh so a resize re-derives it.
+              end: () => "+=" + window.innerHeight * 1.35,
               pin: true,
               anticipatePin: 1,
               scrub: 0.8,
@@ -196,7 +196,7 @@ export default function IdeasWearable() {
             );
           }
 
-          // PHASE 3: OPTICAL APERTURE PORTAL INTO CAPABILITIES (0.65 -> 1.00)
+          // PHASE 3: OPTICAL APERTURE PORTAL INTO THE PROCESS SECTION (0.65 -> 1.00)
           tl.to(
             lines[0],
             {
@@ -349,12 +349,7 @@ export default function IdeasWearable() {
             ref={(el) => {
               linesRef.current[lineIdx] = el;
             }}
-            className="flex items-center justify-center leading-none will-change-transform select-none"
-            style={{
-              fontSize: "clamp(3.75rem, 17vw, 16.5rem)",
-              fontFamily: "var(--font-bebas-neue)",
-              lineHeight: 0.92,
-            }}
+            className="flex items-center justify-center font-headline text-[clamp(3.75rem,17vw,16.5rem)] leading-[0.92] will-change-transform select-none"
             aria-hidden="true"
           >
             {chars.map((c, charIdx) =>

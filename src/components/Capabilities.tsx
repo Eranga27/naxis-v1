@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { GOLD } from "@/lib/brand";
+import { EMERALD_BRIGHT } from "@/lib/brand";
+import { createPinnedGallery } from "@/lib/pinnedGallery";
+import TickRail from "@/components/TickRail";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -168,79 +170,21 @@ export default function Capabilities() {
       // track's native overflow-x-auto + scroll-snap for a normal
       // swipeable strip, no JS involved.
       ScrollTrigger.matchMedia({
-        "(min-width: 768px)": () => {
-          gsap.set(galleryWrap, { overflow: "visible" });
-          gsap.set(track, { overflow: "visible" });
-
-          const getMaxScroll = () =>
-            Math.max(0, track.scrollWidth - galleryWrap.clientWidth);
-
-          const tickCount = CATEGORIES.length;
-          const ticks = tickRefs.current.filter(
-            (el): el is HTMLSpanElement => el !== null
-          );
-
-          // Rest state (progress 0, before any scroll) — first tick reads
-          // as active immediately rather than everything looking inert
-          // until the pin first engages.
-          if (ticks[0]) {
-            gsap.set(ticks[0], { backgroundColor: GOLD, scaleY: 1.8 });
-          }
-
-          const pinTween = gsap.to(track, {
-            x: () => -getMaxScroll(),
-            ease: "none",
-            scrollTrigger: {
-              trigger: galleryWrap,
-              start: "top top",
-              end: () => "+=" + getMaxScroll(),
-              pin: true,
-              scrub: 1,
-              invalidateOnRefresh: true,
-              // Sprocket-hole tick rail wayfinding: the active mark
-              // advances the instant its card becomes the nearest one,
-              // driven by the pin's own scroll progress.
-              onUpdate: (self) => {
-                const activeIndex = Math.round(
-                  self.progress * (tickCount - 1)
-                );
-                ticks.forEach((tick, i) => {
-                  gsap.set(tick, {
-                    backgroundColor:
-                      i === activeIndex ? GOLD : "rgba(244,239,228,0.25)",
-                    scaleY: i === activeIndex ? 1.8 : 1,
-                  });
-                });
-              },
-            },
-          });
-
-          // Each card's photo drifts slightly against the direction of
-          // travel as the strip scrolls — the same inner/outer parallax
-          // split used elsewhere on this section, just running sideways
-          // to match the gallery's own axis.
-          cardInners.forEach((inner) => {
-            gsap.fromTo(
-              inner,
-              { xPercent: -8 },
-              {
-                xPercent: 8,
-                ease: "none",
-                scrollTrigger: {
-                  trigger: galleryWrap,
-                  start: "top top",
-                  end: () => "+=" + getMaxScroll(),
-                  scrub: true,
-                },
-              }
-            );
-          });
-
-          return () => {
-            pinTween.scrollTrigger?.kill();
-            pinTween.kill();
-          };
-        },
+        "(min-width: 768px)": () =>
+          createPinnedGallery({
+            pin: galleryWrap,
+            viewport: galleryWrap,
+            track,
+            ticks: tickRefs.current.filter(
+              (el): el is HTMLSpanElement => el !== null
+            ),
+            tickIdle: "rgba(244,239,228,0.25)",
+            tickDone: EMERALD_BRIGHT,
+            // Each card's photo drifts slightly against the direction of
+            // travel — the same inner/outer parallax split used elsewhere
+            // on this section, just running sideways.
+            parallax: cardInners,
+          }),
       });
     }, section);
 
@@ -290,7 +234,7 @@ export default function Capabilities() {
           ref={(el) => {
             revealRefs.current[0] = el;
           }}
-          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:mb-8 md:text-sm"
+          className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand w-fit opacity-0 md:mb-8 md:text-sm"
         >
           What We Make
         </p>
@@ -320,7 +264,7 @@ export default function Capabilities() {
           padding-constrained flow so it can pin full-bleed — its own
           horizontal padding matches the section's so the cards still line
           up with the heading above at rest. */}
-      <div ref={galleryWrapRef} className="relative z-10 mt-2">
+      <div ref={galleryWrapRef} data-cursor="Scroll" className="relative z-10 mt-2">
         <div
           ref={trackRef}
           className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
@@ -356,7 +300,7 @@ export default function Capabilities() {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-5">
-                  <span className="block font-body text-xs font-semibold text-cream/50">
+                  <span className="text-gradient-brand block w-fit font-body text-xs font-semibold">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span className="block font-body text-xs uppercase tracking-[0.2em] text-cream">
@@ -374,17 +318,12 @@ export default function Capabilities() {
             pin's own scroll progress. Desktop/tablet only, since mobile's
             native scroll-snap doesn't need one (the strip visibly
             continues past the viewport edge). */}
-        <div className="mt-8 hidden items-center gap-2.5 md:flex">
-          {CATEGORIES.map((_, i) => (
-            <span
-              key={i}
-              ref={(el) => {
-                tickRefs.current[i] = el;
-              }}
-              className="h-3 w-[3px] shrink-0 rounded-full bg-cream/25"
-            />
-          ))}
-        </div>
+        <TickRail
+          count={CATEGORIES.length}
+          tickRefs={tickRefs}
+          tone="light"
+          className="mt-8 hidden md:flex"
+        />
       </div>
     </section>
   );

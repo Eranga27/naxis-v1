@@ -221,7 +221,7 @@ export default function AboutNaxis() {
             <div className="mt-12 flex items-center gap-5">
               <div
                 ref={lineLeftRef}
-                className="h-px flex-1 bg-gold"
+                className="h-px flex-1 bg-gradient-to-r from-emerald to-gold"
                 style={{ transform: "scaleX(0)", transformOrigin: "left center" }}
               />
               <p
@@ -232,7 +232,7 @@ export default function AboutNaxis() {
               </p>
               <div
                 ref={lineRightRef}
-                className="h-px flex-1 bg-gold"
+                className="h-px flex-1 bg-gradient-to-r from-gold to-emerald"
                 style={{ transform: "scaleX(0)", transformOrigin: "right center" }}
               />
             </div>

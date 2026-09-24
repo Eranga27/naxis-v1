@@ -29,7 +29,7 @@ export default function ScrollProgress() {
       aria-hidden="true"
       className="pointer-events-none fixed right-0 top-0 z-[90] h-full w-[3px] bg-cream/10"
     >
-      <div ref={barRef} className="h-full w-full origin-top bg-gold" />
+      <div ref={barRef} className="h-full w-full origin-top bg-gradient-to-b from-gold to-emerald-bright" />
     </div>
   );
 }

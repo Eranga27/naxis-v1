@@ -6,7 +6,11 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full border-t border-cream/10 bg-ink px-6 py-14 sm:px-10 md:px-16 lg:px-20">
+    <footer className="relative w-full bg-ink px-6 py-14 sm:px-10 md:px-16 lg:px-20">
+      <span
+        aria-hidden="true"
+        className="bg-gradient-brand absolute inset-x-0 top-0 h-px opacity-40"
+      />
       <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
         <div className="flex flex-col gap-4">
           <span className="relative block h-10 w-32">

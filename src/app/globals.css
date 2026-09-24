@@ -5,11 +5,23 @@
   --color-cream: #f4efe4;
   --color-gold: #ffc94a;
   --color-gold-light: #e6cd93;
+  /* Emerald is the secondary accent to gold: bright for highlights and the
+     far end of gold gradients on dark grounds, dark for deep washes and
+     for legible emerald text on light grounds. */
+  --color-emerald-bright: #2fd08a;
   --color-emerald: #1f6f4a;
+  --color-emerald-dark: #0d4230;
   /* Warm coral accent for the hero's "STANDARD." pop — a single-word
      accent, not a UI color. */
   --color-coral: #f2705c;
   --color-brown: #4a2a1c;
+  /* Letter palette of the client's "We make ideas wearable" phrase asset
+     (IdeasWearable) — used only there, alongside gold. */
+  --color-phrase-green: #0b8a44;
+  --color-phrase-red: #e53c3c;
+  --color-phrase-blue: #1976d2;
+  --color-phrase-brown: #8d4c1f;
+  --color-phrase-purple: #7b1fa2;
 }
 
 @theme inline {
@@ -17,7 +29,9 @@
   --color-cream: var(--color-cream);
   --color-gold: var(--color-gold);
   --color-gold-light: var(--color-gold-light);
+  --color-emerald-bright: var(--color-emerald-bright);
   --color-emerald: var(--color-emerald);
+  --color-emerald-dark: var(--color-emerald-dark);
   --color-coral: var(--color-coral);
   --color-brown: var(--color-brown);
   --font-display: var(--font-poppins);
@@ -29,6 +43,50 @@
   --font-greeting: var(--font-inter), var(--font-noto-sinhala),
     var(--font-noto-devanagari), var(--font-noto-bengali), "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+
+/* Gold -> emerald brand gradients. On dark grounds the sweep ends in
+   bright emerald; the -deep variant ends in dark emerald so it still
+   reads on cream/white. */
+@utility text-gradient-brand {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-gold) 0%,
+    #d9d36a 38%,
+    var(--color-emerald-bright) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility text-gradient-brand-deep {
+  background-image: linear-gradient(
+    100deg,
+    #b8860b 0%,
+    var(--color-emerald) 70%,
+    var(--color-emerald-dark) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-gradient-brand {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-gold) 0%,
+    var(--color-emerald-bright) 100%
+  );
+}
+
+@utility bg-gradient-brand-deep {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-gold) 0%,
+    var(--color-emerald) 60%,
+    var(--color-emerald-dark) 100%
+  );
 }
 
 body {
@@ -66,6 +124,37 @@ html {
 html.custom-cursor-active,
 html.custom-cursor-active * {
   cursor: none !important;
+}
+
+/* Typewriter caret in the intro preloader — a hard on/off blink, like a
+   real text cursor, rather than a soft fade. */
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.preloader-caret {
+  animation: caret-blink 1s infinite;
+}
+
+/* Hero scroll cue: a short gold -> emerald segment sliding down its track. */
+@keyframes hero-scroll-cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(200%);
+  }
+}
+
+.hero-scroll-cue {
+  animation: hero-scroll-cue 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
 /* Set by the inline head script when the intro has already played this

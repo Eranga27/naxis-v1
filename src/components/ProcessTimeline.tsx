@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { GOLD } from "@/lib/brand";
+import { EMERALD, GOLD } from "@/lib/brand";
+import { createPinnedGallery } from "@/lib/pinnedGallery";
+import TickRail from "@/components/TickRail";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -147,104 +149,36 @@ export default function ProcessTimeline() {
         );
       });
 
-      // Pin the full section on desktop/tablet so header & wayfinding remain beautifully framed
+      // Pin the full section on desktop/tablet so header & wayfinding
+      // remain framed while the strip scrolls
       ScrollTrigger.matchMedia({
-        "(min-width: 768px)": () => {
-          gsap.set(galleryWrap, { overflow: "visible" });
-          gsap.set(track, { overflow: "visible" });
-
-          const getMaxScroll = () =>
-            Math.max(0, track.scrollWidth - galleryWrap.clientWidth);
-
-          const maxScroll = getMaxScroll();
-          // Dwell buffer so Card 07 and the Transition card are easily read before unpinning
-          const dwell = Math.min(window.innerHeight * 0.45, 420);
-          const totalDistance = maxScroll + dwell;
-          const tickCount = STEPS.length;
-
-          // First tick active at rest
-          if (ticks[0]) {
-            gsap.set(ticks[0], { backgroundColor: GOLD, scaleY: 1.8 });
-          }
-
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: () => "+=" + totalDistance,
-              pin: true,
-              anticipatePin: 1,
-              scrub: 1,
-              invalidateOnRefresh: true,
-              onUpdate: (self) => {
-                const scrollFraction = maxScroll / (totalDistance || 1);
-                const progressOnTrack = Math.min(1, self.progress / scrollFraction);
-
-                const activeIndex = Math.min(
-                  tickCount - 1,
-                  Math.floor(progressOnTrack * tickCount)
-                );
-
-                ticks.forEach((tick, i) => {
-                  const isActive = i === activeIndex;
-                  gsap.set(tick, {
-                    backgroundColor: isActive ? GOLD : "rgba(16, 13, 9, 0.2)",
-                    scaleY: isActive ? 1.8 : 1,
-                  });
-                });
-
-                if (stepLabelRef.current) {
-                  if (progressOnTrack >= 0.95) {
-                    stepLabelRef.current.textContent = "7 Stages Complete · Next: Global Network";
-                  } else {
-                    stepLabelRef.current.textContent = `Stage ${STEPS[activeIndex].number} / 07 — ${STEPS[activeIndex].label}`;
-                  }
-                }
-
-                if (statusHintRef.current) {
-                  if (progressOnTrack >= 0.95) {
-                    statusHintRef.current.textContent = "Scroll into Global Network ↓";
-                  } else {
-                    statusHintRef.current.textContent = "Scroll to explore stages →";
-                  }
-                }
-              },
-            },
-          });
-
-          // Horizontal translation of track
-          tl.to(track, {
-            x: () => -getMaxScroll(),
-            ease: "none",
-            duration: maxScroll,
-          });
-
-          // Dwell buffer
-          tl.to({}, { duration: dwell });
-
-          // Horizontal parallax on card photos
-          cardImgInners.forEach((inner) => {
-            gsap.fromTo(
-              inner,
-              { xPercent: -7 },
-              {
-                xPercent: 7,
-                ease: "none",
-                scrollTrigger: {
-                  trigger: section,
-                  start: "top top",
-                  end: () => "+=" + maxScroll,
-                  scrub: true,
-                },
+        "(min-width: 768px)": () =>
+          createPinnedGallery({
+            pin: section,
+            viewport: galleryWrap,
+            track,
+            ticks,
+            tickIdle: "rgba(16, 13, 9, 0.2)",
+            tickDone: EMERALD,
+            // Dwell so Card 07 and the transition card are easily read
+            // before unpinning
+            dwell: () => Math.min(window.innerHeight * 0.45, 420),
+            parallax: cardImgInners,
+            parallaxRange: 7,
+            onUpdate: (activeIndex, trackProgress) => {
+              const done = trackProgress >= 0.95;
+              if (stepLabelRef.current) {
+                stepLabelRef.current.textContent = done
+                  ? "7 Stages Complete · Next: Global Network"
+                  : `Stage ${STEPS[activeIndex].number} / 07 — ${STEPS[activeIndex].label}`;
               }
-            );
-          });
-
-          return () => {
-            tl.scrollTrigger?.kill();
-            tl.kill();
-          };
-        },
+              if (statusHintRef.current) {
+                statusHintRef.current.textContent = done
+                  ? "Scroll into Global Network ↓"
+                  : "Scroll to explore stages →";
+              }
+            },
+          }),
       });
     }, section);
 
@@ -289,7 +223,11 @@ export default function ProcessTimeline() {
       </div>
 
       {/* Horizontal Gallery Track */}
-      <div ref={galleryWrapRef} className="relative z-10 my-auto w-full overflow-visible">
+      <div
+        ref={galleryWrapRef}
+        data-cursor="Scroll"
+        className="relative z-10 my-auto w-full overflow-visible"
+      >
         <div
           ref={trackRef}
           className="flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto pb-4 will-change-transform [-ms-overflow-style:none] [scrollbar-width:none] md:gap-6 md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
@@ -301,7 +239,11 @@ export default function ProcessTimeline() {
               className="flex w-[280px] shrink-0 snap-center flex-col sm:w-[320px] md:w-[350px] lg:w-[370px]"
             >
               {/* Card */}
-              <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-sm transition-all duration-300 hover:shadow-md">
+                <span
+                  aria-hidden="true"
+                  className="bg-gradient-brand-deep absolute inset-x-0 bottom-0 z-10 h-[3px] origin-left scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
+                />
                 {/* Image */}
                 <div
                   ref={(el) => {
@@ -388,17 +330,7 @@ export default function ProcessTimeline() {
       <div className="relative z-10 hidden shrink-0 items-center justify-between border-t border-ink/10 pt-4 md:flex">
         {/* Left: Sprocket ticks + Current Stage Indicator */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            {STEPS.map((_, i) => (
-              <span
-                key={i}
-                ref={(el) => {
-                  tickRefs.current[i] = el;
-                }}
-                className="h-3 w-[3px] shrink-0 rounded-full bg-ink/20 transition-all duration-300"
-              />
-            ))}
-          </div>
+          <TickRail count={STEPS.length} tickRefs={tickRefs} tone="dark" />
           <span
             ref={stepLabelRef}
             className="font-body text-xs font-semibold uppercase tracking-wider text-brown"

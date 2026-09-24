@@ -94,7 +94,7 @@ export default function ValueStrip() {
             }}
             className="flex flex-col items-center gap-4 text-center opacity-0"
           >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink/5 text-brown md:h-16 md:w-16">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald/10 text-emerald ring-1 ring-emerald/20 md:h-16 md:w-16">
               <Icon name={value.icon} />
             </span>
             <span className="font-body text-sm font-semibold uppercase tracking-[0.15em] text-ink md:text-base">

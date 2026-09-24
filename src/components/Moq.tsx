@@ -79,7 +79,7 @@ export default function Moq() {
       {/* Gold expanding rule */}
       <div
         ref={lineRef}
-        className="mb-10 h-px w-full bg-gold md:mb-14"
+        className="bg-gradient-brand mb-10 h-px w-full md:mb-14"
         style={{ transform: "scaleX(0)", transformOrigin: "left center" }}
       />
 
@@ -89,7 +89,7 @@ export default function Moq() {
           ref={(el) => {
             revealRefs.current[0] = el;
           }}
-          className="mb-8 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:text-sm"
+          className="mb-8 font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand w-fit opacity-0 md:text-sm"
         >
           Minimum Order Quantity
         </p>
@@ -103,7 +103,7 @@ export default function Moq() {
           aria-label="MOQ? Let's Talk."
         >
           MOQ?{" "}
-          <span className="text-gold">Let&apos;s Talk.</span>
+          <span className="text-gradient-brand pr-[0.04em]">Let&apos;s Talk.</span>
         </h2>
 
         {/* Sub-headline */}
@@ -150,6 +150,7 @@ export default function Moq() {
         >
           <a
             href="#contact"
+            data-magnetic
             className="inline-flex items-center gap-3 rounded-full bg-gold px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-gold-light"
           >
             Start the Conversation

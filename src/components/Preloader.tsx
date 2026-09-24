@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GOLD } from "@/lib/brand";
 
 // Each greeting in its own script. Vietnamese and Italian are natively
 // Latin, so they stay as written.
@@ -14,10 +13,15 @@ const GREETINGS = [
   "Ciao", // Italian
 ];
 const FINAL = "Welcome to NAXIS Australia";
-// "NAXIS" gets a brand-gold accent once the phrase finishes typing — see
-// the reveal after typeIn(FINAL) below.
+// "NAXIS" gets a gold -> emerald accent once the phrase finishes typing —
+// see the reveal after typeIn(FINAL) below. The deep variant of the brand
+// gradient, since plain gold is too faint on the light welcome wash.
 const FINAL_ACCENT = "NAXIS";
-const FINAL_ACCENT_COLOR = GOLD;
+const FINAL_ACCENT_GRADIENT =
+  "linear-gradient(100deg, #b8860b 0%, #1f6f4a 70%, #0d4230 100%)";
+// Longest wait for the greeting webfonts before the sequence starts
+// anyway — see preloadFonts below.
+const FONT_WAIT_MS = 1500;
 
 // One gradient per greeting above, same order — a loose mood cue built from
 // each country's flag palette, not a literal reproduction of the flag's
@@ -93,7 +97,9 @@ type Props = {
 export default function Preloader({ onReveal, waitForMedia }: Props) {
   const [done, setDone] = useState(false);
   const veilRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
   const bgLayerARef = useRef<HTMLDivElement>(null);
   const bgLayerBRef = useRef<HTMLDivElement>(null);
   const cancelled = useRef(false);
@@ -103,13 +109,51 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     cancelled.current = false;
 
     const veil = veilRef.current;
+    const box = boxRef.current;
     const text = textRef.current;
+    const measure = measureRef.current;
     const bgLayerA = bgLayerARef.current;
     const bgLayerB = bgLayerBRef.current;
-    if (!veil || !text || !bgLayerA || !bgLayerB) return;
+    if (!veil || !box || !text || !measure || !bgLayerA || !bgLayerB) return;
 
     const write = (value: string) => {
       if (!cancelled.current) text.textContent = value;
+    };
+
+    // A centered line that grows one character at a time re-centers on
+    // every keystroke, so the whole word visibly shuffles left as it types.
+    // Instead the box is locked to the full word's width up front and the
+    // text types left-to-right inside it. Words too wide for the screen
+    // (the final phrase on phones) get their font size scaled down to fit
+    // on one line, rather than wrapping mid-type.
+    const lockWidth = (word: string) => {
+      box.style.fontSize = "";
+      measure.style.fontSize = "";
+      measure.textContent = word;
+      let width = measure.getBoundingClientRect().width;
+      const maxWidth = window.innerWidth * 0.9;
+      if (width > maxWidth) {
+        const base = parseFloat(getComputedStyle(measure).fontSize);
+        const fitted = `${Math.floor(base * (maxWidth / width))}px`;
+        box.style.fontSize = fitted;
+        measure.style.fontSize = fitted;
+        width = measure.getBoundingClientRect().width;
+      }
+      box.style.width = `${Math.ceil(width)}px`;
+    };
+
+    // The greeting fonts are unicode-range subsets, which the browser only
+    // fetches once a glyph from that script is first on screen — so each
+    // greeting used to type its first characters in a fallback face and
+    // then visibly swap mid-word. Load every one before starting instead,
+    // capped so a slow network can't hold the intro on a blank screen.
+    const preloadFonts = async () => {
+      if (!document.fonts?.load) return;
+      const family = getComputedStyle(text).fontFamily;
+      const loads = [...GREETINGS, FINAL].map((word) =>
+        document.fonts.load(`300 48px ${family}`, word).catch(() => [])
+      );
+      await Promise.race([Promise.all(loads), sleep(FONT_WAIT_MS)]);
     };
 
     // Two stacked full-bleed layers, crossfaded between each other — the
@@ -177,6 +221,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     };
 
     const typeIn = async (word: string) => {
+      lockWidth(word);
       const list = chars(word);
       for (let i = 1; i <= list.length; i++) {
         if (cancelled.current) return;
@@ -206,7 +251,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       }
       if (cancelled.current) return;
 
-      text.style.opacity = "0";
+      box.style.opacity = "0";
       await sleep(TEXT_FADE_MS);
       if (cancelled.current) return;
 
@@ -238,21 +283,26 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     const run = async () => {
       if (reduceMotion) {
         // No cycling, no typewriter — just the destination word, briefly.
+        lockWidth(FINAL);
         write(FINAL);
-        text.style.opacity = "1";
+        box.style.opacity = "1";
         await sleep(700);
         if (cancelled.current) return;
         await finish();
         return;
       }
 
+      await preloadFonts();
+      if (cancelled.current) return;
+
       // First greeting fades in rather than typing, its flag gradient
       // fading in alongside it.
-      text.style.color = GREETING_TEXT_COLOR;
-      text.style.textShadow = GREETING_TEXT_SHADOW;
+      box.style.color = GREETING_TEXT_COLOR;
+      box.style.textShadow = GREETING_TEXT_SHADOW;
       crossfadeBg(COUNTRY_GRADIENTS[0]);
+      lockWidth(GREETINGS[0]);
       write(GREETINGS[0]);
-      text.style.opacity = "1";
+      box.style.opacity = "1";
       await sleep(TEXT_FADE_MS + WORD_HOLD_MS);
 
       for (let i = 1; i < GREETINGS.length; i++) {
@@ -269,8 +319,8 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       // One last crossfade into a soft brand wash rather than a hard cut
       // to flat white — the destination phrase, not another country.
       crossfadeBg(WELCOME_GRADIENT);
-      text.style.color = "#100d09"; // --color-ink
-      text.style.textShadow = "none";
+      box.style.color = "#100d09"; // --color-ink
+      box.style.textShadow = "none";
       await typeIn(FINAL);
       if (cancelled.current) return;
 
@@ -279,14 +329,16 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       // than a distraction while it's still being read.
       const accentStart = FINAL.indexOf(FINAL_ACCENT);
       if (accentStart !== -1) {
+        // The gradient is clipped to the glyphs from the start, hidden under
+        // a solid ink fill; fading that fill to transparent reveals it.
         text.innerHTML =
           FINAL.slice(0, accentStart) +
-          `<span style="color:inherit;transition:color ${BG_FADE_MS}ms ease">${FINAL_ACCENT}</span>` +
+          `<span style="color:#100d09;background-image:${FINAL_ACCENT_GRADIENT};-webkit-background-clip:text;background-clip:text;transition:color ${BG_FADE_MS}ms ease">${FINAL_ACCENT}</span>` +
           FINAL.slice(accentStart + FINAL_ACCENT.length);
         await sleep(150);
         if (cancelled.current) return;
         const accentEl = text.querySelector("span");
-        if (accentEl) accentEl.style.color = FINAL_ACCENT_COLOR;
+        if (accentEl) accentEl.style.color = "transparent";
       }
 
       await sleep(FINAL_HOLD_MS);
@@ -331,13 +383,25 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
       />
 
+      {/* Fixed height and line-height so switching between scripts with
+          different vertical metrics never nudges the line up or down; the
+          width is locked per word in lockWidth above. */}
       <span
-        ref={textRef}
-        className="relative z-10 inline-block min-h-[1.3em] max-w-[90vw] text-center font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.3] tracking-[-0.02em] text-black"
+        ref={boxRef}
+        className="relative z-10 inline-flex h-[1.5em] items-center justify-start whitespace-nowrap font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light leading-[1.5] tracking-[-0.02em] text-black"
         style={{
           opacity: 0,
           transition: `opacity ${TEXT_FADE_MS}ms ease-out, color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease`,
         }}
+      >
+        <span ref={textRef} />
+        <span className="preloader-caret ml-[0.08em] inline-block h-[0.9em] w-[2px] shrink-0 bg-current motion-reduce:hidden" />
+      </span>
+      {/* Off-screen twin of the box's type styles, used only to measure a
+          word's full width before it's typed. */}
+      <span
+        ref={measureRef}
+        className="pointer-events-none invisible absolute whitespace-nowrap font-greeting text-[clamp(2rem,5.5vw,4.25rem)] font-light tracking-[-0.02em]"
       />
     </div>
   );

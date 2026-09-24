@@ -106,8 +106,12 @@ export default function GlobalNetwork() {
             ref={(el) => {
               revealRefs.current[2 + i] = el;
             }}
-            className="flex flex-col gap-3 bg-cream px-6 py-10 opacity-0 md:px-8 md:py-14"
+            className="group relative flex flex-col gap-3 bg-cream px-6 py-10 opacity-0 md:px-8 md:py-14"
           >
+            <span
+              aria-hidden="true"
+              className="bg-gradient-brand-deep absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
+            />
             <span className="font-body text-xs font-semibold text-ink/60">
               {String(i + 1).padStart(2, "0")}
             </span>

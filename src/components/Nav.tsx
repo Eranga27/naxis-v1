@@ -1,15 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { NAV_LINKS } from "@/lib/navLinks";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [solid, setSolid] = useState(false);
+
+  // Clear over the hero, where the header sits on the video; a blurred
+  // ink bar from Mission onward, so section headings scrolling underneath
+  // stop colliding with the logo and buttons. Keyed off Mission's top
+  // edge rather than a scroll offset, since the hero's pin changes how
+  // far down Mission actually starts.
+  useEffect(() => {
+    const mission = document.getElementById("mission");
+    if (!mission) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setSolid(mission.getBoundingClientRect().top <= 80);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 py-6 md:px-12 md:py-7">
+      <header
+        className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 transition-[background-color,padding,box-shadow] duration-500 ease-out md:px-12 ${
+          solid
+            ? "bg-ink/85 py-3 shadow-[0_10px_30px_rgba(16,13,9,0.25)] backdrop-blur-md md:py-3.5"
+            : "bg-transparent py-6 md:py-7"
+        }`}
+      >
+        {/* Gold -> emerald hairline along the solid bar's bottom edge */}
+        <span
+          aria-hidden="true"
+          className={`bg-gradient-brand pointer-events-none absolute inset-x-0 bottom-0 h-px transition-opacity duration-500 ${
+            solid ? "opacity-60" : "opacity-0"
+          }`}
+        />
         <a
           href="#top"
           className="inline-flex h-11 items-center justify-center rounded-full bg-cream/[0.07] p-3 transition-colors hover:bg-cream/15 md:h-12 md:p-3.5"
@@ -29,6 +69,7 @@ export default function Nav() {
         <div className="flex items-center gap-3 md:gap-5">
           <a
             href="#contact"
+            data-magnetic
             className="flex items-center rounded-full bg-gold px-5 py-2.5 font-body text-sm font-medium text-ink transition-colors hover:bg-gold-light md:px-6 md:py-3"
           >
             Inquire
@@ -38,6 +79,7 @@ export default function Nav() {
             type="button"
             aria-label="Open menu"
             aria-expanded={open}
+            data-magnetic
             onClick={() => setOpen(true)}
             // A dark pill behind the cream bars, not a faint cream tint —
             // the header floats over both ink and cream sections, and a

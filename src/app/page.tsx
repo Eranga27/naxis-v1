@@ -22,8 +22,10 @@ export default function Home() {
         <Hero />
         <Mission />
         <AboutNaxis />
-        <IdeasWearable />
+        {/* A mid-page interlude between what NAXIS makes and how —
+            after the concrete proof, not before it. */}
         <Capabilities />
+        <IdeasWearable />
         <ProcessTimeline />
         <GlobalNetwork />
         <CinematicDivider />

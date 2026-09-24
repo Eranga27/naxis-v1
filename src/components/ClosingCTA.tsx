@@ -92,7 +92,7 @@ export default function ClosingCTA() {
         ref={(el) => {
           revealRefs.current[0] = el;
         }}
-        className="mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gold opacity-0 md:mb-8 md:text-sm"
+        className="mx-auto mb-6 font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand w-fit opacity-0 md:mb-8 md:text-sm"
       >
         Get In Touch
       </p>
@@ -116,6 +116,7 @@ export default function ClosingCTA() {
             direct contact over long forms — email is the fallback. */}
         <a
           href={`tel:${CONTACT.phone}`}
+          data-magnetic
           className="flex items-center gap-3 rounded-full bg-gold px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-gold-light"
         >
           <PhoneIcon />
