@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { NAV_LINKS } from "@/lib/navLinks";
 import { CONTACT } from "@/lib/contact";
+import { SERVICES } from "@/content/services";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -11,7 +13,7 @@ export default function Footer() {
         aria-hidden="true"
         className="bg-gradient-brand absolute inset-x-0 top-0 h-px opacity-40"
       />
-      <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-4">
           <span className="relative block h-10 w-32">
             <Image
@@ -22,38 +24,74 @@ export default function Footer() {
               className="object-contain object-left"
             />
           </span>
-          <p className="max-w-xs font-body text-sm text-cream/50">
-            Offshore garment manufacturing across six countries.
+          <p className="max-w-xs font-body text-sm leading-relaxed text-cream/60">
+            Australian-based private label apparel development, manufacturing
+            and complete supply chain solutions.
           </p>
+          {/* The client's sign-off lockup */}
+          <div className="mt-2">
+            <p className="text-gradient-brand w-fit font-body text-sm font-semibold uppercase tracking-[0.3em]">
+              NAXIS Australia
+            </p>
+            <p className="mt-1 font-body text-[0.65rem] uppercase tracking-[0.25em] text-cream/45">
+              Delivering excellence through experience.
+            </p>
+          </div>
         </div>
 
-        <nav>
-          <ul className="flex flex-wrap gap-x-8 gap-y-3">
+        <nav aria-label="Site">
+          <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
+            Explore
+          </p>
+          <ul className="flex flex-col gap-2.5">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   className="font-body text-sm text-cream/70 transition-colors hover:text-cream"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
         </nav>
 
-        <div className="flex flex-col gap-2 font-body text-sm text-cream/70">
-          <a href={`mailto:${CONTACT.email}`} className="transition-colors hover:text-cream">
-            {CONTACT.email}
-          </a>
-          <a href={`tel:${CONTACT.phone}`} className="transition-colors hover:text-cream">
-            {CONTACT.phone}
-          </a>
+        <nav aria-label="Services">
+          <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
+            Services
+          </p>
+          <ul className="flex flex-col gap-2.5">
+            {SERVICES.map((service) => (
+              <li key={service.slug}>
+                <Link
+                  href={`/services/${service.slug}`}
+                  className="font-body text-sm text-cream/70 transition-colors hover:text-cream"
+                >
+                  {service.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div>
+          <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
+            Contact
+          </p>
+          <div className="flex flex-col gap-2.5 font-body text-sm text-cream/70">
+            <a href={`mailto:${CONTACT.email}`} className="break-words transition-colors hover:text-cream">
+              {CONTACT.email}
+            </a>
+            <a href={`tel:${CONTACT.phone}`} className="transition-colors hover:text-cream">
+              {CONTACT.phone}
+            </a>
+          </div>
         </div>
       </div>
 
       <div className="mt-12 border-t border-cream/10 pt-6 font-body text-xs text-cream/40">
-        © {year} NAXIS. All rights reserved.
+        © {year} NAXIS Australia. All rights reserved.
       </div>
     </footer>
   );

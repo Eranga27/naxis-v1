@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { NAV_LINKS } from "@/lib/navLinks";
 
 export default function Nav() {
@@ -12,14 +13,18 @@ export default function Nav() {
   // ink bar from Mission onward, so section headings scrolling underneath
   // stop colliding with the logo and buttons. Keyed off Mission's top
   // edge rather than a scroll offset, since the hero's pin changes how
-  // far down Mission actually starts.
+  // far down Mission actually starts. Pages without a Mission section
+  // (the service pages) go solid after a short scroll instead.
   useEffect(() => {
     const mission = document.getElementById("mission");
-    if (!mission) return;
     let frame = 0;
     const update = () => {
       frame = 0;
-      setSolid(mission.getBoundingClientRect().top <= 80);
+      setSolid(
+        mission
+          ? mission.getBoundingClientRect().top <= 80
+          : window.scrollY > 40
+      );
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -50,8 +55,9 @@ export default function Nav() {
             solid ? "opacity-60" : "opacity-0"
           }`}
         />
-        <a
-          href="#top"
+        <Link
+          href="/#top"
+          aria-label="NAXIS Australia — home"
           className="inline-flex h-11 items-center justify-center rounded-full bg-cream/[0.07] p-3 transition-colors hover:bg-cream/15 md:h-12 md:p-3.5"
         >
           <span className="relative block h-full aspect-[1200/980]">
@@ -64,16 +70,16 @@ export default function Nav() {
               className="object-contain"
             />
           </span>
-        </a>
+        </Link>
 
         <div className="flex items-center gap-3 md:gap-5">
-          <a
-            href="#contact"
+          <Link
+            href="/#contact"
             data-magnetic
             className="flex items-center rounded-full bg-gold px-5 py-2.5 font-body text-sm font-medium text-ink transition-colors hover:bg-gold-light md:px-6 md:py-3"
           >
             Inquire
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -104,12 +110,12 @@ export default function Nav() {
         />
 
         <nav
-          className={`absolute top-0 right-0 flex h-full w-full max-w-sm flex-col justify-between bg-ink px-8 py-8 shadow-2xl transition-transform duration-500 ease-out md:px-12 md:py-10 ${
+          className={`absolute top-0 right-0 flex h-full w-full max-w-sm flex-col justify-between gap-10 overflow-y-auto bg-ink px-8 py-8 shadow-2xl transition-transform duration-500 ease-out md:px-12 md:py-10 ${
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >
           <div>
-            <div className="mb-16 flex items-center justify-between">
+            <div className="mb-10 flex items-center justify-between md:mb-16">
               <span className="font-body text-sm uppercase tracking-[0.2em] text-cream/50">
                 Menu
               </span>
@@ -126,28 +132,28 @@ export default function Nav() {
               </button>
             </div>
 
-            <ul className="flex flex-col gap-6">
+            <ul className="flex flex-col gap-4 md:gap-5">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
-                  <a
+                  <Link
                     href={link.href}
                     onClick={() => setOpen(false)}
-                    className="font-display text-3xl font-extrabold uppercase tracking-tight text-cream transition-colors hover:text-gold md:text-4xl"
+                    className="font-display text-2xl font-extrabold uppercase tracking-tight text-cream transition-colors hover:text-gold md:text-3xl"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          <a
-            href="#contact"
+          <Link
+            href="/#contact"
             onClick={() => setOpen(false)}
             className="w-full rounded-full bg-gold px-6 py-3.5 text-center font-body text-sm font-medium text-ink transition-colors hover:bg-gold-light"
           >
             Inquire
-          </a>
+          </Link>
         </nav>
       </div>
     </>

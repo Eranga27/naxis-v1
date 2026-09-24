@@ -7,7 +7,7 @@ import Capabilities from "@/components/Capabilities";
 import ProcessTimeline from "@/components/ProcessTimeline";
 import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
-import ValueStrip from "@/components/ValueStrip";
+import ServicesStack from "@/components/ServicesStack";
 import Moq from "@/components/Moq";
 import ClosingCTA from "@/components/ClosingCTA";
 import Footer from "@/components/Footer";
@@ -27,9 +27,9 @@ export default function Home() {
         <Capabilities />
         <IdeasWearable />
         <ProcessTimeline />
+        <ServicesStack />
         <GlobalNetwork />
         <CinematicDivider />
-        <ValueStrip />
         <Moq />
         <ClosingCTA />
       </main>
