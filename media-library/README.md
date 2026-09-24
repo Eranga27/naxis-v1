@@ -19,3 +19,12 @@ the component, following the pattern in `Hero.tsx` / `CinematicDivider.tsx`.
 
 None of these files are referenced by any component, config, or data file as
 of this move — confirmed via a repo-wide grep before relocating them.
+
+## Moved out of `public/` (V1 homepage wrap-up)
+
+| File | Why |
+| --- | --- |
+| `hero-4k-master.mp4` | 4K master of the hero video. The site now serves `public/videos/hero-1080.mp4`, a ~1.7MB 1080p re-encode. Re-encode from this master if the hero ever needs a different size. |
+| `ideas-wearable.mp4` | 36MB background for "We make ideas wearable", played at 25% opacity behind a dark scrim. Replaced by vector wattle/eucalyptus foliage matching the client's artboard. |
+| `ideas-wearable-poster.jpg` | That video's poster (an unrelated stock photo). |
+

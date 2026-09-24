@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { WattleBack, WattleFront } from "@/components/WattleFoliage";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -12,11 +13,12 @@ const useIsomorphicLayoutEffect =
 // The client's brand phrase — multi-colored bold letters per the approved
 // client asset. Each letter is assigned its brand color individually.
 // Massive Bebas Neue letters fill the viewport, each a distinct brand color.
-// The palette lives in globals.css as --color-phrase-* tokens.
+// The palette lives in globals.css as --color-phrase-* tokens, sampled
+// from the artboard itself; the face is Poppins Black to match it.
 const LINES: Array<Array<{ char: string; color: string }>> = [
   [
     { char: "W", color: "var(--color-phrase-green)" },
-    { char: "E", color: "var(--color-gold)" },
+    { char: "E", color: "var(--color-phrase-yellow)" },
     { char: " ", color: "transparent" },
     { char: "M", color: "var(--color-phrase-red)" },
     { char: "A", color: "var(--color-phrase-blue)" },
@@ -27,52 +29,30 @@ const LINES: Array<Array<{ char: string; color: string }>> = [
     { char: "I", color: "var(--color-phrase-purple)" },
     { char: "D", color: "var(--color-phrase-blue)" },
     { char: "E", color: "var(--color-phrase-green)" },
-    { char: "A", color: "var(--color-gold)" },
+    { char: "A", color: "var(--color-phrase-yellow)" },
     { char: "S", color: "var(--color-phrase-red)" },
   ],
   [
     { char: "W", color: "var(--color-phrase-blue)" },
-    { char: "E", color: "var(--color-gold)" },
+    { char: "E", color: "var(--color-phrase-yellow)" },
     { char: "A", color: "var(--color-phrase-red)" },
     { char: "R", color: "var(--color-phrase-brown)" },
     { char: "A", color: "var(--color-phrase-purple)" },
     { char: "B", color: "var(--color-phrase-green)" },
     { char: "L", color: "var(--color-phrase-blue)" },
     { char: "E", color: "var(--color-phrase-red)" },
-    { char: ".", color: "var(--color-gold)" },
+    { char: ".", color: "var(--color-phrase-yellow)" },
   ],
 ];
 
 export default function IdeasWearable() {
   const sectionRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const foliageBackRef = useRef<HTMLDivElement>(null);
+  const foliageFrontRef = useRef<HTMLDivElement>(null);
   const linesWrapRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<Array<HTMLDivElement | null>>([]);
   const taglineRef = useRef<HTMLParagraphElement>(null);
   const progressFillRef = useRef<HTMLDivElement>(null);
-
-  // Lazy-load the video when near the viewport
-  useEffect(() => {
-    const video = videoRef.current;
-    const section = sectionRef.current;
-    if (!video || !section) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          video.play().catch(() => {
-            // Autoplay fallback to poster
-          });
-        } else {
-          video.pause();
-        }
-      },
-      { rootMargin: "30%" }
-    );
-
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
@@ -117,9 +97,10 @@ export default function IdeasWearable() {
           gsap.set(lines[0], { xPercent: -10, opacity: 0.18, letterSpacing: "0.04em" });
           gsap.set(lines[1], { scale: 0.85, opacity: 0.18, transformOrigin: "center center" });
           gsap.set(lines[2], { xPercent: 10, opacity: 0.18, letterSpacing: "0.04em" });
-          if (videoRef.current) {
-            gsap.set(videoRef.current, { scale: 1.15, opacity: 0.2 });
-          }
+          // Foliage starts spread wide and gathers in around the phrase,
+          // the front layer travelling further than the back for depth.
+          gsap.set(foliageBackRef.current, { scale: 1.18, opacity: 0.5 });
+          gsap.set(foliageFrontRef.current, { scale: 1.35, opacity: 0.6 });
           if (taglineRef.current) {
             gsap.set(taglineRef.current, { opacity: 0, y: 20, letterSpacing: "0.25em" });
           }
@@ -157,18 +138,16 @@ export default function IdeasWearable() {
             },
             0
           );
-          if (videoRef.current) {
-            tl.to(
-              videoRef.current,
-              {
-                scale: 1.04,
-                opacity: 0.35,
-                ease: "power1.out",
-                duration: 0.35,
-              },
-              0
-            );
-          }
+          tl.to(
+            foliageBackRef.current,
+            { scale: 1, opacity: 1, ease: "power2.out", duration: 0.35 },
+            0
+          );
+          tl.to(
+            foliageFrontRef.current,
+            { scale: 1, opacity: 1, ease: "power2.out", duration: 0.35 },
+            0
+          );
 
           // PHASE 2: GOLDEN LOCKUP & READING BREATH (0.35 -> 0.65)
           if (taglineRef.current) {
@@ -242,18 +221,18 @@ export default function IdeasWearable() {
               0.65
             );
           }
-          if (videoRef.current) {
-            tl.to(
-              videoRef.current,
-              {
-                scale: 1.0,
-                opacity: 0.12,
-                ease: "power1.in",
-                duration: 0.35,
-              },
-              0.65
-            );
-          }
+          // The foliage parts outward like a curtain, opening onto the
+          // next section.
+          tl.to(
+            foliageBackRef.current,
+            { scale: 1.25, opacity: 0.35, ease: "power2.in", duration: 0.35 },
+            0.65
+          );
+          tl.to(
+            foliageFrontRef.current,
+            { scale: 1.6, opacity: 0, ease: "power2.in", duration: 0.35 },
+            0.65
+          );
 
           return () => {
             tl.scrollTrigger?.kill();
@@ -315,24 +294,26 @@ export default function IdeasWearable() {
     <section
       ref={sectionRef}
       id="ideas-wearable"
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-ink"
+      className="relative flex h-screen min-h-[560px] w-full items-center justify-center overflow-hidden bg-bark"
     >
-      {/* Background Video with smooth cinematic grade */}
-      <video
-        ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover opacity-25 will-change-transform"
-        src="/videos/ideas-wearable.mp4"
-        poster="/images/ideas-wearable-bg.jpg"
-        muted
-        loop
-        playsInline
-        preload="metadata"
+      {/* Wattle & eucalyptus framing, in two depth layers */}
+      <div
+        ref={foliageBackRef}
         aria-hidden="true"
-      />
+        className="absolute inset-0 opacity-90 blur-[1.5px] will-change-transform"
+      >
+        <WattleBack />
+      </div>
+      <div
+        ref={foliageFrontRef}
+        aria-hidden="true"
+        className="absolute inset-0 will-change-transform"
+      >
+        <WattleFront />
+      </div>
 
-      {/* Multi-layer scrim for optimal contrast and vignette */}
-      <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/65 to-ink/75" />
-      <div className="absolute inset-0 bg-radial-[circle_at_center] from-transparent via-ink/30 to-ink/80" />
+      {/* Darkened centre keeps the letters crisp over the foliage */}
+      <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-bark/85 via-bark/40 to-transparent" />
 
       {/* The per-letter lines below are aria-hidden (a screen reader would
           otherwise spell them out), so the phrase is given once here. */}
@@ -349,19 +330,19 @@ export default function IdeasWearable() {
             ref={(el) => {
               linesRef.current[lineIdx] = el;
             }}
-            className="flex items-center justify-center font-headline text-[clamp(3.75rem,17vw,16.5rem)] leading-[0.92] will-change-transform select-none"
+            className="flex items-center justify-center font-display text-[clamp(2.6rem,12.2vw,12rem)] font-black leading-[0.98] tracking-[-0.02em] will-change-transform select-none"
             aria-hidden="true"
           >
             {chars.map((c, charIdx) =>
               c.char === " " ? (
-                <span key={charIdx} style={{ width: "0.22em" }} />
+                <span key={charIdx} style={{ width: "0.16em" }} />
               ) : (
                 <span
                   key={charIdx}
                   style={{
                     color: c.color,
                     display: "inline-block",
-                    textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+                    textShadow: "0 4px 18px rgba(0,0,0,0.55)",
                     transition: "transform 0.25s ease",
                   }}
                   className="hover:scale-105"
@@ -376,7 +357,7 @@ export default function IdeasWearable() {
         {/* Elegant Gold Tagline */}
         <p
           ref={taglineRef}
-          className="mt-8 font-body text-xs font-bold uppercase tracking-[0.35em] text-cream/75 will-change-transform md:mt-10 md:text-sm"
+          className="mt-8 px-4 font-body text-[0.65rem] font-bold uppercase tracking-[0.35em] text-cream/80 will-change-transform sm:text-xs md:mt-10 md:text-sm"
         >
           NAXIS Australia — Delivering Excellence Through Experience
         </p>
