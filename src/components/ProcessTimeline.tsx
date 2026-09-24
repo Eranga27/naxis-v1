@@ -235,8 +235,12 @@ export default function ProcessTimeline() {
       >
         <div
           ref={trackRef}
-          className="flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto pb-4 will-change-transform [-ms-overflow-style:none] [scrollbar-width:none] md:gap-6 md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
-          style={{ width: "max-content" }}
+          // max-content only from md up, where the pinned gallery slides
+          // the whole strip. Below md it has to stay the width of the
+          // screen so it can scroll: an inline max-content made it 2,380px
+          // wide inside a clipped section, so phones could never swipe past
+          // the first stage.
+          className="flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto pb-4 will-change-transform [-ms-overflow-style:none] [scrollbar-width:none] md:w-max md:gap-6 md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
         >
           {STEPS.map((step, i) => (
             <div
