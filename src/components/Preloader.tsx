@@ -23,26 +23,32 @@ const FINAL_ACCENT_GRADIENT =
 // anyway — see preloadFonts below.
 const FONT_WAIT_MS = 1500;
 
-// One gradient per greeting above, same order — a loose mood cue built from
+// Greeting text is ink or cream depending on what sits behind it, with a
+// soft halo in the opposite tone to lift it off the busier parts of a flag.
+const TONES = {
+  ink: { color: "#100d09", shadow: "0 1px 14px rgba(255,255,255,0.4)" },
+  cream: { color: "#FBF4E4", shadow: "0 2px 12px rgba(0,0,0,0.4)" },
+} as const;
+type Tone = keyof typeof TONES;
+
+// One backdrop per greeting above, same order — a loose mood cue built from
 // each country's flag palette, not a literal reproduction of the flag's
 // geometry. Bangladesh/Vietnam/China lean on their flags' actual two-tone
 // field+emblem colors; Sri Lanka/India/Italy get a third stop for their
 // tricolore-style flags.
-const COUNTRY_GRADIENTS = [
-  "linear-gradient(135deg, #8D153A 0%, #FFB612 50%, #007847 100%)", // Sri Lanka
-  "linear-gradient(135deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)", // India
-  "linear-gradient(135deg, #006A4E 0%, #F42A41 100%)", // Bangladesh
-  "linear-gradient(135deg, #DA251D 0%, #FFCD00 100%)", // Vietnam
-  "linear-gradient(135deg, #DE2910 0%, #FFDE00 100%)", // China
-  "linear-gradient(135deg, #008C45 0%, #F4F5F0 50%, #CD212A 100%)", // Italy
+//
+// The tone is picked for the gradient's middle band, where the greeting
+// sits. One cream for every flag used to vanish on India's and Italy's
+// white centres (~1:1 contrast); per flag, every greeting clears 5.5:1
+// across the band it spans on a phone.
+const COUNTRY_BACKDROPS: Array<{ gradient: string; tone: Tone }> = [
+  { gradient: "linear-gradient(135deg, #8D153A 0%, #FFB612 50%, #007847 100%)", tone: "ink" }, // Sri Lanka
+  { gradient: "linear-gradient(135deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)", tone: "ink" }, // India
+  { gradient: "linear-gradient(135deg, #006A4E 0%, #F42A41 100%)", tone: "cream" }, // Bangladesh
+  { gradient: "linear-gradient(135deg, #DA251D 0%, #FFCD00 100%)", tone: "ink" }, // Vietnam
+  { gradient: "linear-gradient(135deg, #DE2910 0%, #FFDE00 100%)", tone: "ink" }, // China
+  { gradient: "linear-gradient(135deg, #008C45 0%, #F4F5F0 50%, #CD212A 100%)", tone: "ink" }, // Italy
 ];
-
-// Cream text + a soft dark shadow keeps the greeting legible over every
-// gradient above, light bands included, without needing a bespoke text
-// color per country. Dropped back to plain black once "Welcome" settles
-// the background to white.
-const GREETING_TEXT_COLOR = "#FBF4E4";
-const GREETING_TEXT_SHADOW = "0 2px 10px rgba(0,0,0,0.35)";
 
 // Rather than cut straight from the last flag gradient to flat white, the
 // destination phrase gets one more crossfade — into a soft, low-saturation
@@ -168,6 +174,17 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       hidden.style.opacity = "1";
       showing.style.opacity = "0";
       activeLayer = (1 - activeLayer) as 0 | 1;
+    };
+    // The box transitions color and text-shadow over BG_FADE_MS, so the
+    // text shifts tone in step with the backdrop crossfade above rather
+    // than snapping.
+    const setTone = (tone: Tone) => {
+      box.style.color = TONES[tone].color;
+      box.style.textShadow = TONES[tone].shadow;
+    };
+    const showBackdrop = (i: number) => {
+      crossfadeBg(COUNTRY_BACKDROPS[i].gradient);
+      setTone(COUNTRY_BACKDROPS[i].tone);
     };
     const fireReveal = () => {
       if (revealed.current) return;
@@ -297,9 +314,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
       // First greeting fades in rather than typing, its flag gradient
       // fading in alongside it.
-      box.style.color = GREETING_TEXT_COLOR;
-      box.style.textShadow = GREETING_TEXT_SHADOW;
-      crossfadeBg(COUNTRY_GRADIENTS[0]);
+      showBackdrop(0);
       lockWidth(GREETINGS[0]);
       write(GREETINGS[0]);
       box.style.opacity = "1";
@@ -307,7 +322,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
       for (let i = 1; i < GREETINGS.length; i++) {
         if (cancelled.current) return;
-        crossfadeBg(COUNTRY_GRADIENTS[i]);
+        showBackdrop(i);
         await deleteOut(GREETINGS[i - 1]);
         await typeIn(GREETINGS[i]);
         await sleep(WORD_HOLD_MS);
