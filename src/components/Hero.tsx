@@ -159,7 +159,9 @@ export default function Hero() {
       entrance = () => {
         const tl = gsap.timeline({ onComplete: armScrollInteraction });
 
-        // Video reveals and settles
+        // Video reveals and settles. power3, not expo: expo.out spends ~90%
+        // of its motion in the first third, which on a full-bleed element
+        // reads as a pop-then-freeze. Fine for the small kicker below.
         tl.fromTo(
           media,
           { opacity: 0 },
@@ -168,7 +170,7 @@ export default function Hero() {
         ).fromTo(
           media,
           { scale: 1.15 },
-          { scale: 1, duration: 1.8, ease: "expo.out" },
+          { scale: 1, duration: 1.8, ease: "power3.out" },
           0.1
         );
 
