@@ -330,7 +330,8 @@ export default function ProcessTimeline() {
                 <div className="flex flex-1 flex-col justify-between p-5 md:p-6">
                   <div>
                     <div className="mb-2 flex items-center gap-3">
-                      <span className="font-body text-xs font-bold text-gold">
+                      {/* Brown, not gold: gold on the white card was ~1.5:1. */}
+                      <span className="font-body text-xs font-bold text-brown">
                         {step.number}
                       </span>
                       <div className="h-px flex-1 bg-ink/10" />

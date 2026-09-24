@@ -108,13 +108,13 @@ export default function GlobalNetwork() {
             }}
             className="flex flex-col gap-3 bg-cream px-6 py-10 opacity-0 md:px-8 md:py-14"
           >
-            <span className="font-body text-xs font-semibold text-ink/40">
+            <span className="font-body text-xs font-semibold text-ink/60">
               {String(i + 1).padStart(2, "0")}
             </span>
             <span className="font-headline text-2xl uppercase tracking-[-0.01em] text-ink md:text-3xl">
               {country.name}
             </span>
-            <span className="font-body text-xs uppercase tracking-[0.2em] text-ink/40">
+            <span className="font-body text-xs uppercase tracking-[0.2em] text-ink/70">
               {country.note}
             </span>
           </div>
