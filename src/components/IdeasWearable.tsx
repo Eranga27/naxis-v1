@@ -58,6 +58,7 @@ export default function IdeasWearable() {
     const section = sectionRef.current;
     if (!section) return;
 
+    let mm: gsap.MatchMedia | null = null;
     const ctx = gsap.context(() => {
       const lines = linesRef.current.filter(
         (el): el is HTMLDivElement => el !== null
@@ -72,15 +73,25 @@ export default function IdeasWearable() {
         return;
       }
 
-      ScrollTrigger.matchMedia({
-        // DESKTOP & TABLET: Innovative pinned kinetic typography & optical portal
-        "(min-width: 768px)": () => {
+      // Pinned kinetic typography and optical portal, on every screen
+      // size. Phones used to get a plain scrubbed fade instead, on the
+      // idea that a pin fights the thumb — but this section is a single
+      // full-screen statement, and on a phone the pin reads as the same
+      // deliberate beat it is on desktop. Phones get a shorter pin and
+      // smaller sideways drift to suit the narrower lines.
+      mm = gsap.matchMedia();
+      mm.add(
+        { isPhone: "(max-width: 767px)", isWide: "(min-width: 768px)" },
+        (context) => {
+          const { isPhone } = context.conditions as { isPhone: boolean };
+          const drift = isPhone ? 7 : 10;
+
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: section,
               start: "top top",
               // Read live on every refresh so a resize re-derives it.
-              end: () => "+=" + window.innerHeight * 1.35,
+              end: () => "+=" + window.innerHeight * (isPhone ? 1.1 : 1.35),
               pin: true,
               anticipatePin: 1,
               scrub: 0.8,
@@ -94,9 +105,9 @@ export default function IdeasWearable() {
           });
 
           // Set initial rest state before pin engages
-          gsap.set(lines[0], { xPercent: -10, opacity: 0.18, letterSpacing: "0.04em" });
+          gsap.set(lines[0], { xPercent: -drift, opacity: 0.18, letterSpacing: "0.04em" });
           gsap.set(lines[1], { scale: 0.85, opacity: 0.18, transformOrigin: "center center" });
-          gsap.set(lines[2], { xPercent: 10, opacity: 0.18, letterSpacing: "0.04em" });
+          gsap.set(lines[2], { xPercent: drift, opacity: 0.18, letterSpacing: "0.04em" });
           // Foliage starts spread wide and gathers in around the phrase,
           // the front layer travelling further than the back for depth.
           gsap.set(foliageBackRef.current, { scale: 1.18, opacity: 0.5 });
@@ -156,7 +167,7 @@ export default function IdeasWearable() {
               {
                 opacity: 1,
                 y: 0,
-                letterSpacing: "0.35em",
+                letterSpacing: isPhone ? "0.28em" : "0.35em",
                 ease: "power2.out",
                 duration: 0.2,
               },
@@ -233,68 +244,23 @@ export default function IdeasWearable() {
             { scale: 1.6, opacity: 0, ease: "power2.in", duration: 0.35 },
             0.65
           );
-
-          return () => {
-            tl.scrollTrigger?.kill();
-            tl.kill();
-          };
-        },
-
-        // MOBILE: Scrubbed kinetic parallax (no lock-pin for natural thumb gesture)
-        "(max-width: 767px)": () => {
-          const mobileTl = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top 80%",
-              end: "bottom 20%",
-              scrub: true,
-            },
-          });
-
-          mobileTl
-            .fromTo(
-              lines[0],
-              { opacity: 0.2, xPercent: -8 },
-              { opacity: 1, xPercent: 0, ease: "none", duration: 0.3 }
-            )
-            .fromTo(
-              lines[1],
-              { opacity: 0.2, scale: 0.88 },
-              { opacity: 1, scale: 1, ease: "none", duration: 0.3 },
-              0.1
-            )
-            .fromTo(
-              lines[2],
-              { opacity: 0.2, xPercent: 8 },
-              { opacity: 1, xPercent: 0, ease: "none", duration: 0.3 },
-              0.2
-            );
-
-          if (taglineRef.current) {
-            mobileTl.fromTo(
-              taglineRef.current,
-              { opacity: 0, y: 14 },
-              { opacity: 1, y: 0, ease: "none", duration: 0.2 },
-              0.3
-            );
-          }
-
-          return () => {
-            mobileTl.scrollTrigger?.kill();
-            mobileTl.kill();
-          };
-        },
-      });
+        }
+      );
     }, section);
 
-    return () => ctx.revert();
+    return () => {
+      mm?.revert();
+      ctx.revert();
+    };
   }, []);
 
   return (
     <section
       ref={sectionRef}
       id="ideas-wearable"
-      className="relative flex h-screen min-h-[560px] w-full items-center justify-center overflow-hidden bg-bark"
+      // svh: a pinned full-screen section on a phone should match the
+      // visible screen, not the taller bars-hidden viewport.
+      className="relative flex h-svh min-h-[560px] w-full items-center justify-center overflow-hidden bg-bark"
     >
       {/* Wattle & eucalyptus framing, in two depth layers */}
       <div
@@ -363,8 +329,8 @@ export default function IdeasWearable() {
         </p>
       </div>
 
-      {/* Ambient Micro-Progress Line (Desktop only) */}
-      <div className="absolute bottom-6 left-1/2 hidden h-[2px] w-32 -translate-x-1/2 overflow-hidden rounded-full bg-cream/10 md:block">
+      {/* Ambient micro-progress line for the pin */}
+      <div className="absolute bottom-6 left-1/2 h-[2px] w-32 -translate-x-1/2 overflow-hidden rounded-full bg-cream/10 motion-reduce:hidden">
         <div
           ref={progressFillRef}
           className="h-full w-full origin-left bg-gold/60 will-change-transform"
