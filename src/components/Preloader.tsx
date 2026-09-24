@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { GOLD } from "@/lib/brand";
 
 // Each greeting in its own script. Vietnamese and Italian are natively
 // Latin, so they stay as written.
@@ -16,7 +17,7 @@ const FINAL = "Welcome to NAXIS Australia";
 // "NAXIS" gets a brand-gold accent once the phrase finishes typing — see
 // the reveal after typeIn(FINAL) below.
 const FINAL_ACCENT = "NAXIS";
-const FINAL_ACCENT_COLOR = "#FFC94A"; // --color-gold
+const FINAL_ACCENT_COLOR = GOLD;
 
 // One gradient per greeting above, same order — a loose mood cue built from
 // each country's flag palette, not a literal reproduction of the flag's

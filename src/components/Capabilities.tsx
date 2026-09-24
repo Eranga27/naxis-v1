@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { GOLD } from "@/lib/brand";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -183,7 +184,7 @@ export default function Capabilities() {
           // as active immediately rather than everything looking inert
           // until the pin first engages.
           if (ticks[0]) {
-            gsap.set(ticks[0], { backgroundColor: "#FFC94A", scaleY: 1.8 });
+            gsap.set(ticks[0], { backgroundColor: GOLD, scaleY: 1.8 });
           }
 
           const pinTween = gsap.to(track, {
@@ -206,7 +207,7 @@ export default function Capabilities() {
                 ticks.forEach((tick, i) => {
                   gsap.set(tick, {
                     backgroundColor:
-                      i === activeIndex ? "#FFC94A" : "rgba(244,239,228,0.25)",
+                      i === activeIndex ? GOLD : "rgba(244,239,228,0.25)",
                     scaleY: i === activeIndex ? 1.8 : 1,
                   });
                 });

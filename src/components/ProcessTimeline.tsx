@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { GOLD } from "@/lib/brand";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -109,7 +110,7 @@ export default function ProcessTimeline() {
       if (reduceMotion) {
         gsap.set(reveals, { opacity: 1, y: 0 });
         gsap.set(cardImgs, { clipPath: "inset(0% 0 0 0)" });
-        if (ticks[0]) gsap.set(ticks[0], { backgroundColor: "#FFC94A", scaleY: 1.8 });
+        if (ticks[0]) gsap.set(ticks[0], { backgroundColor: GOLD, scaleY: 1.8 });
         return;
       }
 
@@ -163,7 +164,7 @@ export default function ProcessTimeline() {
 
           // First tick active at rest
           if (ticks[0]) {
-            gsap.set(ticks[0], { backgroundColor: "#FFC94A", scaleY: 1.8 });
+            gsap.set(ticks[0], { backgroundColor: GOLD, scaleY: 1.8 });
           }
 
           const tl = gsap.timeline({
@@ -187,7 +188,7 @@ export default function ProcessTimeline() {
                 ticks.forEach((tick, i) => {
                   const isActive = i === activeIndex;
                   gsap.set(tick, {
-                    backgroundColor: isActive ? "#FFC94A" : "rgba(16, 13, 9, 0.2)",
+                    backgroundColor: isActive ? GOLD : "rgba(16, 13, 9, 0.2)",
                     scaleY: isActive ? 1.8 : 1,
                   });
                 });
