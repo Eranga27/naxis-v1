@@ -159,6 +159,22 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    // The veil only covers the page visually. Without this, Tab lands on
+    // the Nav links underneath it while the intro is still playing. Every
+    // other top-level body child is made inert until the veil is gone.
+    const inerted = Array.from(document.body.children).filter(
+      (el): el is HTMLElement =>
+        el instanceof HTMLElement && el !== veil && !el.inert
+    );
+    inerted.forEach((el) => {
+      el.inert = true;
+    });
+    const releaseInert = () => {
+      inerted.forEach((el) => {
+        el.inert = false;
+      });
+    };
+
     const typeIn = async (word: string) => {
       const list = chars(word);
       for (let i = 1; i <= list.length; i++) {
@@ -214,6 +230,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       if (cancelled.current) return;
 
       document.body.style.overflow = prevOverflow;
+      releaseInert();
       setDone(true);
     };
 
@@ -282,6 +299,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     return () => {
       cancelled.current = true;
       document.body.style.overflow = prevOverflow;
+      releaseInert();
     };
   }, [onReveal, waitForMedia]);
 
