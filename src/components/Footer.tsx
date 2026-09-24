@@ -1,8 +1,6 @@
 import Image from "next/image";
 import { NAV_LINKS } from "@/lib/navLinks";
-
-// Contact email — update once the client confirms their preferred address.
-const CONTACT_EMAIL = "info@naxisaustralia.com.au";
+import { CONTACT } from "@/lib/contact";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -41,8 +39,11 @@ export default function Footer() {
         </nav>
 
         <div className="flex flex-col gap-2 font-body text-sm text-cream/70">
-          <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-cream">
-            {CONTACT_EMAIL}
+          <a href={`mailto:${CONTACT.email}`} className="transition-colors hover:text-cream">
+            {CONTACT.email}
+          </a>
+          <a href={`tel:${CONTACT.phone}`} className="transition-colors hover:text-cream">
+            {CONTACT.phone}
           </a>
         </div>
       </div>

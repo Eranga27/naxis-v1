@@ -3,14 +3,37 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { CONTACT } from "@/lib/contact";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// Contact email — update once the client confirms their preferred address.
-const CONTACT_EMAIL = "info@naxisaustralia.com.au";
+function PhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+      <path
+        d="M6.5 3h3l1.5 4-2 1.5c.9 2 2.6 3.7 4.6 4.6l1.5-2 4 1.5v3c0 1-1 2-2.2 1.9C10.6 17 6.5 13 5.1 6.7 5 5.5 5.5 4 6.5 3z"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+      <path
+        d="M4 20l1.3-4A8 8 0 1112 20a8 8 0 01-4-1.1L4 20z"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <path d="M8.5 9.5c.3 2.5 2.5 4.7 5 5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function MailIcon() {
   return (
@@ -89,18 +112,30 @@ export default function ClosingCTA() {
         }}
         className="flex flex-col items-center justify-center gap-4 opacity-0 sm:flex-row sm:gap-6"
       >
+        {/* Direct channels first, per the client's stated preference for
+            direct contact over long forms — email is the fallback. */}
         <a
-          href={`mailto:${CONTACT_EMAIL}`}
+          href={`tel:${CONTACT.phone}`}
           className="flex items-center gap-3 rounded-full bg-gold px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-gold-light"
         >
-          <MailIcon />
-          Email Us
+          <PhoneIcon />
+          Call
         </a>
         <a
-          href={`mailto:${CONTACT_EMAIL}?subject=Production%20Enquiry`}
+          href={`https://wa.me/${CONTACT.whatsapp}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-full border border-cream/25 px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:border-cream/60"
         >
-          {CONTACT_EMAIL}
+          <WhatsAppIcon />
+          WhatsApp
+        </a>
+        <a
+          href={`mailto:${CONTACT.email}?subject=Production%20Enquiry`}
+          className="flex items-center gap-3 rounded-full border border-cream/25 px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:border-cream/60"
+        >
+          <MailIcon />
+          Email
         </a>
       </div>
     </section>
