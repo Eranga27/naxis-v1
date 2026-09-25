@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
-import Image from "next/image";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { NETWORK_MAP } from "@/content/networkMap";
+import { CONTACT_HREF } from "@/lib/navLinks";
+import { useIsomorphicLayoutEffect } from "@/lib/motion";
+import type { Globe, ScreenPoint } from "@/lib/globeScene";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-// The logistics journey from the client's company profile (page 5) —
-// what happens between each origin and the destination.
+// The logistics journey from the client's company profile (page 5),
+// shown as status pills around the globe.
 const JOURNEY = [
   "Shipping documentation",
   "Freight coordination",
@@ -20,171 +20,313 @@ const JOURNEY = [
   "Doorstep delivery",
 ];
 
-const { width: W, height: H, origins, destination } = NETWORK_MAP;
+// Home is Australia; the routes go out from it to each country.
+const HOME = NETWORK_MAP.destination;
+const PLACES = NETWORK_MAP.origins;
 
-// India sits just left of Bangladesh, so its label goes on the left side
-// of its marker to keep the two from colliding.
-const LABEL_LEFT = new Set(["India"]);
-
-// A gentle arc from each origin down to Australia: a quadratic curve whose
-// control point sits off the midpoint, perpendicular to the chord, so every
-// route bows the same way.
-const arcPath = (x: number, y: number) => {
-  const mx = (x + destination.x) / 2;
-  const my = (y + destination.y) / 2;
-  const dx = destination.x - x;
-  const dy = destination.y - y;
-  const bend = 0.22;
-  const cx = mx + dy * bend;
-  const cy = my - dx * bend;
-  return `M ${x} ${y} Q ${cx} ${cy} ${destination.x} ${destination.y}`;
+// Which side of its marker each label sits, so the close-together
+// countries of South Asia don't collide.
+const LABEL_SIDE: Record<string, "left" | "right" | "above" | "below"> = {
+  Italy: "right",
+  India: "left",
+  "Sri Lanka": "left",
+  Bangladesh: "above",
+  China: "right",
+  Vietnam: "right",
+  Australia: "below",
+};
+const SIDE_CLASS = {
+  left: "-translate-x-full -translate-y-1/2 pr-3",
+  right: "-translate-y-1/2 pl-3",
+  above: "-translate-x-1/2 -translate-y-full pb-3",
+  below: "-translate-x-1/2 pt-3",
 };
 
+// Where the status pills float, in globe radii from its centre (y up), on
+// screens wide enough to scatter them.
+const PILL_AT = [
+  { x: -0.95, y: 0.02 },
+  { x: 0.62, y: 0.86 },
+  { x: -0.34, y: 0.2 },
+  { x: 0.36, y: -0.02 },
+];
+
+// The face of the globe towards us: first Australia, close in; then,
+// following the routes out, the whole network from Italy to Australia.
+const START = { lon: 125, lat: -52, roll: 10 };
+const END = { lon: 76, lat: -11, roll: 23 };
+
+// Routes launch nearest first, so the last to land is Italy as the globe
+// finishes turning west.
+const LAUNCH_ORDER = PLACES.map((place, i) => ({ i, d: Math.hypot(place.lon - HOME.lon, place.lat - HOME.lat) }))
+  .sort((a, b) => a.d - b.d)
+  .map(({ i }) => i);
+
+const lerp = gsap.utils.interpolate;
+const smooth = (a: number, b: number, x: number) => {
+  const t = gsap.utils.clamp(0, 1, (x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * The network as a night globe rising from the foot of the section. The
+ * section pins: the globe rises, Australia lights up, and a route leaves
+ * it for each of the six countries while the globe turns to follow them
+ * west; each country lights as its route lands, and the journey's steps
+ * pop up as status pills. After that, shipments keep running out along
+ * the routes. three.js and the textures load only as the section
+ * approaches. Reduced motion shows the finished network, still; without
+ * WebGL the countries are listed instead.
+ */
 export default function GlobalNetwork() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const revealRefs = useRef<Array<HTMLElement | null>>([]);
-  const arcRefs = useRef<Array<SVGPathElement | null>>([]);
-  const travelerRefs = useRef<Array<SVGCircleElement | null>>([]);
-  const originRefs = useRef<Array<SVGGElement | null>>([]);
+  const textRef = useRef<HTMLDivElement>(null);
   const labelRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const destRef = useRef<SVGGElement>(null);
-  const stepRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const homeLabelRef = useRef<HTMLSpanElement>(null);
+  const pillRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const [noWebGL, setNoWebGL] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
     const stage = stageRef.current;
-    const dest = destRef.current;
-    if (!section || !stage || !dest) return;
+    const text = textRef.current;
+    const homeLabel = homeLabelRef.current;
+    if (!section || !stage || !text || !homeLabel) return;
+    const labels = labelRefs.current;
+    const pills = pillRefs.current.filter((el): el is HTMLLIElement => el !== null);
+    const pillInners = pills.map((pill) => pill.firstElementChild!.firstElementChild as HTMLElement);
 
-    const compact = <T,>(list: Array<T | null>) =>
-      list.filter((el): el is T => el !== null);
-    const reveals = compact(revealRefs.current);
-    const arcs = compact(arcRefs.current);
-    const travelers = compact(travelerRefs.current);
-    const originDots = compact(originRefs.current);
-    const labels = compact(labelRefs.current);
-    const steps = compact(stepRefs.current);
+    // What the scroll drives; the render loop reads it every frame.
+    // Each route's progress is its own object: GSAP reads an array as a
+    // list of targets, not as values to tween.
+    const state = { rise: 0, view: 0, home: 0 };
+    const routes = PLACES.map(() => ({ p: 0 }));
+    let reduce = false;
+    let globe: Globe | null = null;
+    let canvas: HTMLCanvasElement | null = null;
+    let disposed = false;
+    let dirty = true;
+    let width = section.clientWidth;
+    let height = section.clientHeight;
 
-    let mm: gsap.MatchMedia | null = null;
-    const ctx = gsap.context(() => {
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+    // Size and place the globe for this screen. It starts low, only its
+    // crown showing, and rises until Australia and its label clear the
+    // bottom edge.
+    const layout = () => {
+      const phone = width < 640;
+      const radius = phone ? width * 0.56 : width < 1024 ? width * 0.44 : Math.min(width * 0.32, height * 0.52);
+      const startCy = height * (phone ? 0.8 : 0.66) + radius;
+      // Phones keep room at the foot for the pills.
+      const endCy = height - 0.07 * radius - (phone ? 150 : 56);
+      return { phone, radius, cx: width / 2, cy: lerp(startCy, endCy, state.rise), endTop: endCy - radius };
+    };
+    // Whether the risen globe would run into a line of the copy; those
+    // lines make way as it rises (all of it, if even the heading would).
+    const heading = text.querySelector("h2")!;
+    const clashes = (el: Element) => {
+      const box = el as HTMLElement;
+      return text.offsetTop + box.offsetTop + box.offsetHeight > layout().endTop;
+    };
+    const makesWay = (el: Element) => clashes(heading) || clashes(el);
 
-      // Draw-on setup: each route hidden behind a dash offset of its own
-      // full length.
-      const lengths = arcs.map((arc) => arc.getTotalLength());
-      arcs.forEach((arc, i) => {
-        arc.style.strokeDasharray = `${lengths[i]}`;
-        arc.style.strokeDashoffset = `${lengths[i]}`;
+    const place = (el: HTMLElement | null, name: string, point: ScreenPoint, shown: number) => {
+      if (!el) return;
+      const opacity = shown * smooth(0.02, 0.16, point.facing);
+      el.style.opacity = `${opacity}`;
+      if (opacity <= 0.01) return;
+      // Keep the label on screen, whichever side of its marker it sits.
+      const w = el.offsetWidth;
+      const side = LABEL_SIDE[name] ?? "right";
+      const [min, max] =
+        side === "right" ? [12, width - 12 - w] : side === "left" ? [12 + w, width - 12] : [12 + w / 2, width - 12 - w / 2];
+      const x = gsap.utils.clamp(min, max, point.x);
+      el.style.transform = `translate3d(${x}px, ${point.y}px, 0)`;
+    };
+
+    const tick = (time: number) => {
+      if (!globe || (reduce && !dirty)) return;
+      const L = layout();
+      const v = smooth(0, 1, state.view);
+      const drift = reduce ? 0 : Math.sin(time * 0.3) * 4 * (1 - v);
+      // Keep drawing (even when still) until the Earth has faded in.
+      dirty = globe.render({
+        radius: L.radius,
+        cx: L.cx,
+        cy: L.cy,
+        lon: lerp(START.lon, END.lon, v) + drift,
+        lat: lerp(START.lat, END.lat, v),
+        roll: lerp(START.roll, END.roll, v),
+        home: state.home,
+        routes: routes.map((route) => route.p),
+        time: reduce ? 0 : time,
       });
-
-      if (reduceMotion) {
-        gsap.set(reveals, { opacity: 1, y: 0 });
-        arcs.forEach((arc) => (arc.style.strokeDashoffset = "0"));
-        gsap.set([...originDots, dest], { opacity: 1, scale: 1 });
-        gsap.set([...labels, ...steps], { opacity: 1 });
-        gsap.set(travelers, { opacity: 0 });
-        return;
+      const points = globe.screenPoints();
+      place(homeLabel, HOME.name, points.home, state.home);
+      points.places.forEach((point, i) => {
+        place(labels[i], PLACES[i].name, point, smooth(0.9, 1, routes[i].p));
+      });
+      if (!L.phone) {
+        pills.forEach((pill, i) => {
+          const at = PILL_AT[i];
+          const half = 12 + pill.offsetWidth / 2;
+          const x = gsap.utils.clamp(half, width - half, L.cx + at.x * L.radius);
+          pill.style.transform = `translate3d(${x}px, ${L.cy - at.y * L.radius}px, 0)`;
+        });
+      } else {
+        pills.forEach((pill) => (pill.style.transform = ""));
       }
+    };
 
-      gsap.fromTo(
-        reveals,
-        { opacity: 0, y: 32 },
-        {
-          opacity: 1,
-          y: 0,
+    const resize = () => {
+      width = section.clientWidth;
+      height = section.clientHeight;
+      globe?.setSize(width, height);
+      dirty = true;
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(section);
+
+    // Load three.js and the globe as the section approaches.
+    // No WebGL: list the countries instead, and drop the pin and the
+    // copy's fade, which would otherwise play over an empty stage.
+    const giveUp = () => {
+      if (disposed) return;
+      setNoWebGL(true);
+      mm.revert();
+      ScrollTrigger.refresh();
+    };
+    const hasWebGL = () => {
+      const probe = document.createElement("canvas").getContext("webgl2");
+      probe?.getExtension("WEBGL_lose_context")?.loseContext();
+      return probe !== null;
+    };
+
+    const load = () => {
+      if (!hasWebGL()) return giveUp();
+      import("@/lib/globeScene")
+        .then(({ createGlobe }) => {
+          if (disposed) return;
+          canvas = document.createElement("canvas");
+          canvas.setAttribute("aria-hidden", "true");
+          canvas.className = "absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000";
+          stage.appendChild(canvas);
+          try {
+            globe = createGlobe(canvas, {
+              home: HOME,
+              places: [...PLACES],
+              textureSize: width >= 1024 ? 4096 : 2048,
+            });
+          } catch {
+            canvas.remove();
+            canvas = null;
+            return giveUp();
+          }
+          globe.setSize(width, height);
+          canvas.style.opacity = "1";
+          dirty = true;
+          globe.ready.then(() => (dirty = true));
+        })
+        .catch(giveUp);
+    };
+    const near = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          near.disconnect();
+          load();
+        }
+      },
+      { rootMargin: "150% 0px" }
+    );
+    near.observe(section);
+
+    const mm = gsap.matchMedia();
+    mm.add(
+      {
+        wide: "(min-width: 640px) and (prefers-reduced-motion: no-preference)",
+        narrow: "(max-width: 639px) and (prefers-reduced-motion: no-preference)",
+        reduced: "(prefers-reduced-motion: reduce)",
+      },
+      (context) => {
+        const { narrow, reduced } = context.conditions as { narrow: boolean; reduced: boolean };
+        reduce = reduced;
+        dirty = true;
+        if (reduced) {
+          Object.assign(state, { rise: 1, view: 1, home: 1 });
+          routes.forEach((route) => (route.p = 1));
+          gsap.set(pillInners, { autoAlpha: 1, y: 0 });
+          return;
+        }
+        Object.assign(state, { rise: 0, view: 0, home: 0 });
+        routes.forEach((route) => (route.p = 0));
+        gsap.set(pillInners, { autoAlpha: 0, y: 14 });
+
+        gsap.from(text.children, {
+          autoAlpha: 0,
+          y: 28,
           duration: 0.9,
           ease: "power3.out",
           stagger: 0.08,
-          scrollTrigger: { trigger: section, start: "top 75%", once: true },
-        }
-      );
+          scrollTrigger: { trigger: section, start: "top 70%", once: true },
+        });
 
-      gsap.set([...originDots, dest], {
-        opacity: 0,
-        scale: 0.3,
-        transformOrigin: "50% 50%",
-      });
-      // Opacity only — the labels are positioned with CSS translate, which
-      // a GSAP x/y tween would overwrite.
-      gsap.set(labels, { opacity: 0 });
-      gsap.set(steps, { opacity: 0.25 });
-      gsap.set(travelers, { opacity: 0 });
-
-      // One timeline, scrubbed to scroll: the six countries light up,
-      // their routes draw toward Australia with a traveller riding each
-      // line, Australia arrives, then the logistics steps tick through.
-      // Desktop pins the map so the whole journey plays in place; phones
-      // scrub it over the section's natural scroll instead.
-      const build = (pin: boolean) => {
-        const progress = { t: 0 };
         const tl = gsap.timeline({
-          scrollTrigger: pin
-            ? {
-                trigger: section,
-                start: "top top",
-                end: () => "+=" + window.innerHeight * 1.1,
-                pin: true,
-                scrub: 0.8,
-                invalidateOnRefresh: true,
-              }
-            : {
-                trigger: stage,
-                start: "top 80%",
-                end: "bottom 45%",
-                scrub: 0.8,
-              },
-        });
-
-        tl.to(originDots, {
-          opacity: 1,
-          scale: 1,
-          ease: "back.out(2)",
-          stagger: 0.06,
-          duration: 0.2,
-        }, 0);
-        tl.to(labels, { opacity: 1, stagger: 0.06, duration: 0.2 }, 0.05);
-
-        tl.to(progress, {
-          t: 1,
-          ease: "none",
-          duration: 1,
-          onUpdate: () => {
-            arcs.forEach((arc, i) => {
-              // Staggered starts so the routes don't all move as one.
-              const local = gsap.utils.clamp(0, 1, progress.t * 1.35 - i * 0.07);
-              arc.style.strokeDashoffset = `${lengths[i] * (1 - local)}`;
-              const traveler = travelers[i];
-              if (!traveler) return;
-              const point = arc.getPointAtLength(lengths[i] * local);
-              traveler.setAttribute("cx", `${point.x}`);
-              traveler.setAttribute("cy", `${point.y}`);
-              traveler.style.opacity = local > 0 && local < 1 ? "1" : "0";
-            });
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: () => "+=" + window.innerHeight * (narrow ? 1.5 : 1.9),
+            pin: true,
+            scrub: 0.8,
+            invalidateOnRefresh: true,
+            onUpdate: () => (dirty = true),
           },
-        }, 0.3);
-
-        tl.to(dest, { opacity: 1, scale: 1, ease: "back.out(2)", duration: 0.25 }, 1.05);
-        steps.forEach((step, i) => {
-          tl.to(step, { opacity: 1, duration: 0.12 }, 1.1 + i * 0.12);
         });
-        return tl;
-      };
+        tl.to(state, { rise: 1, duration: 0.36, ease: "power2.inOut" }, 0)
+          .to(
+            text.children,
+            {
+              autoAlpha: (_: number, el: Element) => (makesWay(el) ? 0 : 1),
+              y: (_: number, el: Element) => (makesWay(el) ? -30 : 0),
+              duration: 0.22,
+            },
+            0.06
+          )
+          .to(state, { home: 1, duration: 0.1 }, 0.1)
+          .to(state, { view: 1, duration: 0.62 }, 0.2);
+        LAUNCH_ORDER.forEach((index, n) => {
+          tl.to(routes[index], { p: 1, duration: 0.26, ease: "power1.inOut" }, 0.28 + n * 0.075);
+        });
+        pillInners.forEach((pill, i) => {
+          tl.to(pill, { autoAlpha: 1, y: 0, duration: 0.06, ease: "power2.out" }, 0.42 + i * 0.13);
+        });
+        tl.to({}, { duration: 0.06 });
+      }
+    );
 
-      mm = gsap.matchMedia();
-      mm.add("(min-width: 1024px)", () => {
-        build(true);
-      });
-      mm.add("(max-width: 1023px)", () => {
-        build(false);
-      });
-    }, section);
+    // Only render while the section is on screen. An observer rather than
+    // a ScrollTrigger: one on the pinned section itself ends at its bottom
+    // edge, partway through the pin, whereas the section stays in view (and
+    // so observed) for the whole pinned stretch.
+    const visible = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        dirty = true;
+        gsap.ticker.add(tick);
+      } else {
+        gsap.ticker.remove(tick);
+      }
+    });
+    visible.observe(section);
 
     return () => {
-      mm?.revert();
-      ctx.revert();
+      disposed = true;
+      mm.revert();
+      visible.disconnect();
+      gsap.ticker.remove(tick);
+      near.disconnect();
+      observer.disconnect();
+      globe?.dispose();
+      canvas?.remove();
     };
   }, []);
 
@@ -192,159 +334,121 @@ export default function GlobalNetwork() {
     <section
       ref={sectionRef}
       id="global-network"
-      className="relative w-full overflow-hidden bg-cream px-6 py-20 sm:px-10 md:px-16 md:py-24 lg:flex lg:h-screen lg:min-h-[640px] lg:flex-col lg:justify-center lg:px-20 lg:py-16"
+      aria-labelledby="global-network-title"
+      className="relative h-svh min-h-[560px] w-full overflow-hidden bg-ink"
     >
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center lg:gap-14">
-        {/* Copy column */}
-        <div>
-          <p
-            ref={(el) => {
-              revealRefs.current[0] = el;
-            }}
-            className="mb-5 font-body text-xs font-bold uppercase tracking-[0.35em] text-brown opacity-0 md:text-sm"
-          >
-            Global Network
-          </p>
-          <h2
-            ref={(el) => {
-              revealRefs.current[1] = el;
-            }}
-            className="mb-6 font-headline uppercase leading-[1.02] tracking-[-0.01em] text-[clamp(2.25rem,5.5vw,4.5rem)] text-ink opacity-0"
-          >
-            Six countries. <br className="hidden sm:block" />
-            One journey to your door.
-          </h2>
-          <p
-            ref={(el) => {
-              revealRefs.current[2] = el;
-            }}
-            className="mb-8 max-w-md font-body text-sm leading-relaxed text-ink/70 opacity-0 md:text-base"
-          >
-            We manage the journey from factory to your doorstep — evaluating
-            the shipping options for each order to find the right balance of
-            cost, transit time and reliability.
-          </p>
+      {/* Where the globe rises: a faint blue light at the foot */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_55%_60%_at_50%_100%,rgba(70,110,210,0.2),transparent_70%)]"
+      />
+      <div ref={stageRef} className="absolute inset-0" />
 
-          <ol className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-ink/10 pt-6">
+      <div
+        ref={textRef}
+        className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-6 pt-28 text-center md:pt-32"
+      >
+        <p className="mb-5 w-fit font-body text-xs font-bold uppercase tracking-[0.35em] text-gradient-brand md:text-sm">
+          Global Network
+        </p>
+        <h2
+          id="global-network-title"
+          className="font-headline text-[clamp(2.5rem,6.5vw,5.75rem)] uppercase leading-[0.95] tracking-[-0.01em] text-cream"
+        >
+          Six countries. <br className="hidden sm:block" />
+          One journey to your door.
+        </h2>
+        <p className="mt-5 max-w-xl font-body text-sm leading-relaxed text-cream/70 md:text-base">
+          We manage the journey from factory to your doorstep — evaluating the shipping options for each
+          order to find the right balance of cost, transit time and reliability.
+        </p>
+        <Link
+          href={CONTACT_HREF}
+          className="mt-8 inline-flex items-center rounded-full bg-cream px-8 py-3.5 font-body text-sm font-semibold text-ink transition-colors hover:bg-gold"
+        >
+          Start a project
+        </Link>
+      </div>
+
+      {noWebGL ? (
+        <ul className="relative z-10 mx-auto mt-12 flex max-w-2xl flex-wrap justify-center gap-3 px-6">
+          {[HOME, ...PLACES].map((p) => (
+            <li
+              key={p.name}
+              className="rounded-full border border-cream/15 bg-cream/5 px-4 py-2 font-body text-xs font-semibold uppercase tracking-[0.15em] text-cream"
+            >
+              {p.name === HOME.name ? "NAXIS Australia" : p.name}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <>
+          {/* Country labels, placed each frame over their markers */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+            <span ref={homeLabelRef} className="absolute left-0 top-0 opacity-0">
+              <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE.Australia]}`}>
+                <span className="block rounded-full bg-emerald px-3 py-1 font-body text-[0.6rem] font-bold uppercase tracking-[0.18em] text-cream shadow-[0_0_24px_rgba(47,208,138,0.45)] sm:text-[0.68rem]">
+                  NAXIS Australia
+                </span>
+              </span>
+            </span>
+            {PLACES.map((place, i) => (
+              <span
+                key={place.name}
+                ref={(el) => {
+                  labelRefs.current[i] = el;
+                }}
+                className="absolute left-0 top-0 opacity-0"
+              >
+                <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE[place.name] ?? "right"]}`}>
+                  <span className="block rounded-full border border-cream/15 bg-ink/70 px-2.5 py-0.5 font-body text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-cream backdrop-blur-sm sm:text-[0.66rem]">
+                    {place.name}
+                  </span>
+                </span>
+              </span>
+            ))}
+          </div>
+
+          {/* The journey's steps, as status pills */}
+          <ul
+            aria-label="Every shipment, managed"
+            className="pointer-events-none absolute inset-0 z-10 max-sm:inset-auto max-sm:bottom-6 max-sm:left-4 max-sm:right-4 max-sm:flex max-sm:flex-wrap max-sm:justify-center max-sm:gap-2"
+          >
             {JOURNEY.map((step, i) => (
               <li
                 key={step}
                 ref={(el) => {
-                  stepRefs.current[i] = el;
+                  pillRefs.current[i] = el;
                 }}
-                className="flex items-start gap-3"
+                className="sm:absolute sm:left-0 sm:top-0"
               >
-                <span className="mt-0.5 font-body text-xs font-bold tabular-nums text-emerald">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="font-body text-sm font-semibold text-ink md:text-[0.95rem]">
-                  {step}
+                {/* Centred on its point by translate; the pill inside is
+                    what animates (a GSAP y would replace the translate). */}
+                <span className="block w-max -translate-x-1/2 -translate-y-1/2 max-sm:translate-x-0 max-sm:translate-y-0">
+                  <span className="flex items-center gap-2 rounded-full border border-cream/10 bg-[#16140f]/80 px-3.5 py-2 font-body text-xs font-semibold text-cream shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-md max-sm:px-3 max-sm:py-1.5 max-sm:text-[0.7rem] md:gap-2.5 md:px-4 md:py-2.5 md:text-sm">
+                    <CheckIcon />
+                    {step}
+                  </span>
                 </span>
               </li>
             ))}
-          </ol>
-        </div>
+          </ul>
+        </>
+      )}
 
-        {/* Map column */}
-        <div
-          ref={stageRef}
-          className="relative w-full"
-          style={{ aspectRatio: `${W} / ${H}` }}
-        >
-          <Image
-            src="/images/network-map.svg"
-            alt="Map of the NAXIS network: Italy, India, Sri Lanka, Bangladesh, China and Vietnam, connected to Australia"
-            fill
-            unoptimized
-            className="select-none"
-          />
-
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            className="absolute inset-0 h-full w-full overflow-visible"
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="route-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="var(--color-gold)" />
-                <stop offset="100%" stopColor="var(--color-emerald)" />
-              </linearGradient>
-            </defs>
-
-            {origins.map((origin, i) => (
-              <path
-                key={origin.name}
-                ref={(el) => {
-                  arcRefs.current[i] = el;
-                }}
-                d={arcPath(origin.x, origin.y)}
-                fill="none"
-                stroke="url(#route-gradient)"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-
-            {origins.map((origin, i) => (
-              <circle
-                key={`traveler-${origin.name}`}
-                ref={(el) => {
-                  travelerRefs.current[i] = el;
-                }}
-                cx={origin.x}
-                cy={origin.y}
-                r={5}
-                fill="var(--color-emerald)"
-                opacity={0}
-              />
-            ))}
-
-            {origins.map((origin, i) => (
-              <g
-                key={`dot-${origin.name}`}
-                ref={(el) => {
-                  originRefs.current[i] = el;
-                }}
-              >
-                <circle cx={origin.x} cy={origin.y} r={13} fill="var(--color-gold)" fillOpacity={0.22} />
-                <circle cx={origin.x} cy={origin.y} r={6} fill="var(--color-gold)" stroke="var(--color-ink)" strokeWidth={1.5} />
-              </g>
-            ))}
-
-            <g ref={destRef}>
-              <circle cx={destination.x} cy={destination.y} r={24} fill="var(--color-emerald)" fillOpacity={0.15} className="network-pulse" />
-              <circle cx={destination.x} cy={destination.y} r={10} fill="var(--color-emerald)" stroke="var(--color-cream)" strokeWidth={3} />
-            </g>
-          </svg>
-
-          {/* Labels as HTML, positioned in % of the same viewBox, so they
-              stay crisp and readable at any size instead of shrinking with
-              the SVG. */}
-          {origins.map((origin, i) => (
-            <span
-              key={`label-${origin.name}`}
-              ref={(el) => {
-                labelRefs.current[i] = el;
-              }}
-              className={`pointer-events-none absolute -translate-y-1/2 whitespace-nowrap font-body text-[0.6rem] font-bold uppercase tracking-[0.12em] text-ink sm:text-xs ${
-                LABEL_LEFT.has(origin.name)
-                  ? "-translate-x-full pr-3 sm:pr-4"
-                  : "pl-3 sm:pl-4"
-              }`}
-              style={{ left: `${(origin.x / W) * 100}%`, top: `${(origin.y / H) * 100}%` }}
-            >
-              {origin.name}
-            </span>
-          ))}
-          <span
-            className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap pt-6 font-headline text-lg uppercase tracking-[0.04em] text-emerald sm:pt-8 sm:text-2xl"
-            style={{ left: `${(destination.x / W) * 100}%`, top: `${(destination.y / H) * 100}%` }}
-          >
-            Australia
-          </span>
-        </div>
-      </div>
+      <p className="sr-only">
+        A globe showing routes from NAXIS Australia to its network in Italy, India, Sri Lanka, Bangladesh, China and
+        Vietnam.
+      </p>
     </section>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0 text-emerald-bright md:h-[1.1rem] md:w-[1.1rem]" aria-hidden="true">
+      <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6.3 10.2 8.8 12.6 13.8 7.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
