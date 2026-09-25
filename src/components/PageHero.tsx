@@ -133,7 +133,8 @@ export default function PageHero({
       className="relative h-svh min-h-[520px] w-full overflow-hidden bg-cream"
     >
       <div ref={frameRef} className="absolute inset-0 flex items-end overflow-hidden bg-ink">
-        <div ref={mediaRef} className="absolute inset-0">
+        {/* Its own layer, so the scroll push-in scales it on the GPU. */}
+        <div ref={mediaRef} className="absolute inset-0 will-change-transform">
           <div ref={settleRef} className="absolute inset-0">
             {morphName ? (
               <ViewTransition name={morphName} share="morph" default="none">
@@ -148,7 +149,9 @@ export default function PageHero({
         <div ref={dimRef} aria-hidden="true" className="absolute inset-0 bg-ink opacity-0" />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          // Screen-blended from md up; plain on phones, where blending over
+          // the scaling photo cost every frame.
+          className="pointer-events-none absolute inset-0 md:mix-blend-screen"
           style={{
             backgroundImage:
               "radial-gradient(ellipse 60% 55% at 10% 100%, rgba(255,201,74,0.14), transparent 70%), radial-gradient(ellipse 45% 60% at 100% 80%, rgba(47,208,138,0.11), transparent 70%)",

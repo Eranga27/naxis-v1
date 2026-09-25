@@ -477,8 +477,10 @@ export default function Hero() {
         ref={frameRef}
         className="absolute inset-0 flex items-end overflow-hidden bg-ink"
       >
-        {/* Cinematic video backdrop + multi-stop contrast vignette */}
-        <div ref={mediaRef} className="absolute inset-0">
+        {/* Cinematic video backdrop + multi-stop contrast vignette. Its
+            own layer, so the scroll exit's push-in scales it on the GPU
+            instead of repainting the grades over the video every frame. */}
+        <div ref={mediaRef} className="absolute inset-0 will-change-transform">
           <video
             data-hero-video
             className="h-full w-full object-cover"
@@ -519,10 +521,12 @@ export default function Hero() {
 
         {/* Brand light: a warm gold glow rising behind the headline and a
             cooler emerald one off the right edge — gives the grade some
-            color instead of a flat black fade. */}
+            color instead of a flat black fade. Screen-blended from md up;
+            phones lay it on plainly, and skip the grain, since blending
+            over the video cost them on every frame of the scroll exit. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 mix-blend-screen"
+          className="pointer-events-none absolute inset-0 md:mix-blend-screen"
           style={{
             backgroundImage:
               "radial-gradient(ellipse 60% 55% at 12% 100%, rgba(255,201,74,0.16), transparent 70%), radial-gradient(ellipse 45% 60% at 100% 75%, rgba(47,208,138,0.13), transparent 70%)",
@@ -530,7 +534,7 @@ export default function Hero() {
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.09] mix-blend-overlay"
+          className="pointer-events-none absolute inset-0 hidden opacity-[0.09] mix-blend-overlay md:block"
           style={{ backgroundImage: GRAIN }}
         />
 
@@ -545,7 +549,10 @@ export default function Hero() {
                 scroll sequence can measure the lines against it. */}
             <div
               ref={headlineRef}
-              className="hero-headline relative font-headline uppercase text-cream tracking-[-0.01em] leading-[0.94] select-none text-[clamp(3.5rem,10vw,10rem)]"
+              // On phones its own layer, scaled on the GPU through the exit
+              // (their 3x screens keep it sharp at the 1.15x it grows to);
+              // on desktop it's redrawn at each size so it stays crisp.
+              className="hero-headline relative max-md:will-change-transform font-headline uppercase text-cream tracking-[-0.01em] leading-[0.94] select-none text-[clamp(3.5rem,10vw,10rem)]"
             >
               {/* LINE 1: "SIX COUNTRIES," */}
               <div
