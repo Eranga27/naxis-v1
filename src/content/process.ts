@@ -89,3 +89,15 @@ export const PROCESS_INTRO = {
   detail: "In apparel production, every detail matters.",
   focus: "We focus on the details so you can focus on your customers.",
 } as const;
+
+// How We Work as the next chapter, for the pages that lead on to it: the
+// Services hub, and the last service, so the services end there rather
+// than looping back to the first.
+export const PROCESS_CHAPTER = {
+  href: "/how-we-work",
+  label: "Next · How we work",
+  title: "Every detail matters.",
+  summary: PROCESS_INTRO.focus,
+  image: { src: "/images/process-sewing.jpg", alt: "Kraft paper garment patterns hanging on a rail" },
+  morphName: "hero-how-we-work",
+} as const;

@@ -107,7 +107,9 @@ domain is live.
 - Page kit: `PageShell` (the view-transition wrapper + footer — every page
   renders inside one), `PageHero` (photo hero with the homepage's
   frame-to-card exit), `NextChapter` (the end-of-page link whose photo
-  becomes the next hero), `SignOff` (the client's lockup), and
+  becomes the next hero; the pages run About → Services → the four
+  services in order → How We Work → Compliance → Start a Project, with
+  no loop back to service 01), `SignOff` (the client's lockup), and
   `components/motion/` (`SplitReveal`, `ScrubWords`, `CurtainImage`,
   `ThreadLine`). Hooks and constants in `src/lib/motion.ts`.
 - `src/content/` — single sources shared by the homepage and the pages,

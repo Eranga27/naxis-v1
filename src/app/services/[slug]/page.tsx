@@ -13,6 +13,7 @@ import TheLine from "@/components/services/TheLine";
 import TheLoupe from "@/components/services/TheLoupe";
 import DoorstepJourney from "@/components/services/DoorstepJourney";
 import { SERVICES, getService } from "@/content/services";
+import { PROCESS_CHAPTER } from "@/content/process";
 import { CONTACT_HREF } from "@/lib/navLinks";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -51,7 +52,9 @@ export default async function ServicePage({ params }: Props) {
 
   const index = SERVICES.indexOf(service);
   const signature = SIGNATURES[service.slug];
-  const next = SERVICES[(index + 1) % SERVICES.length];
+  // The services run in order, then lead on to How We Work, the next
+  // page after the Services hub; the last one doesn't loop back to 01.
+  const next = SERVICES[index + 1];
   const [lead, ...rest] = service.body;
 
   // Keyed by slug: moving from one service to the next is the same route,
@@ -195,14 +198,18 @@ export default async function ServicePage({ params }: Props) {
         </Reveal>
       </section>
 
-      <NextChapter
-        href={`/services/${next.slug}`}
-        label={`Next service · ${next.number}`}
-        title={next.title}
-        summary={next.summary}
-        image={{ src: next.image, alt: next.imageAlt }}
-        morphName={`hero-service-${next.slug}`}
-      />
+      {next ? (
+        <NextChapter
+          href={`/services/${next.slug}`}
+          label={`Next service · ${next.number}`}
+          title={next.title}
+          summary={next.summary}
+          image={{ src: next.image, alt: next.imageAlt }}
+          morphName={`hero-service-${next.slug}`}
+        />
+      ) : (
+        <NextChapter {...PROCESS_CHAPTER} />
+      )}
     </PageShell>
   );
 }

@@ -6,7 +6,7 @@ import ServiceIndex from "@/components/services/ServiceIndex";
 import ScrubWords from "@/components/motion/ScrubWords";
 import ThreadLine from "@/components/motion/ThreadLine";
 import { ABOUT } from "@/content/about";
-import { PROCESS_INTRO } from "@/content/process";
+import { PROCESS_CHAPTER } from "@/content/process";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -40,14 +40,7 @@ export default function ServicesPage() {
         <ServiceIndex />
       </section>
 
-      <NextChapter
-        href="/how-we-work"
-        label="Next · How we work"
-        title="Every detail matters."
-        summary={PROCESS_INTRO.focus}
-        image={{ src: "/images/process-sewing.jpg", alt: "Kraft paper garment patterns hanging on a rail" }}
-        morphName="hero-how-we-work"
-      />
+      <NextChapter {...PROCESS_CHAPTER} />
     </PageShell>
   );
 }
