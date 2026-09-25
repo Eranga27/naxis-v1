@@ -23,8 +23,8 @@ on its own:
 
 Writes src/content/giantWheel.ts (path data, centred on the wheel's
 centre, in the artwork's units), public/images/wheel/centre.webp, and
-public/images/wheel/original-{2048,1024}.webp: the whole wheel exactly as
-drawn, for hero C.
+public/images/wheel/original-{4096,2048,1024}.webp: the whole wheel exactly
+as drawn, for heroes C and D (D's close-up needs the 4096).
 """
 
 import io
@@ -230,9 +230,10 @@ def main() -> None:
 
     # The whole wheel exactly as the client drew it — a plain render of the
     # page, white face and all, cut to the circle — for hero C, which ends
-    # every weave on the original artwork.
+    # every weave on the original artwork, and hero D, which fills the
+    # screen with a quarter of it (hence the 4096).
     edge = radii[0] + rims[0]["width"] / 2
-    for size in (2048, 1024):
+    for size in (4096, 2048, 1024):
         zoom = size / (2 * edge)
         plain = page.get_pixmap(
             matrix=pymupdf.Matrix(zoom, zoom),
