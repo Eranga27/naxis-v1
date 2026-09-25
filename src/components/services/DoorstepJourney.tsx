@@ -13,10 +13,12 @@ gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin);
 
 const LOGISTICS = getService("logistics")!;
 const STAGES = LOGISTICS.stages!;
-const { width: W, height: H, origins, destination } = NETWORK_MAP;
+// Home is Australia; the shipment leaves from it (as on the homepage
+// globe) for the six countries.
+const { width: W, height: H, origins: PLACES, destination: HOME } = NETWORK_MAP;
 
-// Where the feeder routes meet and the journey proper begins — a point in
-// the Indian Ocean, standing for "the shipment", not a real port.
+// Where the main route ends and fans out to each country — a point in the
+// Indian Ocean, standing for "the shipment", not a real port.
 const HUB = { x: 640, y: 380 };
 
 // A gentle arc between two points: a quadratic curve whose control point
@@ -30,40 +32,46 @@ const arc = (from: { x: number; y: number }, to: { x: number; y: number }, bend 
   const c = control(from, to, bend);
   return `M ${from.x} ${from.y} Q ${c.x} ${c.y} ${to.x} ${to.y}`;
 };
-const ROUTE_CONTROL = control(HUB, destination, 0.25);
-const ROUTE = arc(HUB, destination, 0.25);
-// Where along the route each stage sits (t on the curve).
-const STOPS = [0, 0.38, 0.72, 1];
+const ROUTE_BEND = -0.25;
+const ROUTE_CONTROL = control(HOME, HUB, ROUTE_BEND);
+const ROUTE = arc(HOME, HUB, ROUTE_BEND);
+// Where along the route the first three stages sit (t on the curve):
+// documents at home, freight under way, customs where it fans out. The
+// fourth, the doorstep, is at each country.
+const STOPS = [0, 0.5, 1];
 const pointAt = (t: number) => ({
-  x: (1 - t) ** 2 * HUB.x + 2 * (1 - t) * t * ROUTE_CONTROL.x + t ** 2 * destination.x,
-  y: (1 - t) ** 2 * HUB.y + 2 * (1 - t) * t * ROUTE_CONTROL.y + t ** 2 * destination.y,
+  x: (1 - t) ** 2 * HOME.x + 2 * (1 - t) * t * ROUTE_CONTROL.x + t ** 2 * HUB.x,
+  y: (1 - t) ** 2 * HOME.y + 2 * (1 - t) * t * ROUTE_CONTROL.y + t ** 2 * HUB.y,
 });
-// Scroll progress at which each stage is reached (see the timeline).
-const REACHED = [0.18, 0.47, 0.66, 0.8];
+
+// The timeline, in scroll progress: the ride out to the hub, then the
+// routes fanning out to each country.
+const RIDE = { start: 0.08, length: 0.46 };
+const FAN = { start: 0.56, length: 0.2, stagger: 0.025 };
+// Progress at which each stage is reached.
+const REACHED = [0.05, RIDE.start + RIDE.length * STOPS[1], RIDE.start + RIDE.length, 0.8];
 
 /**
  * Logistics' signature: "we manage the journey from factory to your
- * doorstep", on the homepage's route map. The section pins; the six
- * countries' routes feed into the shipment, which then travels one route
- * to Australia, passing the client's four stages (documentation, freight,
- * customs, doorstep) as it goes — each lights up in the list beside the
- * map — and the map finally closes in on Australia, where "your door" is
- * pinned. Under reduced motion the whole journey is drawn and every stage
+ * doorstep", on the homepage's route map, running out from Australia as
+ * the homepage globe does. The section pins; the shipment leaves NAXIS
+ * Australia with its documents, travels out past freight and customs,
+ * and fans out to each of the six countries, where a door pin lands —
+ * the client's four stages lighting in the list beside the map as it
+ * goes. Under reduced motion the whole journey is drawn and every stage
  * is marked.
  */
 export default function DoorstepJourney() {
   const sectionRef = useRef<HTMLElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
   const routeRef = useRef<SVGPathElement>(null);
   const travellerRef = useRef<SVGGElement>(null);
   const stageRefs = useRef<Array<HTMLLIElement | null>>([]);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
-    const map = mapRef.current;
     const route = routeRef.current;
     const traveller = travellerRef.current;
-    if (!section || !map || !route || !traveller) return;
+    if (!section || !route || !traveller) return;
     const q = gsap.utils.selector(section);
     const stages = stageRefs.current.filter((el): el is HTMLLIElement => el !== null);
     const mark = (reached: number) =>
@@ -76,8 +84,7 @@ export default function DoorstepJourney() {
       { motion: "(prefers-reduced-motion: no-preference)", reduce: "(prefers-reduced-motion: reduce)" },
       (context) => {
         if ((context.conditions as { reduce: boolean }).reduce) {
-          gsap.set(traveller, { autoAlpha: 0 });
-          gsap.set(q("[data-door]"), { autoAlpha: 1 });
+          gsap.set(q("[data-parcel]"), { autoAlpha: 0 });
           mark(STAGES.length);
           return;
         }
@@ -88,10 +95,24 @@ export default function DoorstepJourney() {
           const point = route.getPointAtLength(length * ride.t);
           gsap.set(traveller, { x: point.x, y: point.y });
         };
+        // A small parcel rides each fan-out route as it draws.
+        const feeders = Array.from(section.querySelectorAll<SVGPathElement>("[data-feeder]"));
+        const parcels = Array.from(section.querySelectorAll<SVGCircleElement>("[data-parcel-small]"));
+        const fans = feeders.map((feeder, i) => {
+          const total = feeder.getTotalLength();
+          const state = { t: 0 };
+          return {
+            state,
+            move: () => {
+              const point = feeder.getPointAtLength(total * state.t);
+              gsap.set(parcels[i], { attr: { cx: point.x, cy: point.y } });
+            },
+          };
+        });
 
         gsap.set(q("[data-feeder], [data-route]"), { drawSVG: "0%" });
-        gsap.set(q("[data-origin], [data-stop], [data-door]"), { autoAlpha: 0 });
-        gsap.set(traveller, { autoAlpha: 0 });
+        gsap.set(q("[data-place], [data-stop], [data-door], [data-home]"), { autoAlpha: 0 });
+        gsap.set(q("[data-parcel]"), { autoAlpha: 0 });
         moveTraveller();
         mark(-1);
 
@@ -115,20 +136,33 @@ export default function DoorstepJourney() {
           },
         });
 
-        tl.to(q("[data-origin]"), { autoAlpha: 1, duration: 0.05, stagger: 0.01 }, 0)
-          .to(q("[data-feeder]"), { drawSVG: "100%", duration: 0.12, stagger: 0.01 }, 0.04)
-          .to(q("[data-stop='0']"), { autoAlpha: 1, duration: 0.03 }, 0.17)
-          .to(traveller, { autoAlpha: 1, duration: 0.03 }, 0.18)
-          // The shipment travels the route, drawing it behind itself.
-          .to(ride, { t: 1, duration: 0.6, onUpdate: moveTraveller }, 0.2)
-          .to(q("[data-route]"), { drawSVG: "100%", duration: 0.6 }, 0.2);
+        // Home lights, with the first stop: the documents.
+        tl.to(q("[data-home]"), { autoAlpha: 1, duration: 0.04 }, 0)
+          .to(q("[data-stop='0']"), { autoAlpha: 1, duration: 0.03 }, 0.03)
+          .to(traveller, { autoAlpha: 1, duration: 0.03 }, RIDE.start - 0.02)
+          // The shipment travels out, drawing the route behind it.
+          .to(ride, { t: 1, duration: RIDE.length, onUpdate: moveTraveller }, RIDE.start)
+          .to(q("[data-route]"), { drawSVG: "100%", duration: RIDE.length }, RIDE.start);
         STOPS.slice(1).forEach((stop, i) => {
-          tl.to(q(`[data-stop='${i + 1}']`), { autoAlpha: 1, duration: 0.03 }, 0.2 + stop * 0.6 - 0.02);
+          tl.to(q(`[data-stop='${i + 1}']`), { autoAlpha: 1, duration: 0.03 }, RIDE.start + stop * RIDE.length - 0.02);
         });
-        // Closing in on Australia: your door.
-        tl.to(map, { scale: 2.3, duration: 0.18, ease: "power2.inOut" }, 0.81)
-          .to(traveller, { autoAlpha: 0, duration: 0.04 }, 0.86)
-          .fromTo(q("[data-door]"), { autoAlpha: 0, y: -18 }, { autoAlpha: 1, y: 0, duration: 0.08, ease: "back.out(2)" }, 0.9);
+        // Then fans out to each country, where a door lands.
+        tl.to(traveller, { autoAlpha: 0, duration: 0.03 }, FAN.start);
+        fans.forEach((fan, i) => {
+          const at = FAN.start + i * FAN.stagger;
+          tl.to(parcels[i], { autoAlpha: 1, duration: 0.02 }, at)
+            .to(feeders[i], { drawSVG: "100%", duration: FAN.length }, at)
+            .to(fan.state, { t: 1, duration: FAN.length, onUpdate: fan.move }, at)
+            .to(parcels[i], { autoAlpha: 0, duration: 0.02 }, at + FAN.length - 0.01)
+            .to(q(`[data-place='${i}']`), { autoAlpha: 1, duration: 0.03 }, at + FAN.length - 0.02)
+            .fromTo(
+              q(`[data-door='${i}']`),
+              { autoAlpha: 0, y: -14 },
+              { autoAlpha: 1, y: 0, duration: 0.06, ease: "back.out(2)" },
+              at + FAN.length - 0.01
+            );
+        });
+        tl.to({}, { duration: 0.1 });
       }
     );
 
@@ -149,39 +183,33 @@ export default function DoorstepJourney() {
       </h2>
 
       <div className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-center lg:gap-14">
-        {/* The map, which closes in on Australia at the end */}
+        {/* The map */}
         <div className="relative overflow-hidden rounded-3xl bg-cream">
-          <div
-            ref={mapRef}
-            className="relative w-full"
-            style={{
-              aspectRatio: `${W} / ${H}`,
-              transformOrigin: `${(destination.x / W) * 100}% ${(destination.y / H) * 100}%`,
-            }}
-          >
+          <div className="relative w-full" style={{ aspectRatio: `${W} / ${H}` }}>
             <Image
               src="/images/network-map.svg"
-              alt="Map of the route from NAXIS's six countries to a door in Australia"
+              alt="Map of the route from NAXIS Australia out to the six countries in its network"
               fill
               unoptimized
               className="select-none"
             />
             <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
               <defs>
-                <linearGradient id="journey-gradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="var(--color-gold)" />
-                  <stop offset="100%" stopColor="var(--color-emerald)" />
+                <linearGradient id="journey-gradient" x1="1" y1="1" x2="0" y2="0">
+                  <stop offset="0%" stopColor="var(--color-emerald)" />
+                  <stop offset="100%" stopColor="var(--color-gold)" />
                 </linearGradient>
               </defs>
-              {origins.map((origin) => (
+              {/* Fan-out routes, drawn from the hub outwards */}
+              {PLACES.map((place) => (
                 <path
-                  key={`feed-${origin.name}`}
+                  key={`fan-${place.name}`}
                   data-feeder
-                  d={arc(origin, HUB, 0.18)}
+                  d={arc(HUB, place, -0.18)}
                   fill="none"
                   stroke="var(--color-gold)"
-                  strokeOpacity={0.55}
-                  strokeWidth={1.8}
+                  strokeOpacity={0.7}
+                  strokeWidth={2}
                   strokeLinecap="round"
                 />
               ))}
@@ -194,42 +222,63 @@ export default function DoorstepJourney() {
                 strokeWidth={3.5}
                 strokeLinecap="round"
               />
-              {origins.map((origin) => (
-                <circle key={`o-${origin.name}`} data-origin cx={origin.x} cy={origin.y} r={6} fill="var(--color-gold)" stroke="var(--color-ink)" strokeWidth={1.5} />
+              {/* Home: NAXIS Australia */}
+              <g data-home>
+                <circle cx={HOME.x} cy={HOME.y} r={24} fill="var(--color-emerald)" fillOpacity={0.15} className="network-pulse" />
+                <circle cx={HOME.x} cy={HOME.y} r={10} fill="var(--color-emerald)" stroke="var(--color-cream)" strokeWidth={3} />
+              </g>
+              {PLACES.map((place, i) => (
+                <circle key={`p-${place.name}`} data-place={i} cx={place.x} cy={place.y} r={6} fill="var(--color-gold)" stroke="var(--color-ink)" strokeWidth={1.5} />
               ))}
               {STOPS.map((stop, i) => {
                 const p = pointAt(stop);
+                // The first stop sits just off home, so its marker doesn't
+                // cover Australia's.
+                const dx = i === 0 ? -34 : 0;
+                const dy = i === 0 ? -10 : 0;
                 return (
                   <g key={stop} data-stop={i}>
-                    <circle cx={p.x} cy={p.y} r={15} fill="var(--color-cream)" stroke="var(--color-emerald)" strokeWidth={3} />
-                    <text x={p.x} y={p.y + 5.5} textAnchor="middle" fontSize={15} fontWeight={700} fill="var(--color-emerald)" className="font-body">
+                    <circle cx={p.x + dx} cy={p.y + dy} r={15} fill="var(--color-cream)" stroke="var(--color-emerald)" strokeWidth={3} />
+                    <text x={p.x + dx} y={p.y + dy + 5.5} textAnchor="middle" fontSize={15} fontWeight={700} fill="var(--color-emerald)" className="font-body">
                       {String(i + 1).padStart(2, "0")}
                     </text>
                   </g>
                 );
               })}
-              <g ref={travellerRef}>
+              {PLACES.map((place) => (
+                <circle key={`parcel-${place.name}`} data-parcel data-parcel-small r={5} cx={HUB.x} cy={HUB.y} fill="var(--color-gold)" stroke="var(--color-ink)" strokeWidth={1.2} />
+              ))}
+              <g ref={travellerRef} data-parcel>
                 <circle r={13} fill="var(--color-gold)" fillOpacity={0.3} />
                 <rect x={-6} y={-6} width={12} height={12} rx={2} fill="var(--color-gold)" stroke="var(--color-ink)" strokeWidth={1.5} />
               </g>
-              {/* Your door */}
-              {/* Placed by the outer group; the inner one drops in (a GSAP y
-                  on the placed group would replace its translate). */}
-              <g transform={`translate(${destination.x} ${destination.y - 26})`}>
-                <g data-door>
-                  <path d="M0 22 C -9 10 -12 5 -12 0 A 12 12 0 1 1 12 0 C 12 5 9 10 0 22 Z" fill="var(--color-emerald)" stroke="var(--color-cream)" strokeWidth={2} />
-                  <path d="M-5 2 L0 -3 L5 2 M-3.5 1 V5.5 H3.5 V1" fill="none" stroke="var(--color-cream)" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+              {/* A door at each country. Placed by the outer group; the
+                  inner one drops in (a GSAP y on the placed group would
+                  replace its translate). */}
+              {PLACES.map((place, i) => (
+                <g key={`door-${place.name}`} transform={`translate(${place.x} ${place.y - 22})`}>
+                  <g data-door={i}>
+                    <path d="M0 16 C -7 8 -9 4 -9 0 A 9 9 0 1 1 9 0 C 9 4 7 8 0 16 Z" fill="var(--color-emerald)" stroke="var(--color-cream)" strokeWidth={1.8} />
+                    <path d="M-3.8 1.5 L0 -2.2 L3.8 1.5 M-2.6 0.8 V4 H2.6 V0.8" fill="none" stroke="var(--color-cream)" strokeWidth={1.3} strokeLinejoin="round" strokeLinecap="round" />
+                  </g>
                 </g>
-              </g>
+              ))}
             </svg>
-            <span
-              data-door
-              className="pointer-events-none absolute whitespace-nowrap rounded-full bg-emerald px-2 py-0.5 font-body text-[0.45rem] font-bold uppercase tracking-[0.15em] text-cream sm:text-[0.5rem]"
-              style={{ left: `${(destination.x / W) * 100 + 1.6}%`, top: `${(destination.y / H) * 100 - 5.5}%` }}
+            {/* Right-anchored, running left from under the marker, so it
+                stays inside the map at any width. */}
+            <span className="pointer-events-none absolute whitespace-nowrap rounded-full bg-emerald px-2 py-0.5 font-body text-[0.45rem] font-bold uppercase tracking-[0.15em] text-cream sm:text-[0.5rem]"
+              style={{ right: `${100 - (HOME.x / W) * 100 - 2}%`, top: `${(HOME.y / H) * 100 + 3.5}%` }}
             >
-              Your door
+              NAXIS Australia
             </span>
           </div>
+          {/* The key: what the pins mean */}
+          <p className="absolute bottom-3 left-4 flex items-center gap-2 font-body text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-brown sm:bottom-4 sm:left-5 sm:text-xs">
+            <svg viewBox="-10 -10 20 28" className="h-4 w-3" aria-hidden="true">
+              <path d="M0 16 C -7 8 -9 4 -9 0 A 9 9 0 1 1 9 0 C 9 4 7 8 0 16 Z" fill="var(--color-emerald)" />
+            </svg>
+            Your door
+          </p>
         </div>
 
         {/* The client's four stages */}
