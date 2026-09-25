@@ -4,17 +4,13 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
+import { MOQ } from "@/content/moq";
+
 gsap.registerPlugin(ScrollTrigger);
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// MOQ copy sourced directly from the client-provided document.
-const BODY_PARAS = [
-  "Talk to us. Tell us what you want to create, how many you need, and where you want to go with your idea. We'll listen, understand, and work with you to find a way forward.",
-  "With our flexible manufacturing network, hands-on product development expertise and complete supply chain capabilities, we don't simply look at the numbers — we look at the possibilities.",
-  "Your idea matters to us. Whatever the quantity, talk to us first. Together, we'll find a way to make it happen.",
-];
 
 export default function Moq() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -113,7 +109,7 @@ export default function Moq() {
           }}
           className="mb-3 font-serif text-base italic text-ink/70 opacity-0 md:text-xl"
         >
-          Everything is possible when there&apos;s a willingness to find a way.
+          {MOQ.subline}
         </p>
 
         {/* Emphasis statement */}
@@ -123,12 +119,12 @@ export default function Moq() {
           }}
           className="mb-12 font-serif text-[clamp(1.6rem,4.2vw,3.25rem)] font-bold leading-[1.1] tracking-[-0.02em] text-brown opacity-0 md:mb-16"
         >
-          Don&apos;t let MOQ hold your idea back.
+          {MOQ.statement}
         </p>
 
         {/* Body paragraphs */}
         <div className="mx-auto flex max-w-3xl flex-col gap-5 md:gap-6">
-          {BODY_PARAS.map((para, i) => (
+          {MOQ.body.map((para, i) => (
             <p
               key={i}
               ref={(el) => {

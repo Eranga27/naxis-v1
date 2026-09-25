@@ -4,45 +4,12 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { CONTACT } from "@/lib/contact";
+import { MailIcon, PhoneIcon, WhatsAppIcon } from "@/components/ContactIcons";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-function PhoneIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
-      <path
-        d="M6.5 3h3l1.5 4-2 1.5c.9 2 2.6 3.7 4.6 4.6l1.5-2 4 1.5v3c0 1-1 2-2.2 1.9C10.6 17 6.5 13 5.1 6.7 5 5.5 5.5 4 6.5 3z"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
-      <path
-        d="M4 20l1.3-4A8 8 0 1112 20a8 8 0 01-4-1.1L4 20z"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <path d="M8.5 9.5c.3 2.5 2.5 4.7 5 5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function MailIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
-      <rect x="2" y="4" width="20" height="16" rx="2" strokeLinejoin="round" />
-      <path d="M2 7l10 7 10-7" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function ClosingCTA() {
   const sectionRef = useRef<HTMLElement>(null);
