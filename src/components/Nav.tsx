@@ -51,7 +51,7 @@ export default function Nav() {
         mission
           ? heroFramed || mission.getBoundingClientRect().top <= 80
           : darkHero
-            ? darkHero.getBoundingClientRect().bottom <= 80
+            ? heroFramed || darkHero.getBoundingClientRect().bottom <= 80
             : true
       );
     };

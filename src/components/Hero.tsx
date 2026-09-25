@@ -5,6 +5,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { INTRO_SESSION_KEY, onReveal } from "@/lib/intro";
 import { GOLD } from "@/lib/brand";
+import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP } from "@/lib/motion";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -38,12 +39,6 @@ const COUNTRY_REST_COLOR = "rgba(244, 239, 228, 0.55)"; // cream/55
 // in. The hidden start sits far enough down to clear that extra reach.
 const LINE_MASK = "inset(-0.3em -100vw -0.25em -100vw)";
 const LINE_HIDDEN_Y = "135%";
-
-// Where the full-bleed frame ends up once scrolled: a rounded card on the
-// cream of the section that follows. Phones keep more of the width.
-const CARD_CLIP_PHONE = "inset(15% 4% 15% 4% round 22px)";
-const CARD_CLIP_WIDE = "inset(11% 5.5% 11% 5.5% round 36px)";
-const FULL_CLIP = "inset(0% 0% 0% 0% round 0px)";
 
 // Static film grain, as an inline SVG turbulence tile. Breaks up the flat
 // digital gradient over the video so the hero reads as footage, not a
