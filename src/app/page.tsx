@@ -1,4 +1,4 @@
-import ForgedWheelHero from "@/components/ForgedWheelHero";
+import WovenWheelHero from "@/components/WovenWheelHero";
 import Mission from "@/components/Mission";
 import AboutNaxis from "@/components/AboutNaxis";
 import IdeasWearable from "@/components/IdeasWearable";
@@ -18,7 +18,7 @@ export default function Home() {
     <>
       <HomeIntro />
       <PageShell>
-        <ForgedWheelHero />
+        <WovenWheelHero />
         <Mission />
         <AboutNaxis />
         {/* A mid-page interlude between what NAXIS makes and how —

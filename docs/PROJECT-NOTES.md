@@ -41,7 +41,12 @@ domain is live.
   otherwise. Its pushes get Vercel previews like any branch.
 - `v2-hero-section` → a snapshot of `v2` at `e3299bd`: V2 with hero A, the
   flat CSS wheel, kept whole at the owner's request when hero B was made.
-  `v2` carries hero B.
+- `v2-hero-b` → V2 with hero B (the forged 3D wheel), at `9feb516`; `v2`
+  itself is still there too.
+- `v2-hero-c` → V2 with hero C (the woven wheel), branched from `v2`.
+  The three heroes are alternatives for the client to choose between;
+  each branch has its own preview. Once one is chosen, bring it to `v2`
+  and drop the other heroes' components.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
 
@@ -159,6 +164,8 @@ domain is live.
   "dark" (gilded, for the hero's stage) tone.
 - `src/lib/wheelScene.ts` — hero B's three.js scene (loaded on demand,
   like the globe); draws whatever `WheelFrame` it's given.
+- `src/lib/wovenScene.ts` — hero C's: the artwork sampled into points,
+  one draw call; draws whatever `WovenFrame` it's given.
 - `src/lib/globeScene.ts` — the Global Network globe (three.js): night
   Earth shader, halo, routes, markers; it only draws what
   `GlobalNetwork.tsx` passes it each frame. Textures in
@@ -182,6 +189,23 @@ domain is live.
   entrance off it. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
+- **Hero C** (`WovenWheelHero.tsx` → `WovenWheelStage.tsx` +
+  `src/lib/wovenScene.ts`, on `v2-hero-c`): the Giant Wheel woven from
+  thread — ~120k points of light (42k on phones), sampled from the
+  artwork drawn to canvases (rings from the same path data, the disc from
+  the same image) with its colours: half on the lettering and rims, 40%
+  on the icons, 10% a light scatter of the disc's cream ground. One
+  vertex shader places each point either loose, on one of 190 threads
+  flowing across (warp) or down (weft) the screen — each thread has its
+  own depth, so it stays a line — or woven, turned with its ring; each
+  point weaves in at its own moment, centre first, swirling on the way.
+  Arrival: the zoom through the X lands on the loom, and the threads
+  weave the wheel, finished with a ripple through the cloth. Loop (~26s):
+  woven and turning with a light running round it and a ripple; undone
+  into threads the other way from last time; woven again. On desktop the
+  threads part round the pointer. Scrolling unpicks the weave as the
+  stage closes to a card. Points are sized to the wheel on screen, so it
+  reads at any size. Stand-in: hero A.
 - **Hero B** (`ForgedWheelHero.tsx` → `ForgedWheelStage.tsx` +
   `src/lib/wheelScene.ts`, on `v2`): the Giant Wheel forged in WebGL.
   The client's lettering is extruded from its own outlines
@@ -305,6 +329,8 @@ these when adding motion:
   transforms, so turning them is compositing, not repainting.
 - Hero B on phones: 3 curve segments and one bevel step on the lettering
   (~120k triangles), no bloom, 1.5x pixel ratio, 160 dust motes.
+- Hero C on phones: 42k points instead of 120k, each drawn larger so the
+  weave still reads.
 
 ## GSAP / scroll gotchas learned the hard way
 
