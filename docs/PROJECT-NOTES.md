@@ -35,7 +35,10 @@ domain is live.
 - The V1 inner pages (`docs/V1-PLAN.md`) were built on
   `v1-homepage-rebuild` on 2026-09-25 and went to `main` the same day at
   the owner's request; later rounds follow the same ask-first workflow.
-- Plan: keep refining V1, then a full top-to-bottom V2 later.
+- `v2` → V2, branched from `main` at `df4c3f0` (V1 as the client
+  reviewed it: ~70% satisfied, with a first round of changes). V2 work
+  goes here and only here; `main` stays V1 until the owner says
+  otherwise. Its pushes get Vercel previews like any branch.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
 
@@ -146,7 +149,11 @@ domain is live.
   depth (centred card flat, neighbours turned/shrunk/dimmed), centring
   padding, the same tick rail, and a one-off nudge. Wayfinding only under
   reduced motion.
-- `src/lib/intro.ts` — preloader ↔ hero entrance handshake.
+- `src/lib/intro.ts` — preloader ↔ hero entrance handshake; the veil
+  holds until the wheel's disc image is decoded (`waitForHeroWheel`).
+- `components/wheel/WheelLayers.tsx` — the wheel's rims, lettered rings
+  and disc as shared server components, in a "light" (as drawn) or
+  "dark" (gilded, for the hero's stage) tone.
 - `src/lib/globeScene.ts` — the Global Network globe (three.js): night
   Earth shader, halo, routes, markers; it only draws what
   `GlobalNetwork.tsx` passes it each frame. Textures in
@@ -170,14 +177,27 @@ domain is live.
   entrance off it. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
-- **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase
-  exit on every size. The statement moves to centre and grows, then the
-  full-bleed frame clip-paths to a rounded card on cream, handing over to
-  Mission seamlessly. It fires `hero:pinned` (Mission refreshes) and
-  `hero:framed` (Nav goes solid over the cream). Below lg an "Operating
-  across" roller turns through the six countries. Once the headline's
-  line masks release, it takes a layered shadow (`.hero-headline.is-lit`
-  in globals), over a soft shade pooled behind it.
+- **Hero** (`WheelHero.tsx` + `WheelHeroStage.tsx`, V2): the client's
+  Giant Wheel and nothing else, on a dark stage, always turning — the
+  client wants to leave it running on a large screen. The intro's zoom
+  through the X lands on the centre disc (the letters show it as they
+  become windows); the camera pulls back while the ring outlines draw in
+  and each lettered ring is lit clockwise behind a running spark (a
+  conic `mask-image` on `--sweep`, cleared once lit). Then it loops for
+  good: the rings turn at their own paces in alternating directions
+  (CSS `wheel-spin`, `--spin`/`--spin-dir`), the stage drifts in a slow
+  tilt (`wheel-drift`) that parts the layers, stepped in depth with
+  GSAP `z`, and each scaled back by the lens so face-on they sit exactly
+  as drawn; light sweeps the rings, rays turn behind, the glow breathes,
+  gold dust rises (a canvas, 30fps on phones), and every few seconds a
+  spark orbits the rim. On desktop the wheel leans to the pointer. All
+  rest while it's off screen (`.wheel-paused`, dust stopped). Scrolling
+  pins it: the wheel tips back (its layers stack visibly) and the stage
+  closes to a card on cream; it fires `hero:pinned` and `hero:framed` as
+  the old hero did. The only text is a Scroll cue; the h1 is sr-only.
+  Reduced motion: the finished wheel, still, no pin. The V1 video hero
+  (`Hero.tsx`) is on `main`; its video and poster files are still in
+  `public/` (the poster is the menu's Home preview).
 - **Ideas Wearable** (`IdeasWearable.tsx`): the client's phrase told as
   how a garment is made, on pattern paper (a dot grid on bark). Chalk
   guides and "WE MAKE" arrive as it scrolls in; pinned, "ideas" is
@@ -291,8 +311,12 @@ these when adding motion:
   refresh.
 - Pin lengths must be functions (`end: () => ...`) with
   `invalidateOnRefresh`, never numbers captured at load.
-- Hero pins only after its entrance finishes; Mission listens for the
-  `hero:pinned` event to refresh — see comments in `Mission.tsx`.
+- The V1 hero pinned only after its entrance finished, so Mission
+  listens for `hero:pinned` to refresh — see `Mission.tsx`. The V2 wheel
+  hero pins at mount and fires it on the next frame.
+- A layer in a `preserve-3d` stack at `z` looks `P/(P−z)` bigger through
+  perspective `P`; scale it by `(P−z)/P` so face-on it keeps its drawn
+  size and only the tilt shows the depth (the wheel hero's rings).
 - Gradient-clipped text can't carry a parent's `text-shadow`; use a
   `drop-shadow` filter.
 - SVG gradients inside a `display:none` SVG don't paint — shared defs live
@@ -344,9 +368,10 @@ these when adding motion:
 - Cloud sessions: Chromium is at `/opt/pw-browsers/chromium`, but the
   container runs as root, where Chrome needs `--no-sandbox`. Point
   `CHROME_PATH` at a two-line wrapper script that adds it. That Chromium
-  can't decode H.264, so the hero video never plays (poster only) and the
-  intro waits out its 6s media timeout; for timing checks, stub
-  `HTMLMediaElement.prototype.readyState` to 4 before load. Animations are
+  can't decode H.264, so videos never play (poster only); on `main` the
+  intro waits out the V1 hero video's 6s timeout, so for timing checks
+  stub `HTMLMediaElement.prototype.readyState` to 4 before load (V2's
+  hero waits only on the wheel's disc image). Animations are
   best checked with a CDP screencast (`Page.startScreencast`) turned into
   contact sheets, not single screenshots. The screencast sends no frames
   during a view transition — take `Page.captureScreenshot` bursts there.

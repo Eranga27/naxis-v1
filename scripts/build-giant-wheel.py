@@ -201,7 +201,9 @@ def main() -> None:
     svg.append("</svg>")
     OUT_IMG.mkdir(parents=True, exist_ok=True)
     doc = pymupdf.open(stream="".join(svg).encode(), filetype="svg")
-    for size in (1024,):
+    # 2048 across, for a wheel filling a large screen; next/image serves
+    # smaller cuts to smaller screens.
+    for size in (2048,):
         zoom = size / (2 * r)
         pix = doc[0].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=True)
         shapes = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGBA")

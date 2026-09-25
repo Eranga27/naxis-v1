@@ -32,34 +32,20 @@ export function onReveal(cb: () => void): () => void {
 }
 
 /**
- * Resolves once the hero video has buffered enough to play, so the veil never
- * lifts onto a blank or stalled video. Capped so a slow connection can't trap
- * the visitor on the white screen.
+ * Resolves once the homepage hero's wheel is ready to be seen — its centre
+ * disc (the one raster in it) loaded and decoded — so the veil never
+ * lifts onto a half-drawn wheel. Capped so a slow connection can't trap
+ * the visitor on the intro.
  */
-export function waitForHeroVideo(timeoutMs = 6000): Promise<void> {
-  return new Promise((resolve) => {
-    const video = document.querySelector<HTMLVideoElement>(
-      "video[data-hero-video]"
-    );
-    if (!video) {
-      resolve();
-      return;
-    }
-    // HAVE_FUTURE_DATA or better — already playable.
-    if (video.readyState >= 3) {
-      resolve();
-      return;
-    }
-
-    const done = () => {
-      video.removeEventListener("canplaythrough", done);
-      video.removeEventListener("canplay", done);
-      clearTimeout(timer);
-      resolve();
-    };
-
-    const timer = setTimeout(done, timeoutMs);
-    video.addEventListener("canplaythrough", done);
-    video.addEventListener("canplay", done);
-  });
+export function waitForHeroWheel(timeoutMs = 6000): Promise<void> {
+  const img = document.querySelector<HTMLImageElement>("#top img[data-wheel-disc]");
+  if (!img) return Promise.resolve();
+  const ready = img.complete
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => {
+        img.addEventListener("load", () => resolve(), { once: true });
+        img.addEventListener("error", () => resolve(), { once: true });
+      });
+  const decoded = ready.then(() => img.decode?.().catch(() => {}));
+  return Promise.race([decoded.then(() => {}), new Promise<void>((r) => setTimeout(r, timeoutMs))]);
 }

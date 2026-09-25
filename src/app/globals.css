@@ -203,6 +203,71 @@ html.custom-cursor-active * {
   }
 }
 
+/* The homepage hero's wheel (WheelHero): each ring turns forever at its
+   own --spin, the stage drifts in a slow tilt, the glow breathes. CSS
+   animations run on the compositor, so the loop stays smooth on a large
+   screen left running. Paused while the hero is off screen
+   (.wheel-paused), and off entirely under reduced motion. */
+@keyframes wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wheel-drift {
+  0%,
+  100% {
+    transform: rotateX(9deg) rotateY(-11deg);
+  }
+  25% {
+    transform: rotateX(-3deg) rotateY(7deg);
+  }
+  50% {
+    transform: rotateX(-10deg) rotateY(-2deg);
+  }
+  75% {
+    transform: rotateX(4deg) rotateY(12deg);
+  }
+}
+@keyframes wheel-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes wheel-cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(200%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wheel-spin {
+    animation: wheel-spin var(--spin, 120s) linear infinite;
+    animation-direction: var(--spin-dir, normal);
+  }
+  .wheel-drift {
+    animation: wheel-drift 26s ease-in-out infinite;
+  }
+  .wheel-breathe {
+    animation: wheel-breathe 7s ease-in-out infinite;
+  }
+  .wheel-cue {
+    animation: wheel-cue 2.2s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+  }
+}
+
+.wheel-paused :is(.wheel-spin, .wheel-drift, .wheel-breathe, .wheel-cue) {
+  animation-play-state: paused;
+}
+
 /* Set by the inline head script when the intro has already played this
    session — suppresses the veil before it can paint. */
 html.intro-seen [data-preloader] {
