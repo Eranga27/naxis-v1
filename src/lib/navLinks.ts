@@ -13,7 +13,7 @@ export const NAV_LINKS: NavLink[] = [
   { label: "About", href: "/about", image: "/images/about-hero.jpg" },
   { label: "What We Make", href: "/#capabilities", image: "/images/cat1.jpg" },
   { label: "Process", href: "/#process", image: "/images/process-sewing.jpg" },
-  { label: "Services", href: "/#services", image: "/images/services/manufacturing.jpg" },
+  { label: "Services", href: "/services", image: "/images/services/manufacturing.jpg" },
   { label: "Global Network", href: "/#global-network", image: "/images/process-shipment.jpg" },
   { label: "Compliance", href: "/#certifications", image: "/images/divider-poster.jpg" },
   { label: "MOQ", href: "/#moq", image: "/images/moq-bg.jpg" },

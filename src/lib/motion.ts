@@ -33,3 +33,18 @@ export const useReducedMotion = () =>
     () => window.matchMedia(REDUCED).matches,
     () => false
   );
+
+const FINE_POINTER = "(hover: hover) and (pointer: fine)";
+const subscribePointer = (onChange: () => void) => {
+  const mq = window.matchMedia(FINE_POINTER);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+};
+
+/** True with a mouse or trackpad (hover interactions), false on touch. */
+export const useFinePointer = () =>
+  useSyncExternalStore(
+    subscribePointer,
+    () => window.matchMedia(FINE_POINTER).matches,
+    () => false
+  );
