@@ -39,6 +39,9 @@ domain is live.
   reviewed it: ~70% satisfied, with a first round of changes). V2 work
   goes here and only here; `main` stays V1 until the owner says
   otherwise. Its pushes get Vercel previews like any branch.
+- `v2-hero-section` → a snapshot of `v2` at `e3299bd`: V2 with hero A, the
+  flat CSS wheel, kept whole at the owner's request when hero B was made.
+  `v2` carries hero B.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
 
@@ -154,6 +157,8 @@ domain is live.
 - `components/wheel/WheelLayers.tsx` — the wheel's rims, lettered rings
   and disc as shared server components, in a "light" (as drawn) or
   "dark" (gilded, for the hero's stage) tone.
+- `src/lib/wheelScene.ts` — hero B's three.js scene (loaded on demand,
+  like the globe); draws whatever `WheelFrame` it's given.
 - `src/lib/globeScene.ts` — the Global Network globe (three.js): night
   Earth shader, halo, routes, markers; it only draws what
   `GlobalNetwork.tsx` passes it each frame. Textures in
@@ -177,7 +182,26 @@ domain is live.
   entrance off it. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
-- **Hero** (`WheelHero.tsx` + `WheelHeroStage.tsx`, V2): the client's
+- **Hero B** (`ForgedWheelHero.tsx` → `ForgedWheelStage.tsx` +
+  `src/lib/wheelScene.ts`, on `v2`): the Giant Wheel forged in WebGL.
+  The client's lettering is extruded from its own outlines
+  (`giantWheel.ts` through three's SVGLoader) into bevelled gold, cream
+  and emerald relief on dark enamel bands, each band edged with a gold
+  rim, the icon disc in a gold bezel; lit by a dark softbox "studio"
+  environment built in the scene (a bright room washed the enamel pale
+  and the gold white) with a soft front light for the lettering's faces,
+  plus rays, a glow and 3D gold dust; bloom on desktop. Arrival: the
+  zoom through the X lands on the wheel edge on, which turns to face the
+  camera as it keeps pushing in, and its rings close up and lock with a
+  flash. Loop (~22s, for a large screen left on it): the seal turns,
+  rings at their own paces; the rings lift apart and tip on their own
+  axes as a gyroscope while the camera swings round; they swing back and
+  lock with a flash and a ring of light. The component tweens a state
+  object with GSAP and passes it to `render()` every frame; `wheelScene`
+  holds no timing. Phones: coarser curves, no bloom, fewer motes, 1.5x.
+  The veil waits on the scene (`setHeroReady`). Without WebGL or under
+  reduced motion, hero A stands in.
+- **Hero A** (`WheelHero.tsx` + `WheelHeroStage.tsx`, V2): the client's
   Giant Wheel and nothing else, on a dark stage, always turning — the
   client wants to leave it running on a large screen. The intro's zoom
   through the X lands on the centre disc (the letters show it as they
@@ -279,6 +303,8 @@ these when adding motion:
   journey).
 - The wheel's rings are separate `<svg>`/`<img>` layers turned with CSS
   transforms, so turning them is compositing, not repainting.
+- Hero B on phones: 3 curve segments and one bevel step on the lettering
+  (~120k triangles), no bloom, 1.5x pixel ratio, 160 dust motes.
 
 ## GSAP / scroll gotchas learned the hard way
 
@@ -314,6 +340,12 @@ these when adding motion:
 - The V1 hero pinned only after its entrance finished, so Mission
   listens for `hero:pinned` to refresh — see `Mission.tsx`. The V2 wheel
   hero pins at mount and fires it on the next frame.
+- An IntersectionObserver made before a ScrollTrigger pin moves its
+  target into the pin-spacer kept reporting it off screen (hero B's
+  render loop never started). Observe after the pin exists, or check
+  the box in the loop, as hero B does.
+- Metal facing the camera reflects what's behind the viewer: a dark
+  studio environment needs a soft light there, or flat gold reads black.
 - A layer in a `preserve-3d` stack at `z` looks `P/(P−z)` bigger through
   perspective `P`; scale it by `(P−z)/P` so face-on it keeps its drawn
   size and only the tilt shows the depth (the wheel hero's rings).
@@ -378,7 +410,9 @@ these when adding motion:
   Headless Chrome reports a coarse pointer, so to test cursor features
   patch `matchMedia` to answer `(pointer: fine)` before load. For the
   WebGL globe, launch headless Chrome with `--enable-unsafe-swiftshader
-  --use-angle=swiftshader`. Scroll into pinned sections in steps after
+  --use-angle=swiftshader`. SwiftShader draws hero B at about a frame a
+  second, so check its poses with `Page.captureScreenshot` at set times
+  (the timelines run on real time), not a screencast. Scroll into pinned sections in steps after
   the page settles; a single jump lands before late re-measures move
   them.
 - Phone performance: emulate 390×844 at 3x density with CPU throttling
