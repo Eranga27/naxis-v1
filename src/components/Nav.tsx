@@ -54,10 +54,15 @@ export default function Nav() {
     const update = () => {
       frame = 0;
       // Down by more than a nudge tucks it; up by a little brings it
-      // back. Near the top it always shows.
+      // back. Near the top it always shows — except on the homepage, where
+      // the hero has the screen to itself (the client's call): nothing
+      // shows until Mission reaches the bar, and from there it comes back
+      // on the way up. Keyboard focus still brings it out (onFocus below).
       const y = window.scrollY;
       const dy = y - lastY;
-      if (y < 120) setTucked(false);
+      const overHero = !!mission && mission.getBoundingClientRect().top > 80;
+      if (overHero) setTucked(true);
+      else if (y < 120) setTucked(false);
       else if (dy > 6) setTucked(true);
       else if (dy < -6) setTucked(false);
       if (Math.abs(dy) > 6 || y < 120) lastY = y;
