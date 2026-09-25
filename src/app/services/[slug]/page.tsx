@@ -11,6 +11,7 @@ import SplitReveal from "@/components/motion/SplitReveal";
 import SketchToSample from "@/components/services/SketchToSample";
 import TheLine from "@/components/services/TheLine";
 import TheLoupe from "@/components/services/TheLoupe";
+import DoorstepJourney from "@/components/services/DoorstepJourney";
 import { SERVICES, getService } from "@/content/services";
 import { CONTACT_HREF } from "@/lib/navLinks";
 
@@ -23,6 +24,7 @@ const SIGNATURES: Record<string, { Component: () => React.JSX.Element; coversSta
   "product-development": { Component: SketchToSample },
   manufacturing: { Component: TheLine },
   quality: { Component: TheLoupe, coversStages: true },
+  logistics: { Component: DoorstepJourney, coversStages: true },
 };
 
 // Only the four known services exist; anything else is a 404.
