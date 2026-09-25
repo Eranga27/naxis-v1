@@ -71,9 +71,19 @@ export default function LostInTransit() {
 
   return (
     <div className="relative w-full" style={{ aspectRatio: `${VIEW.w} / ${VIEW.h}` }}>
+      {/* The map, still, in a drawing of its own: sharing one with the
+          moving parcel and dashes, the ~2,900-dot map was repainted on
+          every frame. */}
       <svg
         viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}
         className="absolute inset-0 h-full w-full"
+        aria-hidden="true"
+      >
+        <image href="/images/network-map.svg" x={0} y={0} width={W} height={H} />
+      </svg>
+      <svg
+        viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}
+        className="absolute inset-0 h-full w-full will-change-transform"
         aria-hidden="true"
       >
         <defs>
@@ -82,7 +92,6 @@ export default function LostInTransit() {
             <stop offset="100%" stopColor="var(--color-emerald)" />
           </linearGradient>
         </defs>
-        <image href="/images/network-map.svg" x={0} y={0} width={W} height={H} />
         <path
           ref={routeRef}
           d={ROUTE}

@@ -175,7 +175,8 @@ html.custom-cursor-active * {
   animation: hero-scroll-cue 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
-/* Global Network: slow breathing ring around the Australia marker. */
+/* Logistics map: slow breathing ring around the Australia marker (an HTML
+   ring over the map, see DoorstepJourney). */
 @keyframes network-pulse {
   0%,
   100% {

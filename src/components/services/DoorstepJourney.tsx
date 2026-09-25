@@ -193,7 +193,10 @@ export default function DoorstepJourney() {
               unoptimized
               className="select-none"
             />
-            <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
+            {/* Its own layer (will-change): the routes and parcels change on
+                every frame of the pin, and without it each change repainted
+                the ~2,900-dot map beneath as well — 3x slower on phones. */}
+            <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full overflow-visible will-change-transform" aria-hidden="true">
               <defs>
                 <linearGradient id="journey-gradient" x1="1" y1="1" x2="0" y2="0">
                   <stop offset="0%" stopColor="var(--color-emerald)" />
@@ -224,7 +227,6 @@ export default function DoorstepJourney() {
               />
               {/* Home: NAXIS Australia */}
               <g data-home>
-                <circle cx={HOME.x} cy={HOME.y} r={24} fill="var(--color-emerald)" fillOpacity={0.15} className="network-pulse" />
                 <circle cx={HOME.x} cy={HOME.y} r={10} fill="var(--color-emerald)" stroke="var(--color-cream)" strokeWidth={3} />
               </g>
               {PLACES.map((place, i) => (
@@ -264,6 +266,20 @@ export default function DoorstepJourney() {
                 </g>
               ))}
             </svg>
+            {/* Home's pulse, as an HTML ring over the map rather than a
+                circle inside the SVG: animating anything in the SVG makes
+                the whole map drawing repaint, every frame, for as long as
+                it's on screen. The outer span shows and hides with the
+                timeline; the inner one pulses (a CSS animation would
+                override GSAP's opacity on the same element). */}
+            <span
+              data-home
+              aria-hidden="true"
+              className="pointer-events-none absolute aspect-square w-[4.8%] -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${(HOME.x / W) * 100}%`, top: `${(HOME.y / H) * 100}%` }}
+            >
+              <span className="network-pulse block h-full w-full rounded-full bg-emerald/15" />
+            </span>
             {/* Right-anchored, running left from under the marker, so it
                 stays inside the map at any width. */}
             <span className="pointer-events-none absolute whitespace-nowrap rounded-full bg-emerald px-2 py-0.5 font-body text-[0.45rem] font-bold uppercase tracking-[0.15em] text-cream sm:text-[0.5rem]"
