@@ -14,7 +14,8 @@ lead generation: brands wanting their own clothing line.
 
 Stack: Next.js 16.3.4 (App Router — read `AGENTS.md`; APIs differ from
 older Next), React 19.2.8, Tailwind v4, GSAP (ScrollTrigger, SplitText,
-DrawSVG, Draggable — all free now), Lenis smooth scroll.
+DrawSVG, Draggable — all free now), Lenis smooth scroll, and three.js
+for the homepage globe only (loaded on demand).
 
 The only server code is `src/app/api/enquiry/route.ts`, which sends the
 Start a Project brief through Resend. It needs `RESEND_API_KEY`,
@@ -129,6 +130,11 @@ domain is live.
   padding, the same tick rail, and a one-off nudge. Wayfinding only under
   reduced motion.
 - `src/lib/intro.ts` — preloader ↔ hero entrance handshake.
+- `src/lib/globeScene.ts` — the Global Network globe (three.js): night
+  Earth shader, halo, routes, markers; it only draws what
+  `GlobalNetwork.tsx` passes it each frame. Textures in
+  `public/images/globe/` are NASA imagery (public domain), rebuilt by
+  `scripts/build-globe-textures.py`.
 - `media-library/` — tracked masters not served (hero 4K master, retired
   media). `new-media/` — **git-ignored**, 118MB of local stock, only on the
   owner's machine.
@@ -149,6 +155,16 @@ domain is live.
   Mission seamlessly. It fires `hero:pinned` (Mission refreshes) and
   `hero:framed` (Nav goes solid over the cream). Below lg an "Operating
   across" roller turns through the six countries.
+- **Global Network** (`GlobalNetwork.tsx`): a night globe rising from the
+  foot of a dark section (after moto-card.com, which the owner cited).
+  The section pins: the globe rises, NAXIS Australia lights, and a route
+  leaves it for each country, nearest first (exports, not imports: the
+  owner's call), while the globe turns west; countries light as routes
+  land, the logistics steps pop up as status pills, and shipments keep
+  running out along the routes. Copy lines the risen globe would reach
+  fade out. three.js and textures load as it approaches; it renders only
+  while on screen. Reduced motion: the finished network, still. No WebGL:
+  a list of the countries, no pin.
 - **Phones**: Hero and Ideas Wearable pin (shorter pins); Capabilities and
   Process use the swipe deck; Services cards are dealt in (no sticky:
   tall cards would hide their links). Full-screen pinned sections use
@@ -217,6 +233,16 @@ domain is live.
   placement on an outer static `<g>` and animate an inner one.
 - `clip-path` (like `overflow: hidden`) flattens a `preserve-3d` element:
   on a flip card, clip the faces, not the card.
+- GSAP reads an array target as a list of targets, so
+  `gsap.to(numbers, { 0: 1 })` does nothing: tween objects (`{ p: 0 }`).
+- A ScrollTrigger on a pinned section ends at the section's own bottom
+  edge, partway through the pin. To know whether a pinned section is on
+  screen, use an IntersectionObserver (it stays in view while pinned).
+- three.js orthographic cameras clip to their near/far range: a globe
+  scaled to hundreds of px needs a depth range to match, or only a thin
+  slice of it draws.
+- Additive WebGL layers over a transparent canvas: put the intensity in
+  alpha, or where they fade to black they hide the page behind.
 - A page reused across dynamic params (service → service) keeps its
   instance, so no transition plays and effects go stale: key `PageShell`
   by the slug. Preload the next hero on intent (`preloadHero`) so a
@@ -242,7 +268,11 @@ domain is live.
   contact sheets, not single screenshots. The screencast sends no frames
   during a view transition — take `Page.captureScreenshot` bursts there.
   Headless Chrome reports a coarse pointer, so to test cursor features
-  patch `matchMedia` to answer `(pointer: fine)` before load.
+  patch `matchMedia` to answer `(pointer: fine)` before load. For the
+  WebGL globe, launch headless Chrome with `--enable-unsafe-swiftshader
+  --use-angle=swiftshader`. Scroll into pinned sections in steps after
+  the page settles; a single jump lands before late re-measures move
+  them.
 
 ## Next up
 
