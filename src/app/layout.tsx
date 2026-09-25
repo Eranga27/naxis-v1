@@ -14,6 +14,7 @@ import RouteEffects from "@/components/RouteEffects";
 import Nav from "@/components/Nav";
 import CustomCursor from "@/components/CustomCursor";
 import ScrollProgress from "@/components/ScrollProgress";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -86,12 +87,32 @@ const notoBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "NAXIS Australia — Private Label Apparel Manufacturing",
     template: "%s — NAXIS Australia",
   },
-  description:
-    "NAXIS Australia is an Australian-based apparel product development, manufacturing and complete supply chain solutions company, supported by our own facilities and a trusted global network of specialised partner factories.",
+  description: SITE_DESCRIPTION,
+  // Share cards: each page's opengraph-image supplies the image.
+  openGraph: {
+    siteName: SITE_NAME,
+    locale: "en_AU",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+// Structured data for search engines: only what the client has confirmed
+// (name, positioning, logo). Address, phone and email join it once they
+// are confirmed — see lib/contact.ts.
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logos/naxis-wordmark.png`,
+  description: SITE_DESCRIPTION,
+  slogan: "Delivering excellence through experience.",
 };
 
 export const viewport: Viewport = {
@@ -123,6 +144,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="flex min-h-screen flex-col bg-ink text-cream font-body">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(ORGANIZATION_JSON_LD).replace(/</g, "\\u003c"),
+          }}
+        />
         <SmoothScroll />
         <RouteEffects />
         <CustomCursor />
