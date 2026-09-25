@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import Link from "next/link";
 import { CERTIFICATIONS } from "@/content/compliance";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -162,6 +163,16 @@ export default function CinematicDivider() {
             </li>
           ))}
         </ul>
+
+        <Link
+          href="/compliance"
+          className="group mt-12 inline-flex items-center gap-3 rounded-full border border-cream/25 px-6 py-3 font-body text-xs font-semibold uppercase tracking-[0.15em] text-cream transition-colors hover:border-gold hover:bg-gold hover:text-ink md:mt-14 md:text-sm"
+        >
+          Our compliance
+          <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+            →
+          </span>
+        </Link>
       </div>
     </section>
   );

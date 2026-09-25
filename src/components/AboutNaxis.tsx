@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, ViewTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
@@ -170,7 +171,9 @@ export default function AboutNaxis() {
 
         {/* Two-column layout: photo left, text right */}
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
-          {/* Photo column */}
+          {/* Photo column. The About page's hero is the same photo, so it
+              carries across the page transition and becomes it. */}
+          <ViewTransition name="hero-about" share="morph" default="none">
           <div
             ref={imgWrapRef}
             className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden rounded-2xl lg:w-[38%]"
@@ -189,6 +192,7 @@ export default function AboutNaxis() {
             {/* Subtle ink vignette at the bottom */}
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/20 to-transparent" />
           </div>
+          </ViewTransition>
 
           {/* Text column */}
           <div className="flex flex-col justify-center lg:pt-4">
@@ -250,6 +254,15 @@ export default function AboutNaxis() {
               <p className="mt-2 font-body text-[0.65rem] uppercase tracking-[0.3em] text-ink/60 md:text-xs">
                 Delivering excellence through experience.
               </p>
+              <Link
+                href="/about"
+                className="group mt-10 inline-flex items-center gap-3 rounded-full border border-ink/20 px-6 py-3 font-body text-xs font-semibold uppercase tracking-[0.15em] text-ink transition-colors hover:border-emerald hover:text-emerald md:text-sm"
+              >
+                More about NAXIS
+                <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+                  →
+                </span>
+              </Link>
             </div>
           </div>
         </div>

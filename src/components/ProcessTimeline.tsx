@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { EMERALD, GOLD } from "@/lib/brand";
@@ -192,14 +193,25 @@ export default function ProcessTimeline() {
           >
             From sketch to shipment.
           </h2>
-          <p
+          <div
             ref={(el) => {
               revealRefs.current[2] = el;
             }}
-            className="max-w-md font-body text-sm text-ink/65 opacity-0 md:text-right md:text-base"
+            className="max-w-md opacity-0 md:text-right"
           >
-            Every stage managed. One seamless supply chain.
-          </p>
+            <p className="font-body text-sm text-ink/65 md:text-base">
+              Every stage managed. One seamless supply chain.
+            </p>
+            <Link
+              href="/how-we-work"
+              className="group mt-1.5 inline-flex items-center gap-2 font-body text-xs font-semibold uppercase tracking-[0.15em] text-brown transition-colors hover:text-emerald md:text-sm"
+            >
+              Every stage, in detail
+              <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+                →
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
 

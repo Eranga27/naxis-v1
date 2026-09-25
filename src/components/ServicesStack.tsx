@@ -277,6 +277,18 @@ export default function ServicesStack() {
           </article>
         ))}
       </div>
+
+      <div className="mt-12 flex justify-center md:mt-16">
+        <Link
+          href="/services"
+          className="group inline-flex items-center gap-3 font-body text-xs font-semibold uppercase tracking-[0.2em] text-gold transition-colors hover:text-cream md:text-sm"
+        >
+          All four services, in depth
+          <span aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-1">
+            →
+          </span>
+        </Link>
+      </div>
     </section>
   );
 }
