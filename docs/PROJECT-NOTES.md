@@ -33,8 +33,8 @@ domain is live.
 - Workflow: work on `v1-homepage-rebuild`, push, wait for its Vercel
   preview to succeed, then fast-forward `main` — **only when the owner asks**.
 - The V1 inner pages (`docs/V1-PLAN.md`) were built on
-  `v1-homepage-rebuild` on 2026-09-25 and are **not on `main`** until the
-  owner reviews the preview and asks.
+  `v1-homepage-rebuild` on 2026-09-25 and went to `main` the same day at
+  the owner's request; later rounds follow the same ask-first workflow.
 - Plan: keep refining V1, then a full top-to-bottom V2 later.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
@@ -153,7 +153,8 @@ domain is live.
   veil switches to `mix-blend-mode: lighten` so the letters show the hero,
   then it scales about the centre of the X until the hero fills the
   screen. `VEIL_EXIT_MS` is reveal → veil gone; Hero times its headline
-  off it. Reduced motion: static lockup, then fade. The `intro-seen`
+  off it. A "Skip intro" pill (and Escape) appears after a moment and
+  fades straight to the hero. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
 - **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase
@@ -202,6 +203,28 @@ domain is live.
   that lights each stage (`StageThread`). Compliance hangs the
   certifications as spring-driven swing tags on a `gsap.ticker` (only
   while on screen) that flip on tap. The 404 loops a parcel round the map.
+
+## Phones: what keeps them smooth
+
+Measured on a throttled phone profile (see Verifying visually). Keep to
+these when adding motion:
+
+- Anything a scroll sequence scales or moves every frame gets its own
+  layer (`will-change-transform`): the heroes' media, the Logistics
+  route SVG. Without it, what's painted with it (grades over the video,
+  the ~2,900-dot map under the routes) is repainted every frame.
+- Don't animate anything inside an SVG that also holds a big static
+  drawing; split the static part out (the 404 map) or move the animated
+  bit to HTML (the Logistics pulse ring).
+- No blur, blend or backdrop-filter on layers that move or sit over
+  something that redraws: the Ideas Wearable foliage blur and the hero's
+  grain and screen-blended light are md+ only; the globe's labels and
+  pills are solid; Capabilities' backdrop photos are pre-rendered
+  greyscale (`public/images/backdrop/`) instead of a CSS filter.
+- The globe on phones: 1.5x pixel ratio, no MSAA, pulses at 30fps only
+  while pinned, no redraws while it scrolls in or out.
+- Pins on phones run shorter than on desktop (Hero, Ideas Wearable,
+  About's word roll, Sketch to Sample, the Logistics journey).
 
 ## GSAP / scroll gotchas learned the hard way
 
@@ -292,6 +315,12 @@ domain is live.
   --use-angle=swiftshader`. Scroll into pinned sections in steps after
   the page settles; a single jump lands before late re-measures move
   them.
+- Phone performance: emulate 390×844 at 3x density with CPU throttling
+  (`Emulation.setCPUThrottlingRate` 4), step `scrollTo` a few percent of
+  the viewport per double-rAF and time the frames, grouped by the
+  section at the viewport centre. Software GL inflates absolute numbers;
+  compare variants (A/B by mutating the DOM before measuring). Neutralise
+  WebGL draws to rule the globe in or out.
 
 ## Next up
 
