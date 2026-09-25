@@ -136,9 +136,13 @@ export default function Hero() {
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      // Release masks once entrance completes so nothing stays clipped
+      // Release masks once entrance completes so nothing stays clipped —
+      // and only then deepen the headline's shadow (hero-headline in
+      // globals), which the masks would otherwise have cut off below the
+      // letters mid-rise.
       const releaseMasks = () => {
         gsap.set([line1Wrap, line2Wrap], { clipPath: "none" });
+        headlineRef.current?.classList.add("is-lit");
       };
 
       // A slow gold sweep down the country list, one country at a time —
@@ -493,6 +497,17 @@ export default function Hero() {
           className="pointer-events-none absolute inset-0 bg-ink opacity-0"
         />
 
+        {/* A soft shade pooled behind the headline, bottom left, so the
+            words stand off the footage without darkening the whole frame. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 75% 60% at 18% 88%, rgba(16,13,9,0.55), rgba(16,13,9,0.2) 55%, transparent 80%)",
+          }}
+        />
+
         {/* Brand light: a warm gold glow rising behind the headline and a
             cooler emerald one off the right edge — gives the grade some
             color instead of a flat black fade. */}
@@ -521,7 +536,7 @@ export default function Hero() {
                 scroll sequence can measure the lines against it. */}
             <div
               ref={headlineRef}
-              className="relative font-headline uppercase text-cream tracking-[-0.01em] leading-[0.94] select-none text-[clamp(3.5rem,10vw,10rem)] [text-shadow:0_2px_12px_rgba(0,0,0,0.45)]"
+              className="hero-headline relative font-headline uppercase text-cream tracking-[-0.01em] leading-[0.94] select-none text-[clamp(3.5rem,10vw,10rem)]"
             >
               {/* LINE 1: "SIX COUNTRIES," */}
               <div
@@ -579,10 +594,10 @@ export default function Hero() {
                   </span>
                   {/* Gradient-clipped text can't carry the parent's
                       text-shadow (it would show through the transparent
-                      fill), so it gets a drop-shadow filter instead. */}
+                      fill), so it gets drop-shadow filters instead. */}
                   <span
                     style={{ display: "inline-block" }}
-                    className="text-gradient-brand pr-[0.04em] [text-shadow:none] [filter:drop-shadow(0_2px_12px_rgba(0,0,0,0.45))]"
+                    className="hero-headline-gradient text-gradient-brand pr-[0.04em]"
                   >
                     STANDARD.
                   </span>
