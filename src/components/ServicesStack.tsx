@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, ViewTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { SERVICES } from "@/content/services";
+import { preloadHero } from "@/lib/preloadHero";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -229,6 +230,9 @@ export default function ServicesStack() {
 
                 <Link
                   href={`/services/${service.slug}`}
+                  onPointerEnter={() => preloadHero(service.image)}
+                  onFocus={() => preloadHero(service.image)}
+                  onTouchStart={() => preloadHero(service.image)}
                   className="group inline-flex w-fit items-center gap-3 rounded-full border border-cream/25 px-6 py-3 font-body text-xs font-semibold uppercase tracking-[0.15em] text-cream transition-colors hover:border-gold hover:bg-gold hover:text-ink md:text-sm"
                 >
                   Learn more
@@ -239,7 +243,9 @@ export default function ServicesStack() {
                 </Link>
               </div>
 
-              {/* Photo */}
+              {/* Photo. Named so it carries across the page transition and
+                  becomes the service page's hero. */}
+              <ViewTransition name={`hero-service-${service.slug}`} share="morph" default="none">
               <div className="relative order-first aspect-[16/10] overflow-hidden md:order-none md:aspect-auto">
                 <div
                   ref={(el) => {
@@ -257,6 +263,7 @@ export default function ServicesStack() {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a1510]/60 via-transparent to-transparent md:bg-gradient-to-r md:from-[#1a1510] md:via-[#1a1510]/10" />
               </div>
+              </ViewTransition>
             </div>
 
             {/* Dimming layer, faded in as the next card covers this one */}

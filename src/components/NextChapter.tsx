@@ -49,7 +49,7 @@ export default function NextChapter({ href, label, title, summary, image, morphN
   }, []);
 
   const photo = (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
       <Image src={image.src} alt={image.alt} fill sizes="100vw" className="object-cover" />
     </div>
   );
