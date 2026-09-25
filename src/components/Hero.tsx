@@ -6,6 +6,7 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 import { INTRO_SESSION_KEY, onReveal } from "@/lib/intro";
 import { GOLD } from "@/lib/brand";
 import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP } from "@/lib/motion";
+import { COUNTRIES } from "@/content/countries";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -15,16 +16,8 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// The six countries behind the headline's "SIX" — listed beside it on
-// desktop so the claim is immediately concrete.
-const COUNTRIES = [
-  "Sri Lanka",
-  "India",
-  "Bangladesh",
-  "Vietnam",
-  "China",
-  "Italy",
-];
+// The six countries behind the headline's "SIX" are listed beside it on
+// desktop (and rolled through below lg) so the claim is concrete.
 
 // From the client's company profile — same list as CinematicDivider.
 const CERTIFICATIONS = ["WRAP", "SMETA", "BSCI", "C-TPAT", "OEKO-TEX"];

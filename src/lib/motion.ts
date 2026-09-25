@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useSyncExternalStore } from "react";
 
 // Layout effects don't run during SSR; fall back to useEffect there to avoid
 // the React warning, while still getting pre-paint timing in the browser.
@@ -14,3 +14,22 @@ export const prefersReducedMotion = () =>
 export const FULL_CLIP = "inset(0% 0% 0% 0% round 0px)";
 export const CARD_CLIP_PHONE = "inset(15% 4% 15% 4% round 22px)";
 export const CARD_CLIP_WIDE = "inset(11% 5.5% 11% 5.5% round 36px)";
+
+const REDUCED = "(prefers-reduced-motion: reduce)";
+const subscribeReduced = (onChange: () => void) => {
+  const mq = window.matchMedia(REDUCED);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+};
+
+/**
+ * For components whose markup differs under reduced motion (a pinned
+ * sequence vs a plain list). false on the server and during hydration,
+ * then the real value, with no cascading re-render.
+ */
+export const useReducedMotion = () =>
+  useSyncExternalStore(
+    subscribeReduced,
+    () => window.matchMedia(REDUCED).matches,
+    () => false
+  );
