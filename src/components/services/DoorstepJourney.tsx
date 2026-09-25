@@ -283,7 +283,7 @@ export default function DoorstepJourney() {
             </span>
             {/* Right-anchored, running left from under the marker, so it
                 stays inside the map at any width. */}
-            <span className="pointer-events-none absolute whitespace-nowrap rounded-full bg-emerald px-2 py-0.5 font-body text-[0.45rem] font-bold uppercase tracking-[0.15em] text-cream sm:text-[0.5rem]"
+            <span className="pointer-events-none absolute whitespace-nowrap rounded-full bg-emerald px-2 py-0.5 font-body text-[0.55rem] font-bold uppercase tracking-[0.15em] text-cream sm:text-[0.6rem]"
               style={{ right: `${100 - (HOME.x / W) * 100 - 2}%`, top: `${(HOME.y / H) * 100 + 3.5}%` }}
             >
               NAXIS Australia

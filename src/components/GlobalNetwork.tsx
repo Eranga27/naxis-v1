@@ -404,7 +404,7 @@ export default function GlobalNetwork() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
             <span ref={homeLabelRef} className="absolute left-0 top-0 opacity-0">
               <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE.Australia]}`}>
-                <span className="block rounded-full bg-emerald px-3 py-1 font-body text-[0.6rem] font-bold uppercase tracking-[0.18em] text-cream shadow-[0_0_24px_rgba(47,208,138,0.45)] sm:text-[0.68rem]">
+                <span className="block rounded-full bg-emerald px-3 py-1 font-body text-[0.65rem] font-bold uppercase tracking-[0.16em] text-cream shadow-[0_0_24px_rgba(47,208,138,0.45)] sm:text-[0.68rem]">
                   NAXIS Australia
                 </span>
               </span>
@@ -418,7 +418,7 @@ export default function GlobalNetwork() {
                 className="absolute left-0 top-0 opacity-0"
               >
                 <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE[place.name] ?? "right"]}`}>
-                  <span className="block rounded-full border border-cream/15 bg-ink/80 px-2.5 py-0.5 font-body text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-cream sm:text-[0.66rem]">
+                  <span className="block rounded-full border border-cream/15 bg-ink/80 px-2.5 py-0.5 font-body text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-cream sm:text-[0.66rem]">
                     {place.name}
                   </span>
                 </span>

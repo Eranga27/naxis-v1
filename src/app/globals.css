@@ -128,6 +128,22 @@ html {
   background-color: var(--color-gold);
 }
 
+/* Touch screens: no grey flash on tap (it reads as a browser default on
+   a designed page); whatever is pressed dims for the moment it's held
+   instead, so every tap still answers. */
+a,
+button,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: none) {
+  a:active,
+  button:active,
+  label:active {
+    opacity: 0.72;
+  }
+}
+
 html.custom-cursor-active,
 html.custom-cursor-active * {
   cursor: none !important;

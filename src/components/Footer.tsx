@@ -13,8 +13,10 @@ export default function Footer() {
         aria-hidden="true"
         className="bg-gradient-brand absolute inset-x-0 top-0 h-px opacity-40"
       />
-      <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-        <div className="flex flex-col gap-4">
+      {/* Phones: the two link lists side by side rather than one long
+          column, with taller tap targets. */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-2 md:gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="col-span-2 flex flex-col gap-4 md:col-span-1">
           <span className="relative block h-10 w-32">
             <Image
               src="/logos/naxis-wordmark.png"
@@ -43,12 +45,12 @@ export default function Footer() {
           <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
             Explore
           </p>
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col md:gap-2.5">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="font-body text-sm text-cream/70 transition-colors hover:text-cream"
+                  className="inline-block py-1.5 font-body text-sm text-cream/70 transition-colors hover:text-cream md:py-0"
                 >
                   {link.label}
                 </Link>
@@ -61,12 +63,12 @@ export default function Footer() {
           <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
             Services
           </p>
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col md:gap-2.5">
             {SERVICES.map((service) => (
               <li key={service.slug}>
                 <Link
                   href={`/services/${service.slug}`}
-                  className="font-body text-sm text-cream/70 transition-colors hover:text-cream"
+                  className="inline-block py-1.5 font-body text-sm text-cream/70 transition-colors hover:text-cream md:py-0"
                 >
                   {service.title}
                 </Link>
@@ -75,7 +77,7 @@ export default function Footer() {
           </ul>
         </nav>
 
-        <div>
+        <div className="col-span-2 md:col-span-1">
           <p className="mb-4 font-body text-xs font-bold uppercase tracking-[0.25em] text-cream/40">
             Contact
           </p>
