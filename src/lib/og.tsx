@@ -9,8 +9,6 @@ import { join } from "node:path";
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
-const read = (path: string) => readFile(join(process.cwd(), path));
-
 export async function renderOgImage({
   eyebrow,
   title,
@@ -19,9 +17,11 @@ export async function renderOgImage({
   title: string;
 }) {
   const [bebas, inter, logo] = await Promise.all([
-    read("src/assets/fonts/BebasNeue-Regular.woff"),
-    read("src/assets/fonts/Inter-SemiBold.woff"),
-    read("public/logos/naxis-wordmark.png"),
+    // Literal paths, so the build traces just these three files rather
+    // than the whole project.
+    readFile(join(process.cwd(), "src/assets/fonts/BebasNeue-Regular.woff")),
+    readFile(join(process.cwd(), "src/assets/fonts/Inter-SemiBold.woff")),
+    readFile(join(process.cwd(), "public/logos/naxis-wordmark.png")),
   ]);
   const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
 
