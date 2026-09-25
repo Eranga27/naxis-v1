@@ -66,7 +66,6 @@ const WELCOME_GRADIENT =
 const WORD_HOLD_MS = 800; // time to read a greeting once it's in
 const LOCKUP_HOLD_MS = 1300; // time to read the finished lockup
 const TEXT_FADE_MS = 400;
-const SKIP_FADE_MS = 450;
 const BG_FADE_MS = 650; // flag-gradient crossfade duration
 
 // The exit, in seconds from the moment the hero is revealed: the name's
@@ -213,12 +212,19 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       gsap.set(letters, { yPercent: 110 });
       gsap.set(rules, { scaleX: 0 });
     });
-    // Runs a timeline inside the context and resolves when it ends — or
-    // at `resolveAt` seconds, letting the rest play on while the sequence
+    // The greetings' own tweens, apart, so skipping can stop them where
+    // they are without touching the lockup's.
+    const greetings = gsap.context(() => {});
+    // Runs a timeline inside a context and resolves when it ends — or at
+    // `resolveAt` seconds, letting the rest play on while the sequence
     // moves ahead.
-    const play = (build: (tl: gsap.core.Timeline) => void, resolveAt?: number) =>
+    const play = (
+      build: (tl: gsap.core.Timeline) => void,
+      resolveAt?: number,
+      ctx: gsap.Context = tweens
+    ) =>
       new Promise<void>((resolve) => {
-        tweens.add(() => {
+        ctx.add(() => {
           const tl = gsap.timeline({ onComplete: resolveAt === undefined ? resolve : undefined });
           build(tl);
           if (resolveAt !== undefined) tl.call(resolve, undefined, resolveAt);
@@ -357,14 +363,14 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
           )
           .to(glows, { textShadow: glowShadow(g.glow, 1.2), duration: 0.6, ease: "power2.inOut", stagger: 0.045 }, 0.6);
         // Readable by now; the glow settles during the hold.
-      }, 0.75);
+      }, 0.75, greetings);
     };
     const greetOut = () => {
       const chars = Array.from(word.children);
       return play((tl) => {
         tl.to(chars, { yPercent: -45, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power2.in", stagger: 0.025 }, 0)
           .to([native, from], { opacity: 0, duration: 0.35, ease: "power2.in" }, 0);
-      });
+      }, undefined, greetings);
     };
 
     // Positions the lockup around the name, which sits dead centre:
@@ -448,18 +454,39 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         return;
       }
 
+      // Not cut short by a skip: the lockup is measured in these faces.
       await preloadFonts();
       if (cancelled.current) return;
 
-      for (let i = 0; i < GREETINGS.length; i++) {
-        if (cancelled.current) return;
+      for (let i = 0; i < GREETINGS.length && !skipping; i++) {
         showBackdrop(i);
-        await greetIn(i);
-        await sleep(WORD_HOLD_MS);
+        await greetStep(() => greetIn(i));
+        await greetStep(() => sleep(WORD_HOLD_MS));
         if (cancelled.current) return;
-        await greetOut();
+        await greetStep(greetOut);
       }
       if (cancelled.current) return;
+
+      // Skipped: whatever greeting is on screen stops where it is and
+      // steps out, straight into the welcome.
+      if (skipping) {
+        greetings.kill();
+        await play((tl) => {
+          tl.to(greet, { opacity: 0, duration: 0.35, ease: "power2.in" });
+        });
+        if (cancelled.current) return;
+      }
+
+      // From here the intro plays out as usual; there's nothing left to
+      // skip to.
+      welcoming = true;
+      if (skipRef.current) {
+        const button = skipRef.current;
+        tweens.add(() => {
+          gsap.killTweensOf(button);
+          gsap.to(button, { autoAlpha: 0, duration: 0.3 });
+        });
+      }
 
       // One last crossfade into a soft brand wash rather than a hard cut
       // to flat white — the destination, not another country.
@@ -528,7 +555,6 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       // The last few frames also fade the veil, in case an engine can't
       // blend it over the video.
       gsap.set(masks, { clipPath: "none" });
-      if (skipRef.current) gsap.to(skipRef.current, { autoAlpha: 0, duration: 0.3 });
       const zoom = zoomTarget();
       gsap.set(mark, { transformOrigin: zoom.origin });
       await play((tl) => {
@@ -554,20 +580,24 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       release();
     };
 
-    // Skip: the whole sequence runs ~15s, a long wait on a phone. Offered
-    // after a moment, it stops the sequence where it is and fades straight
-    // into the hero. Escape does the same.
-    let skipped = false;
+    // Skip: the greetings take ~12s, a long wait on a phone. Offered after
+    // a moment, it cuts them short and goes straight to the welcome, which
+    // still forms the lockup and zooms through the X into the hero, so
+    // the arrival isn't lost. Escape does the same.
+    let skipping = false;
+    let welcoming = false;
+    let onSkip = () => {};
+    const skipped = new Promise<void>((resolve) => {
+      onSkip = resolve;
+    });
+    // Runs a step of the greetings unless they've been skipped, and stops
+    // waiting on it the moment they are.
+    const greetStep = (start: () => Promise<unknown>) =>
+      skipping ? Promise.resolve() : Promise.race([start(), skipped]);
     const skip = () => {
-      if (skipped || cancelled.current) return;
-      skipped = true;
-      cancelled.current = true;
-      tweens.kill();
-      fireReveal();
-      veil.style.mixBlendMode = "normal";
-      veil.style.transition = `opacity ${SKIP_FADE_MS}ms ease`;
-      veil.style.opacity = "0";
-      setTimeout(release, SKIP_FADE_MS);
+      if (skipping || welcoming || cancelled.current) return;
+      skipping = true;
+      onSkip();
     };
     skipIntro.current = skip;
     const onKey = (event: KeyboardEvent) => {
@@ -587,6 +617,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       cancelled.current = true;
       skipIntro.current = null;
       document.removeEventListener("keydown", onKey);
+      greetings.revert();
       tweens.revert();
       document.body.style.overflow = prevOverflow;
       releaseInert();

@@ -156,7 +156,10 @@ domain is live.
   then it scales about the centre of the X until the hero fills the
   screen. `VEIL_EXIT_MS` is reveal → veil gone; Hero times its headline
   off it. A "Skip intro" pill (and Escape) appears after a moment and
-  fades straight to the hero. Reduced motion: static lockup, then fade. The `intro-seen`
+  cuts the greetings short: the one on screen steps out and the welcome
+  plays as usual, lockup and zoom included, so skipping never lands
+  flat on the hero. The pill goes once the welcome starts. Reduced
+  motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
 - **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase
