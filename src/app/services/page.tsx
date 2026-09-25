@@ -6,7 +6,7 @@ import ServiceIndex from "@/components/services/ServiceIndex";
 import ScrubWords from "@/components/motion/ScrubWords";
 import ThreadLine from "@/components/motion/ThreadLine";
 import { ABOUT } from "@/content/about";
-import { MOQ } from "@/content/moq";
+import { PROCESS_INTRO } from "@/content/process";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -41,11 +41,12 @@ export default function ServicesPage() {
       </section>
 
       <NextChapter
-        href="/contact"
-        label="Next · Start a project"
-        title={MOQ.headline}
-        summary={MOQ.statement}
-        image={{ src: "/images/about-design.jpg", alt: "Designer sketching garment ideas" }}
+        href="/how-we-work"
+        label="Next · How we work"
+        title="Every detail matters."
+        summary={PROCESS_INTRO.focus}
+        image={{ src: "/images/process-sewing.jpg", alt: "Kraft paper garment patterns hanging on a rail" }}
+        morphName="hero-how-we-work"
       />
     </PageShell>
   );
