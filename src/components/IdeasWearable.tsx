@@ -266,7 +266,9 @@ export default function IdeasWearable() {
       <div
         ref={foliageBackRef}
         aria-hidden="true"
-        className="absolute inset-0 opacity-90 blur-[1.5px] will-change-transform"
+        // The depth blur is for larger screens only: blurring a full-screen
+        // layer as it scales tripled the cost of every frame on phones.
+        className="absolute inset-0 opacity-90 will-change-transform md:blur-[1.5px]"
       >
         <WattleBack />
       </div>

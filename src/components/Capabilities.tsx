@@ -45,10 +45,13 @@ const CATEGORY_IMAGES = [
 // any specific category, unlike the cards. Sits behind everything as a
 // dim, grayscale ambient layer so the section doesn't read as a flat
 // block of ink behind the cards.
+// Greyscale copies (public/images/backdrop/), rather than a CSS
+// grayscale filter: the photos drift with the scroll, and a filter on
+// them was re-run on every frame — noticeably slower on phones.
 const BACKDROP_IMAGES = [
-  "/images/apparel3.jpg",
-  "/images/apparel4.jpg",
-  "/images/apparel6.jpg",
+  "/images/backdrop/apparel3-mono.jpg",
+  "/images/backdrop/apparel4-mono.jpg",
+  "/images/backdrop/apparel6-mono.jpg",
 ];
 
 export default function Capabilities() {
@@ -249,7 +252,7 @@ export default function Capabilities() {
                 alt=""
                 fill
                 sizes="34vw"
-                className="object-cover grayscale"
+                className="object-cover"
               />
             </div>
           </div>
