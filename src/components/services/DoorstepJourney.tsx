@@ -122,7 +122,8 @@ export default function DoorstepJourney() {
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            end: () => "+=" + window.innerHeight * 2,
+            // Shorter on phones, where a long pin under the thumb feels stuck.
+            end: () => "+=" + window.innerHeight * (window.innerWidth < 768 ? 1.4 : 2),
             pin: true,
             scrub: 0.7,
             invalidateOnRefresh: true,

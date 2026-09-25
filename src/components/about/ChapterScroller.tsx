@@ -64,8 +64,9 @@ export default function ChapterScroller() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          // One screen of scroll per chapter change.
-          end: () => "+=" + window.innerHeight * last,
+          // One screen of scroll per chapter change; less on phones, where
+          // a long pin under the thumb feels stuck.
+          end: () => "+=" + window.innerHeight * last * (window.innerWidth < 768 ? 0.7 : 1),
           pin: true,
           scrub: 0.7,
           invalidateOnRefresh: true,
