@@ -178,6 +178,9 @@ scroll. No backend, no env vars.
 
 ## Next up
 
+- **V1 scope is in `docs/V1-PLAN.md`** (approved 2026-09-25): the inner
+  pages, their concepts, build order and what's waiting on the client.
+  Work through it in order and tick pages off there.
 - **Scroll-scrubbed "thread to doorstep" sequence** (owner is producing
   2–3 clips in Runable): extract frames with ffmpeg to WebP/AVIF (≈150
   desktop / ≈75 mobile), draw to `<canvas>` from ScrollTrigger progress,
