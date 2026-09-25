@@ -382,6 +382,9 @@ export default function Hero() {
             opacity: 1,
             y: 0,
             filter: "blur(0px)",
+            // A filter left on, even blur(0px), makes the browser re-run
+            // it on every frame of the scroll exit; clear it once in.
+            clearProps: "filter",
             duration: 0.75,
             ease: "expo.out",
           },
@@ -396,6 +399,9 @@ export default function Hero() {
             opacity: 1,
             y: "0%",
             filter: "blur(0px)",
+            // A filter left on, even blur(0px), makes the browser re-run
+            // it on every frame of the scroll exit; clear it once in.
+            clearProps: "filter",
             duration: 0.9,
             ease: "power3.out",
           },
@@ -410,6 +416,9 @@ export default function Hero() {
             opacity: 1,
             y: "0%",
             filter: "blur(0px)",
+            // A filter left on, even blur(0px), makes the browser re-run
+            // it on every frame of the scroll exit; clear it once in.
+            clearProps: "filter",
             duration: 0.9,
             ease: "power3.out",
           },

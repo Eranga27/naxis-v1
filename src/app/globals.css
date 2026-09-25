@@ -135,21 +135,22 @@ html.custom-cursor-active * {
 
 /* The hero headline's shadow: a plain one while its lines rise inside
    their masks, then (is-lit, once the masks are released) a layered one,
-   tight plus two deep, soft ones, so the words stand off the footage.
-   The gradient word can't take a text-shadow, so it gets matching
-   drop-shadows; both filter lists have two shadows so they interpolate. */
+   tight plus a deep, soft one, so the words stand off the footage (with
+   the shade pooled behind them in Hero). The headline is repainted on
+   every frame of its scroll exit, so blur radii stay modest: a third,
+   72px shadow made those frames half as slow again. The gradient word
+   can't take a text-shadow, so it gets matching drop-shadows; both lists
+   have two shadows so they interpolate. */
 .hero-headline {
   text-shadow:
     0 2px 12px rgba(0, 0, 0, 0.45),
-    0 0 0 rgba(0, 0, 0, 0),
     0 0 0 rgba(0, 0, 0, 0);
   transition: text-shadow 900ms ease;
 }
 .hero-headline.is-lit {
   text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.4),
-    0 10px 30px rgba(0, 0, 0, 0.55),
-    0 24px 72px rgba(0, 0, 0, 0.5);
+    0 2px 4px rgba(0, 0, 0, 0.45),
+    0 10px 32px rgba(0, 0, 0, 0.6);
 }
 .hero-headline-gradient {
   text-shadow: none;
