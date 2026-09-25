@@ -8,77 +8,14 @@ import { EMERALD, GOLD } from "@/lib/brand";
 import { createPinnedGallery } from "@/lib/pinnedGallery";
 import { createSwipeDeck } from "@/lib/swipeDeck";
 import TickRail from "@/components/TickRail";
+import { PROCESS_STEPS, SUCCESS_STEP } from "@/content/process";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// The manufacturing process from the NAXIS Australia PDF (page 1):
-// Design → Pattern Making → Sampling → Sourcing → Sewing
-// → Quality Control → Order Shipment → Your Success.
-// The first seven are photo cards; "Your Success" is the closing card
-// below the list (SUCCESS_STEP), as in the client's own diagram.
-const STEPS = [
-  {
-    number: "01",
-    label: "Design",
-    description:
-      "Our design team works closely with your brand to translate ideas into technical specifications — tech packs, CADs, fabric recommendations and construction details.",
-    image: "/images/about-design.jpg",
-    imageAlt: "Design and technical pack development",
-  },
-  {
-    number: "02",
-    label: "Pattern Making",
-    description:
-      "Precision pattern drafting transforms designs into production-ready templates. Every seam, measurement and tolerance is engineered for consistency at scale.",
-    image: "/images/process-pattern-making.jpg",
-    imageAlt: "Pattern making and grading",
-  },
-  {
-    number: "03",
-    label: "Sampling",
-    description:
-      "Pre-production samples are crafted and sent for approval before mass production begins — ensuring fit, finish and fabric performance match the specification exactly.",
-    image: "/images/process-sampling.jpg",
-    imageAlt: "Garment sampling and approval",
-  },
-  {
-    number: "04",
-    label: "Sourcing",
-    description:
-      "Leveraging our global supplier network, we source the right fabrics, trims and accessories — balancing quality, lead time and cost to meet your program requirements.",
-    image: "/images/about-fabric.jpg",
-    imageAlt: "Fabric and trim sourcing",
-  },
-  {
-    number: "05",
-    label: "Sewing",
-    description:
-      "Production runs through our own facilities and specialist partner factories, operating to strict quality and ethical standards. Every line, every stitch — supervised and on-spec.",
-    image: "/images/process-sewing.jpg",
-    imageAlt: "Garment sewing and production",
-  },
-  {
-    number: "06",
-    label: "Quality Control",
-    description:
-      "Multi-point quality audits are conducted throughout production and at final inspection — ensuring every unit leaving the factory meets your exact brief.",
-    image: "/images/process-qc.jpg",
-    imageAlt: "Quality control and inspection",
-  },
-  {
-    number: "07",
-    label: "Order Shipment",
-    description:
-      "End-to-end logistics management — from factory floor to your warehouse. We coordinate freight, customs documentation and final delivery to your door.",
-    image: "/images/process-shipment.jpg",
-    imageAlt: "Packing and order shipment",
-  },
-];
-
-const SUCCESS_STEP = { number: "08", label: "Your Success" };
+const STEPS = PROCESS_STEPS;
 const TOTAL_STEPS = STEPS.length + 1;
 
 export default function ProcessTimeline() {
