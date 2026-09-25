@@ -144,8 +144,16 @@ export default function GlobalNetwork() {
       el.style.transform = `translate3d(${x}px, ${point.y}px, 0)`;
     };
 
+    // Phones spare the GPU: between scroll updates only the pulses move, so
+    // they're redrawn at half rate while the section is pinned, and not at
+    // all as it scrolls in or out (the canvas keeps its last frame). Any
+    // scroll that changes the scene marks it dirty and gets every frame.
+    let lastDraw = 0;
+    let pinned = false;
     const tick = (time: number) => {
       if (!globe || (reduce && !dirty)) return;
+      if (!dirty && width < 768 && (!pinned || time - lastDraw < 1 / 30)) return;
+      lastDraw = time;
       const L = layout();
       const v = smooth(0, 1, state.view);
       const drift = reduce ? 0 : Math.sin(time * 0.3) * 4 * (1 - v);
@@ -216,6 +224,9 @@ export default function GlobalNetwork() {
               home: HOME,
               places: [...PLACES],
               textureSize: width >= 1024 ? 4096 : 2048,
+              // Phones draw it at up to 1.5x rather than 2x: about half
+              // the pixels, on a screen too dense to tell.
+              maxPixelRatio: width < 768 ? 1.5 : 2,
             });
           } catch {
             canvas.remove();
@@ -280,6 +291,10 @@ export default function GlobalNetwork() {
             scrub: 0.8,
             invalidateOnRefresh: true,
             onUpdate: () => (dirty = true),
+            onToggle: (self) => {
+              pinned = self.isActive;
+              dirty = true;
+            },
           },
         });
         tl.to(state, { rise: 1, duration: 0.36, ease: "power2.inOut" }, 0)
@@ -383,7 +398,9 @@ export default function GlobalNetwork() {
         </ul>
       ) : (
         <>
-          {/* Country labels, placed each frame over their markers */}
+          {/* Country labels, placed each frame over their markers. Labels
+              and pills are solid rather than frosted: a backdrop blur over
+              a canvas that redraws every frame is recomputed every frame. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
             <span ref={homeLabelRef} className="absolute left-0 top-0 opacity-0">
               <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE.Australia]}`}>
@@ -401,7 +418,7 @@ export default function GlobalNetwork() {
                 className="absolute left-0 top-0 opacity-0"
               >
                 <span className={`block whitespace-nowrap ${SIDE_CLASS[LABEL_SIDE[place.name] ?? "right"]}`}>
-                  <span className="block rounded-full border border-cream/15 bg-ink/70 px-2.5 py-0.5 font-body text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-cream backdrop-blur-sm sm:text-[0.66rem]">
+                  <span className="block rounded-full border border-cream/15 bg-ink/80 px-2.5 py-0.5 font-body text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-cream sm:text-[0.66rem]">
                     {place.name}
                   </span>
                 </span>
@@ -425,7 +442,7 @@ export default function GlobalNetwork() {
                 {/* Centred on its point by translate; the pill inside is
                     what animates (a GSAP y would replace the translate). */}
                 <span className="block w-max -translate-x-1/2 -translate-y-1/2 max-sm:translate-x-0 max-sm:translate-y-0">
-                  <span className="flex items-center gap-2 rounded-full border border-cream/10 bg-[#16140f]/80 px-3.5 py-2 font-body text-xs font-semibold text-cream shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-md max-sm:px-3 max-sm:py-1.5 max-sm:text-[0.7rem] md:gap-2.5 md:px-4 md:py-2.5 md:text-sm">
+                  <span className="flex items-center gap-2 rounded-full border border-cream/10 bg-[#16140f]/90 px-3.5 py-2 font-body text-xs font-semibold text-cream shadow-[0_10px_30px_rgba(0,0,0,0.45)] max-sm:px-3 max-sm:py-1.5 max-sm:text-[0.7rem] md:gap-2.5 md:px-4 md:py-2.5 md:text-sm">
                     <CheckIcon />
                     {step}
                   </span>

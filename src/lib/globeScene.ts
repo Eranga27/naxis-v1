@@ -150,10 +150,18 @@ function glowTexture() {
 
 export function createGlobe(
   canvas: HTMLCanvasElement,
-  { home, places, textureSize }: { home: Place; places: Place[]; textureSize: 2048 | 4096 }
+  {
+    home,
+    places,
+    textureSize,
+    maxPixelRatio = 2,
+  }: { home: Place; places: Place[]; textureSize: 2048 | 4096; maxPixelRatio?: number }
 ) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const pixelRatio = Math.min(window.devicePixelRatio, maxPixelRatio);
+  // Multisampling only where pixels are big enough for edges to step;
+  // at 1.5x and up it's cost without a visible difference.
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: pixelRatio < 1.5, alpha: true });
+  renderer.setPixelRatio(pixelRatio);
   renderer.setClearColor(0x000000, 0);
 
   const scene = new THREE.Scene();
