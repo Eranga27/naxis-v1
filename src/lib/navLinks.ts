@@ -17,8 +17,8 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Global Network", href: "/#global-network", image: "/images/process-shipment.jpg" },
   { label: "Compliance", href: "/#certifications", image: "/images/divider-poster.jpg" },
   { label: "MOQ", href: "/#moq", image: "/images/moq-bg.jpg" },
-  { label: "Contact", href: "/#contact", image: "/images/about-design.jpg" },
+  { label: "Start a Project", href: "/contact", image: "/images/about-design.jpg" },
 ];
 
 // Where "Inquire" and every "start a project" call to action lead.
-export const CONTACT_HREF = "/#contact";
+export const CONTACT_HREF = "/contact";

@@ -260,3 +260,24 @@ html.intro-seen [data-preloader] {
     animation-delay: 0s !important;
   }
 }
+
+/* A gold rule drawing out from the left, as under the client's artboard
+   headlines. Plain CSS, played once on load. */
+@keyframes rule-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.rule-grow {
+  animation: rule-grow 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rule-grow {
+    animation: none;
+  }
+}

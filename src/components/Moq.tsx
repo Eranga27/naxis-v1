@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
+import Link from "next/link";
 import { MOQ } from "@/content/moq";
+import { CONTACT_HREF } from "@/lib/navLinks";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -144,8 +146,8 @@ export default function Moq() {
           }}
           className="mt-14 opacity-0 md:mt-20"
         >
-          <a
-            href="#contact"
+          <Link
+            href={CONTACT_HREF}
             data-magnetic
             className="inline-flex items-center gap-3 rounded-full bg-brown px-8 py-4 font-body text-sm font-semibold uppercase tracking-[0.1em] text-cream transition-colors hover:bg-emerald"
           >
@@ -162,7 +164,7 @@ export default function Moq() {
                 clipRule="evenodd"
               />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
 

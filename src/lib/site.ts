@@ -16,4 +16,4 @@ export const SITE_DESCRIPTION =
   "NAXIS Australia is an Australian-based apparel product development, manufacturing and complete supply chain solutions company, supported by our own manufacturing facilities and a trusted global network of specialised partner factories.";
 
 // Every public page, for the sitemap. Add each page as it lands.
-export const SITE_PAGES = ["/"];
+export const SITE_PAGES = ["/", "/contact"];
