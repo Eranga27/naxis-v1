@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Poppins,
   Bebas_Neue,
   Inter,
   Noto_Sans_Sinhala,
@@ -18,16 +17,9 @@ import ScrollProgress from "@/components/ScrollProgress";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["800", "900"],
-  display: "swap",
-});
-
 // Tall, minimalist condensed sans for the hero headline only — thinner and
 // more restrained than a poster-weight face, which reads as premium rather
-// than shouty. Poppins is kept for other display/UI uses.
+// than shouty.
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
   subsets: ["latin"],
@@ -134,7 +126,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} ${sourceSerif.variable} ${allura.variable} ${instrumentSerif.variable} antialiased`}
+      className={`${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} ${sourceSerif.variable} ${allura.variable} ${instrumentSerif.variable} antialiased`}
     >
       <head>
         {/*

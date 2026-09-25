@@ -17,14 +17,6 @@
   --color-brown: #4a2a1c;
   /* Ground of the client's "We make ideas wearable" artboard. */
   --color-bark: #2a1206;
-  /* Letter palette of the client's "We make ideas wearable" phrase asset
-     (IdeasWearable) — used only there, alongside gold. */
-  --color-phrase-green: #008c4d;
-  --color-phrase-yellow: #fdda17;
-  --color-phrase-red: #f90406;
-  --color-phrase-blue: #004bfd;
-  --color-phrase-brown: #a85008;
-  --color-phrase-purple: #7d02fa;
 }
 
 @theme inline {
@@ -38,7 +30,6 @@
   --color-coral: var(--color-coral);
   --color-brown: var(--color-brown);
   --color-bark: var(--color-bark);
-  --font-display: var(--font-poppins);
   --font-headline: var(--font-bebas-neue);
   --font-body: var(--font-inter);
   --font-serif: var(--font-source-serif), Georgia, serif;

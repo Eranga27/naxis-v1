@@ -1,257 +1,239 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { WattleBack, WattleFront } from "@/components/WattleFoliage";
+import { useIsomorphicLayoutEffect } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-// The client's brand phrase — multi-colored bold letters per the approved
-// client asset. Each letter is assigned its brand color individually.
-// Massive Bebas Neue letters fill the viewport, each a distinct brand color.
-// The palette lives in globals.css as --color-phrase-* tokens, sampled
-// from the artboard itself; the face is Poppins Black to match it.
-const LINES: Array<Array<{ char: string; color: string }>> = [
-  [
-    { char: "W", color: "var(--color-phrase-green)" },
-    { char: "E", color: "var(--color-phrase-yellow)" },
-    { char: " ", color: "transparent" },
-    { char: "M", color: "var(--color-phrase-red)" },
-    { char: "A", color: "var(--color-phrase-blue)" },
-    { char: "K", color: "var(--color-phrase-brown)" },
-    { char: "E", color: "var(--color-phrase-purple)" },
-  ],
-  [
-    { char: "I", color: "var(--color-phrase-purple)" },
-    { char: "D", color: "var(--color-phrase-blue)" },
-    { char: "E", color: "var(--color-phrase-green)" },
-    { char: "A", color: "var(--color-phrase-yellow)" },
-    { char: "S", color: "var(--color-phrase-red)" },
-  ],
-  [
-    { char: "W", color: "var(--color-phrase-blue)" },
-    { char: "E", color: "var(--color-phrase-yellow)" },
-    { char: "A", color: "var(--color-phrase-red)" },
-    { char: "R", color: "var(--color-phrase-brown)" },
-    { char: "A", color: "var(--color-phrase-purple)" },
-    { char: "B", color: "var(--color-phrase-green)" },
-    { char: "L", color: "var(--color-phrase-blue)" },
-    { char: "E", color: "var(--color-phrase-red)" },
-    { char: ".", color: "var(--color-phrase-yellow)" },
-  ],
+// The client's phrase, set as a small story of how a garment is made:
+// "ideas" is sketched in pencil, and "WEARABLE." is stitched, then
+// filled with fabric in Australia's green and gold, as patches sewn on.
+//
+// Two drawings of the same lockup, each in its own units: on wider
+// screens "WE MAKE" sits small beside the script "ideas", over
+// "WEARABLE." in the headline face; on phones the three stack, so the
+// lockup fills the tall screen instead of a strip across it. Both are
+// in the markup and animated together; CSS shows one.
+type Layout = {
+  id: string;
+  className: string;
+  view: { w: number; h: number };
+  make: { x: number; y: number; size: number; spacing: number; anchor: "start" | "middle" };
+  ideas: { x: number; y: number; size: number; anchor: "start" | "middle" };
+  wearable: { y: number; size: number };
+};
+const LAYOUTS: Layout[] = [
+  {
+    id: "wide",
+    className: "hidden w-[min(92vw,1180px,150svh)] md:block",
+    view: { w: 1000, h: 600 },
+    make: { x: 18, y: 322, size: 40, spacing: 12, anchor: "start" },
+    ideas: { x: 318, y: 330, size: 360, anchor: "start" },
+    wearable: { y: 575, size: 272 },
+  },
+  {
+    id: "phone",
+    className: "w-[94vw] md:hidden",
+    view: { w: 600, h: 620 },
+    make: { x: 306, y: 104, size: 38, spacing: 12, anchor: "middle" },
+    ideas: { x: 300, y: 398, size: 310, anchor: "middle" },
+    wearable: { y: 596, size: 170 },
+  },
 ];
+// Longer than any one letter's outline: SVG dashes text glyph by glyph,
+// so one dash this long draws every letter's outline at once.
+const TRACE = 3000;
+
+function Lockup({ id, className, view, make, ideas, wearable }: Layout) {
+  const word = {
+    x: view.w / 2,
+    y: wearable.y,
+    textAnchor: "middle" as const,
+    className: "font-headline",
+    fontSize: wearable.size,
+    letterSpacing: wearable.size / 136,
+    children: "WEARABLE.",
+  };
+  const guides = [ideas.y, wearable.y];
+  return (
+    <svg
+      viewBox={`0 0 ${view.w} ${view.h}`}
+      className={`relative z-10 overflow-visible ${className}`}
+      aria-hidden="true"
+    >
+      <defs>
+        {/* Green and gold, as in the site's brand gradient. */}
+        <linearGradient id={`iw-fabric-${id}`} x1="0" y1="0" x2="1" y2="0.35">
+          <stop offset="0%" stopColor="var(--color-gold)" />
+          <stop offset="45%" stopColor="#d9d36a" />
+          <stop offset="100%" stopColor="var(--color-emerald-bright)" />
+        </linearGradient>
+        {/* A twill weave: fine diagonal ribs over the fabric. */}
+        <pattern id={`iw-twill-${id}`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)">
+          <rect width="7" height="2.2" fill="#000" fillOpacity="0.1" />
+        </pattern>
+        <clipPath id={`iw-wipe-${id}`}>
+          <rect data-wipe data-full={view.w} x="0" y="0" width={view.w} height={view.h} />
+        </clipPath>
+        {/* The stitches appear as this unseen pen traces the letters. */}
+        <mask id={`iw-stitch-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={view.w} height={view.h}>
+          <text
+            {...word}
+            data-stitch-pen
+            fill="none"
+            stroke="#fff"
+            strokeWidth={16}
+            strokeDasharray={`${TRACE} ${TRACE}`}
+            strokeDashoffset={0}
+          />
+        </mask>
+      </defs>
+
+      {/* Chalk guides at the two baselines. */}
+      {guides.map((y) => (
+        <line
+          key={y}
+          data-guide
+          x1={0}
+          x2={view.w}
+          y1={y + 6}
+          y2={y + 6}
+          stroke="var(--color-gold-light)"
+          strokeOpacity={0.3}
+          strokeWidth={1.2}
+          strokeDasharray={`${TRACE} ${TRACE}`}
+          strokeDashoffset={0}
+        />
+      ))}
+
+      <text
+        data-make
+        x={make.x}
+        y={make.y}
+        textAnchor={make.anchor}
+        className="font-body"
+        fontSize={make.size}
+        fontWeight={700}
+        letterSpacing={make.spacing}
+        fill="var(--color-cream)"
+        fillOpacity={0.75}
+      >
+        WE MAKE
+      </text>
+
+      {/* The idea: a pencil outline, then filled in. */}
+      <text
+        data-sketch
+        x={ideas.x}
+        y={ideas.y}
+        textAnchor={ideas.anchor}
+        className="font-script"
+        fontSize={ideas.size}
+        fill="var(--color-cream)"
+        stroke="var(--color-gold-light)"
+        strokeWidth={1.6}
+        strokeDasharray={`${TRACE} ${TRACE}`}
+        strokeDashoffset={0}
+      >
+        ideas
+      </text>
+
+      {/* The garment: a lift underneath, the fabric and its weave, and
+          the stitching over the edges. */}
+      <g clipPath={`url(#iw-wipe-${id})`}>
+        <text {...word} data-shadow x={word.x + 5} y={word.y + 8} fill="#120700" fillOpacity={0.7} />
+        <text {...word} fill={`url(#iw-fabric-${id})`} />
+        <text {...word} fill={`url(#iw-twill-${id})`} />
+      </g>
+      <text
+        {...word}
+        mask={`url(#iw-stitch-${id})`}
+        fill="none"
+        stroke="var(--color-cream)"
+        strokeWidth={2.4}
+        strokeDasharray="9 7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export default function IdeasWearable() {
   const sectionRef = useRef<HTMLElement>(null);
-  const foliageBackRef = useRef<HTMLDivElement>(null);
-  const foliageFrontRef = useRef<HTMLDivElement>(null);
-  const linesWrapRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef<Array<HTMLDivElement | null>>([]);
-  const taglineRef = useRef<HTMLParagraphElement>(null);
-  const progressFillRef = useRef<HTMLDivElement>(null);
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
+    const all = (selector: string) => Array.from(section.querySelectorAll<SVGElement>(selector));
+    const guides = all("[data-guide]");
+    const make = all("[data-make]");
+    const sketch = all("[data-sketch]");
+    const stitchPen = all("[data-stitch-pen]");
+    const shadow = all("[data-shadow]");
+    const wipe = all("[data-wipe]");
+    const progress = section.querySelector<HTMLElement>("[data-progress]");
+    const fullWidth = (_: number, el: Element) => Number((el as HTMLElement).dataset.full);
 
-    let mm: gsap.MatchMedia | null = null;
-    const ctx = gsap.context(() => {
-      const lines = linesRef.current.filter(
-        (el): el is HTMLDivElement => el !== null
-      );
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+    const mm = gsap.matchMedia();
+    mm.add(
+      {
+        isPhone: "(max-width: 767px)",
+        isWide: "(min-width: 768px)",
+        reduce: "(prefers-reduced-motion: reduce)",
+      },
+      (context) => {
+        const { isPhone, reduce } = context.conditions as { isPhone: boolean; reduce: boolean };
+        // The finished lockup is the markup's own state; reduced motion
+        // just keeps it.
+        if (reduce) return;
 
-      if (reduceMotion) {
-        gsap.set(lines, { opacity: 1, y: 0, scale: 1 });
-        if (taglineRef.current) gsap.set(taglineRef.current, { opacity: 1, y: 0 });
-        return;
+        gsap.set(guides, { strokeDashoffset: TRACE });
+        gsap.set(make, { opacity: 0, y: 18 });
+        gsap.set(sketch, { strokeDashoffset: TRACE, fillOpacity: 0 });
+        gsap.set(stitchPen, { strokeDashoffset: TRACE });
+        gsap.set(wipe, { attr: { width: 0 } });
+        gsap.set(shadow, { opacity: 0 });
+
+        // On the way in, the paper is ruled and the first words set, so
+        // the section never arrives empty.
+        gsap
+          .timeline({
+            scrollTrigger: { trigger: section, start: "top 70%", end: "top top", scrub: 0.6 },
+          })
+          .to(guides, { strokeDashoffset: 0, ease: "power1.inOut", stagger: 0.15 }, 0)
+          .to(make, { opacity: 1, y: 0, ease: "power2.out" }, 0.3);
+
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: () => "+=" + window.innerHeight * (isPhone ? 1.3 : 1.6),
+            pin: true,
+            anticipatePin: 1,
+            scrub: 0.8,
+            invalidateOnRefresh: true,
+            onUpdate: (self) => {
+              if (progress) gsap.set(progress, { scaleX: self.progress });
+            },
+          },
+        });
+
+        // The idea, sketched in outline, then inked in.
+        tl.to(sketch, { strokeDashoffset: 0, duration: 0.3, ease: "power1.inOut" }, 0)
+          .to(sketch, { fillOpacity: 1, duration: 0.1 }, 0.27)
+          // A running stitch round every letter of WEARABLE...
+          .to(stitchPen, { strokeDashoffset: 0, duration: 0.3, ease: "power1.inOut" }, 0.36)
+          // ...and the fabric laid in, left to right.
+          .to(wipe, { attr: { width: fullWidth }, duration: 0.2, ease: "power2.inOut" }, 0.64)
+          .to(shadow, { opacity: 1, duration: 0.12 }, 0.7)
+          .to(guides, { opacity: 0.35, duration: 0.1 }, 0.78)
+          .to({}, { duration: 0.12 }, 0.88);
       }
-
-      // Pinned kinetic typography and optical portal, on every screen
-      // size. Phones used to get a plain scrubbed fade instead, on the
-      // idea that a pin fights the thumb — but this section is a single
-      // full-screen statement, and on a phone the pin reads as the same
-      // deliberate beat it is on desktop. Phones get a shorter pin and
-      // smaller sideways drift to suit the narrower lines.
-      mm = gsap.matchMedia();
-      mm.add(
-        { isPhone: "(max-width: 767px)", isWide: "(min-width: 768px)" },
-        (context) => {
-          const { isPhone } = context.conditions as { isPhone: boolean };
-          const drift = isPhone ? 7 : 10;
-
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              // Read live on every refresh so a resize re-derives it.
-              end: () => "+=" + window.innerHeight * (isPhone ? 1.1 : 1.35),
-              pin: true,
-              anticipatePin: 1,
-              scrub: 0.8,
-              invalidateOnRefresh: true,
-              onUpdate: (self) => {
-                if (progressFillRef.current) {
-                  gsap.set(progressFillRef.current, { scaleX: self.progress });
-                }
-              },
-            },
-          });
-
-          // Set initial rest state before pin engages
-          gsap.set(lines[0], { xPercent: -drift, opacity: 0.18, letterSpacing: "0.04em" });
-          gsap.set(lines[1], { scale: 0.85, opacity: 0.18, transformOrigin: "center center" });
-          gsap.set(lines[2], { xPercent: drift, opacity: 0.18, letterSpacing: "0.04em" });
-          // Foliage starts spread wide and gathers in around the phrase,
-          // the front layer travelling further than the back for depth.
-          gsap.set(foliageBackRef.current, { scale: 1.18, opacity: 0.5 });
-          gsap.set(foliageFrontRef.current, { scale: 1.35, opacity: 0.6 });
-          if (taglineRef.current) {
-            gsap.set(taglineRef.current, { opacity: 0, y: 20, letterSpacing: "0.25em" });
-          }
-
-          // PHASE 1: KINETIC GATHERING & PRECISION LOCKUP (0.00 -> 0.35)
-          tl.to(
-            lines[0],
-            {
-              xPercent: 0,
-              opacity: 1,
-              letterSpacing: "-0.01em",
-              ease: "power2.out",
-              duration: 0.35,
-            },
-            0
-          );
-          tl.to(
-            lines[1],
-            {
-              scale: 1.0,
-              opacity: 1,
-              ease: "power2.out",
-              duration: 0.35,
-            },
-            0
-          );
-          tl.to(
-            lines[2],
-            {
-              xPercent: 0,
-              opacity: 1,
-              letterSpacing: "-0.01em",
-              ease: "power2.out",
-              duration: 0.35,
-            },
-            0
-          );
-          tl.to(
-            foliageBackRef.current,
-            { scale: 1, opacity: 1, ease: "power2.out", duration: 0.35 },
-            0
-          );
-          tl.to(
-            foliageFrontRef.current,
-            { scale: 1, opacity: 1, ease: "power2.out", duration: 0.35 },
-            0
-          );
-
-          // PHASE 2: GOLDEN LOCKUP & READING BREATH (0.35 -> 0.65)
-          if (taglineRef.current) {
-            tl.to(
-              taglineRef.current,
-              {
-                opacity: 1,
-                y: 0,
-                letterSpacing: isPhone ? "0.28em" : "0.35em",
-                ease: "power2.out",
-                duration: 0.2,
-              },
-              0.35
-            );
-          }
-          if (linesWrapRef.current) {
-            tl.to(
-              linesWrapRef.current,
-              {
-                scale: 1.03,
-                ease: "none",
-                duration: 0.3,
-              },
-              0.35
-            );
-          }
-
-          // PHASE 3: OPTICAL APERTURE PORTAL INTO THE PROCESS SECTION (0.65 -> 1.00)
-          tl.to(
-            lines[0],
-            {
-              yPercent: -30,
-              opacity: 0.2,
-              letterSpacing: "0.06em",
-              ease: "power2.in",
-              duration: 0.35,
-            },
-            0.65
-          );
-          tl.to(
-            lines[2],
-            {
-              yPercent: 30,
-              opacity: 0.2,
-              letterSpacing: "0.06em",
-              ease: "power2.in",
-              duration: 0.35,
-            },
-            0.65
-          );
-          tl.to(
-            lines[1],
-            {
-              scale: 1.4,
-              opacity: 0.08,
-              letterSpacing: "0.12em",
-              ease: "power2.in",
-              duration: 0.35,
-            },
-            0.65
-          );
-          if (taglineRef.current) {
-            tl.to(
-              taglineRef.current,
-              {
-                opacity: 0,
-                y: -14,
-                ease: "power2.in",
-                duration: 0.2,
-              },
-              0.65
-            );
-          }
-          // The foliage parts outward like a curtain, opening onto the
-          // next section.
-          tl.to(
-            foliageBackRef.current,
-            { scale: 1.25, opacity: 0.35, ease: "power2.in", duration: 0.35 },
-            0.65
-          );
-          tl.to(
-            foliageFrontRef.current,
-            { scale: 1.6, opacity: 0, ease: "power2.in", duration: 0.35 },
-            0.65
-          );
-        }
-      );
-    }, section);
-
-    return () => {
-      mm?.revert();
-      ctx.revert();
-    };
+    );
+    return () => mm.revert();
   }, []);
 
   return (
@@ -260,84 +242,27 @@ export default function IdeasWearable() {
       id="ideas-wearable"
       // svh: a pinned full-screen section on a phone should match the
       // visible screen, not the taller bars-hidden viewport.
-      className="relative flex h-svh min-h-[560px] w-full items-center justify-center overflow-hidden bg-bark"
+      className="relative flex h-svh min-h-[520px] w-full items-center justify-center overflow-hidden bg-bark"
     >
-      {/* Wattle & eucalyptus framing, in two depth layers */}
+      {/* Pattern paper: a faint dot grid, darker towards the edges. */}
       <div
-        ref={foliageBackRef}
         aria-hidden="true"
-        // The depth blur is for larger screens only: blurring a full-screen
-        // layer as it scales tripled the cost of every frame on phones.
-        className="absolute inset-0 opacity-90 will-change-transform md:blur-[1.5px]"
-      >
-        <WattleBack />
-      </div>
+        className="absolute inset-0 opacity-[0.14] [background-image:radial-gradient(var(--color-gold-light)_1px,transparent_1.2px)] [background-size:22px_22px] md:[background-size:28px_28px]"
+      />
       <div
-        ref={foliageFrontRef}
         aria-hidden="true"
-        className="absolute inset-0 will-change-transform"
-      >
-        <WattleFront />
-      </div>
+        className="absolute inset-0 bg-radial-[ellipse_at_center] from-transparent via-bark/40 to-bark"
+      />
 
-      {/* Darkened centre keeps the letters crisp over the foliage */}
-      <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-bark/85 via-bark/40 to-transparent" />
-
-      {/* The per-letter lines below are aria-hidden (a screen reader would
-          otherwise spell them out), so the phrase is given once here. */}
       <h2 className="sr-only">We make ideas wearable.</h2>
 
-      {/* Main Kinetic Typography Block */}
-      <div
-        ref={linesWrapRef}
-        className="relative z-10 flex w-full flex-col items-center justify-center px-4 text-center sm:px-6 will-change-transform"
-      >
-        {LINES.map((chars, lineIdx) => (
-          <div
-            key={lineIdx}
-            ref={(el) => {
-              linesRef.current[lineIdx] = el;
-            }}
-            className="flex items-center justify-center font-display text-[clamp(2.6rem,12.2vw,12rem)] font-black leading-[0.98] tracking-[-0.02em] will-change-transform select-none"
-            aria-hidden="true"
-          >
-            {chars.map((c, charIdx) =>
-              c.char === " " ? (
-                <span key={charIdx} style={{ width: "0.16em" }} />
-              ) : (
-                <span
-                  key={charIdx}
-                  style={{
-                    color: c.color,
-                    display: "inline-block",
-                    textShadow: "0 4px 18px rgba(0,0,0,0.55)",
-                    transition: "transform 0.25s ease",
-                  }}
-                  className="hover:scale-105"
-                >
-                  {c.char}
-                </span>
-              )
-            )}
-          </div>
-        ))}
-
-        {/* Elegant Gold Tagline */}
-        <p
-          ref={taglineRef}
-          className="mt-8 px-4 font-body text-[0.65rem] font-bold uppercase tracking-[0.35em] text-cream/80 will-change-transform sm:text-xs md:mt-10 md:text-sm"
-        >
-          NAXIS Australia — Delivering Excellence Through Experience
-        </p>
-      </div>
+      {LAYOUTS.map((layout) => (
+        <Lockup key={layout.id} {...layout} />
+      ))}
 
       {/* Ambient micro-progress line for the pin */}
       <div className="absolute bottom-6 left-1/2 h-[2px] w-32 -translate-x-1/2 overflow-hidden rounded-full bg-cream/10 motion-reduce:hidden">
-        <div
-          ref={progressFillRef}
-          className="h-full w-full origin-left bg-gold/60 will-change-transform"
-          style={{ transform: "scaleX(0)" }}
-        />
+        <div data-progress className="h-full w-full origin-left bg-gold/60 will-change-transform" style={{ transform: "scaleX(0)" }} />
       </div>
     </section>
   );

@@ -61,7 +61,9 @@ domain is live.
   it. Its copy is transcribed verbatim into `src/content/` (services,
   about, MOQ, process, compliance).
 - 4 artboard PNGs: About (ivory), MOQ (ivory), and two "We make ideas
-  wearable" (wattle/eucalyptus on ivory / brown).
+  wearable" (wattle/eucalyptus on ivory / brown). The homepage sets that
+  phrase in the site's own faces and green and gold, not the artboards'
+  rainbow letters: the owner found those broke from the rest of the site.
 - The PDF's photos and certification logos appear AI-generated (e.g. the
   WRAP badge lettering is garbled) — do not put them on the site.
 - Positioning confirmed by the client's own copy: own manufacturing
@@ -74,8 +76,6 @@ domain is live.
 - All photography (stock) — incl. `public/images/services/*`
 - Fonts: Source Serif 4 and Allura stand in for the artboards' serif and
   script (`layout.tsx`)
-- Wattle foliage is procedural vector art (`WattleFoliage.tsx`) until the
-  client sends the layered artwork
 - Official certification logos + which facility holds which certificate.
   The tags' "what it covers" lines describe each standard, not NAXIS's
   certificates (`src/content/compliance.ts`).
@@ -91,11 +91,9 @@ domain is live.
   for GSAP writes in `src/lib/brand.ts`. Gold + emerald are the paired
   accents (Australia's green and gold, as in the client artwork).
 - Utilities: `text-gradient-brand` / `-deep`, `bg-gradient-brand` / `-deep`.
-- Fonts: `font-headline` (Bebas Neue — section headlines), `font-display`
-  (Poppins, sparing; Ideas Wearable uses Poppins Black to match the
-  artboard), `font-body` (Inter), `font-serif`, `font-script`,
-  `font-greeting` (preloader).
-- `--color-phrase-*` are sampled from the client's "ideas wearable" art.
+- Fonts: `font-headline` (Bebas Neue — section headlines), `font-body`
+  (Inter), `font-serif`, `font-script` (Allura), `font-greeting`
+  (preloader), `font-native` (the greetings' own scripts).
 
 ## Code map
 
@@ -170,6 +168,14 @@ domain is live.
   across" roller turns through the six countries. Once the headline's
   line masks release, it takes a layered shadow (`.hero-headline.is-lit`
   in globals), over a soft shade pooled behind it.
+- **Ideas Wearable** (`IdeasWearable.tsx`): the client's phrase told as
+  how a garment is made, on pattern paper (a dot grid on bark). Chalk
+  guides and "WE MAKE" arrive as it scrolls in; pinned, "ideas" is
+  sketched in pencil outline and inked in, then a running stitch goes
+  round every letter of "WEARABLE." and green-and-gold fabric (with a
+  twill weave and a lift) is laid in left to right, like patches sewn
+  on. Two SVG lockups share the markup: one line over another on md+,
+  stacked on phones. Reduced motion: the finished lockup, no pin.
 - **Global Network** (`GlobalNetwork.tsx`): a night globe rising from the
   foot of a dark section (after moto-card.com, which the owner cited).
   The section pins: the globe rises, NAXIS Australia lights, and a route
@@ -222,8 +228,8 @@ these when adding motion:
   drawing; split the static part out (the 404 map) or move the animated
   bit to HTML (the Logistics pulse ring).
 - No blur, blend or backdrop-filter on layers that move or sit over
-  something that redraws: the Ideas Wearable foliage blur and the hero's
-  grain and screen-blended light are md+ only; the globe's labels and
+  something that redraws: the hero's grain and screen-blended light are
+  md+ only; the globe's labels and
   pills are solid; Capabilities' backdrop photos are pre-rendered
   greyscale (`public/images/backdrop/`) instead of a CSS filter.
 - The globe on phones: 1.5x pixel ratio, no MSAA, pulses at 30fps only
@@ -274,6 +280,10 @@ these when adding motion:
   placement on an outer static `<g>` and animate an inner one.
 - `clip-path` (like `overflow: hidden`) flattens a `preserve-3d` element:
   on a flip card, clip the faces, not the card.
+- SVG `<text>` takes `stroke-dasharray`, and dashes each glyph on its
+  own: one dash longer than any letter's outline, offset back to 0,
+  draws every letter at once (Ideas Wearable's sketch and stitches). To
+  reveal a dashed stroke progressively, draw a solid one in a mask.
 - GSAP reads an array target as a list of targets, so
   `gsap.to(numbers, { 0: 1 })` does nothing: tween objects (`{ p: 0 }`).
 - A ScrollTrigger on a pinned section ends at the section's own bottom
