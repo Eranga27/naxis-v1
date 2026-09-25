@@ -8,10 +8,18 @@ import Reveal from "@/components/Reveal";
 import CurtainImage from "@/components/motion/CurtainImage";
 import ScrubWords from "@/components/motion/ScrubWords";
 import SplitReveal from "@/components/motion/SplitReveal";
+import SketchToSample from "@/components/services/SketchToSample";
 import { SERVICES, getService } from "@/content/services";
 import { CONTACT_HREF } from "@/lib/navLinks";
 
 type Props = { params: Promise<{ slug: string }> };
+
+// Each service's signature moment, shown after the client copy. Services
+// whose signature already walks through their stages skip the generic
+// stage-by-stage section.
+const SIGNATURES: Record<string, { Component: () => React.JSX.Element; coversStages?: boolean }> = {
+  "product-development": { Component: SketchToSample },
+};
 
 // Only the four known services exist; anything else is a 404.
 export const dynamicParams = false;
@@ -36,6 +44,7 @@ export default async function ServicePage({ params }: Props) {
   if (!service) notFound();
 
   const index = SERVICES.indexOf(service);
+  const signature = SIGNATURES[service.slug];
   const next = SERVICES[(index + 1) % SERVICES.length];
   const [lead, ...rest] = service.body;
 
@@ -103,8 +112,10 @@ export default async function ServicePage({ params }: Props) {
         </div>
       </section>
 
+      {signature && <signature.Component />}
+
       {/* Stages */}
-      {service.stages && (
+      {service.stages && !signature?.coversStages && (
         <section className="bg-ink px-6 py-20 sm:px-10 md:px-16 md:py-24 lg:px-20">
           <SplitReveal
             as="h2"
