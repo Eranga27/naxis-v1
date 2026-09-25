@@ -3,23 +3,12 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { CERTIFICATIONS } from "@/content/compliance";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
-// Certifications and their full names, from the NAXIS Australia client
-// PDF (page 6). Shown as text only: the logo artwork in that PDF is not
-// usable (it appears to be re-drawn, with garbled lettering) — official
-// logos need to come from the client with the certificates behind them.
-const CERTIFICATIONS = [
-  { code: "WRAP", name: "Worldwide Responsible Accredited Production" },
-  { code: "SMETA", name: "Sedex Members Ethical Trade Audit" },
-  { code: "BSCI", name: "Business Social Compliance Initiative" },
-  { code: "C-TPAT", name: "Customs-Trade Partnership Against Terrorism" },
-  { code: "OEKO-TEX®", name: "Standard 100 — tested for harmful substances" },
-];
 
 export default function CinematicDivider() {
   const sectionRef = useRef<HTMLElement>(null);
