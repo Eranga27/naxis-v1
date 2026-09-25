@@ -22,7 +22,9 @@ on its own:
     shapes), so it's lifted from a plain render of the page.
 
 Writes src/content/giantWheel.ts (path data, centred on the wheel's
-centre, in the artwork's units) and public/images/wheel/centre.webp.
+centre, in the artwork's units), public/images/wheel/centre.webp, and
+public/images/wheel/original-{2048,1024}.webp: the whole wheel exactly as
+drawn, for hero C.
 """
 
 import io
@@ -225,6 +227,25 @@ def main() -> None:
         disc = Image.fromarray(n, "RGBA")
         disc.alpha_composite(shapes)
         disc.save(OUT_IMG / "centre.webp", "WEBP", quality=86, method=6)
+
+    # The whole wheel exactly as the client drew it — a plain render of the
+    # page, white face and all, cut to the circle — for hero C, which ends
+    # every weave on the original artwork.
+    edge = radii[0] + rims[0]["width"] / 2
+    for size in (2048, 1024):
+        zoom = size / (2 * edge)
+        plain = page.get_pixmap(
+            matrix=pymupdf.Matrix(zoom, zoom),
+            clip=pymupdf.Rect(cx - edge, cy - edge, cx + edge, cy + edge),
+            alpha=False,
+        )
+        wheel = Image.frombytes("RGB", (plain.width, plain.height), plain.samples).resize((size, size))
+        # A soft-edged circle, a pixel's width of antialiasing.
+        yy, xx = np.mgrid[0:size, 0:size]
+        dist = np.hypot(xx + 0.5 - size / 2, yy + 0.5 - size / 2)
+        mask = np.clip(size / 2 - dist, 0, 1) * 255
+        wheel.putalpha(Image.fromarray(mask.astype(np.uint8), "L"))
+        wheel.save(OUT_IMG / f"original-{size}.webp", "WEBP", quality=92, method=6)
 
     print(f"centre ({cx:.1f}, {cy:.1f}), radii {radii}")
     for v in values:

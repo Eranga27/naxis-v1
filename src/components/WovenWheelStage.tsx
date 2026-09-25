@@ -10,7 +10,8 @@ import type { WovenScene } from "@/lib/wovenScene";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const DISC_SRC = "/images/wheel/centre.webp";
+// The wheel exactly as the client drew it; a lighter cut for phones.
+const ART_SRC = { wide: "/images/wheel/original-2048.webp", phone: "/images/wheel/original-1024.webp" };
 const TURN = Math.PI * 2;
 // Each ring's own pace and direction (rad/s; negative is clockwise as
 // seen): values, motto, name, disc.
@@ -37,20 +38,21 @@ const hasWebGL = () => {
 const noSubscription = () => () => {};
 
 /**
- * The homepage hero, woven (V2, hero C): the client's Giant Wheel as a
- * hundred thousand or so points of light in its own colours, which lie
- * loose as threads or come together as the wheel (see lib/wovenScene).
- * A garment maker's wheel, made the way their garments are: from thread.
+ * The homepage hero, woven (V2, hero C): the client's Giant Wheel exactly
+ * as they drew it, which comes apart into threads of its own colours and
+ * is woven back together (see lib/wovenScene). A garment maker's wheel,
+ * made the way their garments are: from thread.
  *
  * Arrival: the intro's zoom through the X lands on a loom — coloured
  * threads running across the dark — and they swirl in and weave the
- * wheel from its centre out, finished with a ripple through the cloth.
+ * wheel from its centre out, the artwork itself taking over from the
+ * threads as they land, finished with a ripple through the cloth.
  *
  * Then a loop to hold a large screen: the woven wheel turns ring by ring
  * while a light runs round it and a ripple passes through now and then;
  * then it comes undone into threads streaming the other way (warp, then
- * weft, in turn) and weaves itself again. On desktop the threads part
- * round the pointer, like fingers through cloth.
+ * weft, in turn) and weaves itself again. On desktop the pointer pulls a
+ * few threads out of the cloth, showing what it's made of.
  *
  * Scrolling pins it, unpicks the wheel into threads and closes the stage
  * to a card on cream for Mission. It rests while off screen. Without
@@ -122,8 +124,9 @@ export default function WovenWheelStage({ fallback }: { fallback: React.ReactNod
         ripple: st.ripple,
         scan,
         pointer: { x: pointer.sx, y: pointer.sy, on: pointer.son * st.form },
-        azimuth: st.azimuth + Math.sin(time * 0.1) * 0.1 + pointer.sx * 0.05,
-        elevation: st.elevation + Math.sin(time * 0.07) * 0.07 - pointer.sy * 0.04 + st.exit * 0.35,
+        // A barely-there drift, so the woven wheel stays face on, as drawn.
+        azimuth: st.azimuth + Math.sin(time * 0.1) * 0.035 + pointer.sx * 0.02,
+        elevation: st.elevation + Math.sin(time * 0.07) * 0.025 - pointer.sy * 0.015 + st.exit * 0.35,
         dolly: st.dolly * (1 - st.exit * 0.2),
       });
     };
@@ -149,6 +152,12 @@ export default function WovenWheelStage({ fallback }: { fallback: React.ReactNod
         st.weft = crossings % 2 === 0 ? 1 : 0;
       }, 10)
       .to(st, { form: 0, duration: 3.6, ease: "power2.in" }, 11)
+      .add(() => {
+        // Fully undone, where it can't be seen: the rings go back to where
+        // the client drew them, so every weave lands on their wheel
+        // exactly (the turning drifts them apart again after).
+        angles.fill(0);
+      }, 15)
       .to(st, { dolly: 1.06, duration: 3.6, ease: "power1.inOut" }, 11)
       .to(st, { form: 1, duration: 4.4, ease: "power2.inOut" }, 16.4)
       .to(st, { dolly: 1, duration: 4.4, ease: "power1.inOut" }, 16.4)
@@ -170,7 +179,7 @@ export default function WovenWheelStage({ fallback }: { fallback: React.ReactNod
     // Build the scene (three.js loads now); the intro's veil waits for it.
     const ready = import("@/lib/wovenScene")
       .then(({ createWovenScene }) =>
-        createWovenScene(canvas, { count: phone ? 42000 : 120000, discSrc: DISC_SRC })
+        createWovenScene(canvas, { count: phone ? 42000 : 120000, artSrc: phone ? ART_SRC.phone : ART_SRC.wide })
       )
       .then((built) => {
         if (disposed) {
@@ -191,7 +200,7 @@ export default function WovenWheelStage({ fallback }: { fallback: React.ReactNod
     const sized = new ResizeObserver(() => scene?.resize());
     sized.observe(canvas);
 
-    // The threads part round the pointer, where there is one.
+    // The pointer pulls threads out of the cloth, where there is one.
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const onMove = (event: PointerEvent) => {
       const w = window.innerWidth;
