@@ -279,9 +279,6 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       } catch {
         // private mode / storage disabled
       }
-      // Hides the veil markup on later client-side visits to the homepage
-      // before it can paint for a frame (see html.intro-seen in globals).
-      document.documentElement.classList.add("intro-seen");
       onReveal?.();
     };
 
@@ -388,6 +385,11 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     const release = () => {
       document.body.style.overflow = prevOverflow;
       releaseInert();
+      // Hides the veil markup on later client-side visits to the homepage
+      // before it can paint for a frame (see html.intro-seen in globals).
+      // Only now the veil is finished: set at the reveal, it hid the veil
+      // on the spot and cut off the zoom through the X.
+      document.documentElement.classList.add("intro-seen");
       setDone(true);
     };
 
