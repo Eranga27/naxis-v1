@@ -43,12 +43,13 @@
   --font-body: var(--font-inter);
   --font-serif: var(--font-source-serif), Georgia, serif;
   --font-script: var(--font-allura), cursive;
-  /* Multi-script stack for the intro greetings. The browser resolves per
-     glyph, so Latin renders in Inter while each native script falls through
-     to its own Noto face; Chinese uses the system CJK font. */
-  --font-greeting: var(--font-inter), var(--font-noto-sinhala),
-    var(--font-noto-devanagari), var(--font-noto-bengali), "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  /* The intro's greetings, and the native-script line above each one.
+     The native stack resolves per glyph, so each script falls through to
+     its own Noto face; Chinese uses the system CJK font. */
+  --font-greeting: var(--font-instrument-serif), Georgia, serif;
+  --font-native: var(--font-noto-sinhala), var(--font-noto-devanagari),
+    var(--font-noto-bengali), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", var(--font-inter), sans-serif;
 }
 
 /* Gold -> emerald brand gradients. On dark grounds the sweep ends in
@@ -130,23 +131,6 @@ html {
 html.custom-cursor-active,
 html.custom-cursor-active * {
   cursor: none !important;
-}
-
-/* Typewriter caret in the intro preloader — a hard on/off blink, like a
-   real text cursor, rather than a soft fade. */
-@keyframes caret-blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.preloader-caret {
-  animation: caret-blink 1s infinite;
 }
 
 /* Hero scroll cue: a short gold -> emerald segment sliding down its track. */

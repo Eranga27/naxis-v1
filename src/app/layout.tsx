@@ -8,6 +8,7 @@ import {
   Noto_Sans_Bengali,
   Source_Serif_4,
   Allura,
+  Instrument_Serif,
 } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
 import RouteEffects from "@/components/RouteEffects";
@@ -61,10 +62,19 @@ const allura = Allura({
   display: "swap",
 });
 
-// Native scripts for the intro greetings. Script subsets only — Latin comes
-// from Inter, which sits first in the greeting stack. Chinese deliberately
-// falls back to the system CJK face rather than pulling a multi-megabyte
-// webfont for two glyphs.
+// The intro's greetings ("Ayubowan", "from Sri Lanka"): a fine, high-
+// contrast display serif, set in italic. latin-ext for the pinyin tones.
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+// Native scripts for the small line above each greeting. Script subsets
+// only. Chinese deliberately falls back to the system CJK face rather
+// than pulling a multi-megabyte webfont for two glyphs.
 const notoSinhala = Noto_Sans_Sinhala({
   variable: "--font-noto-sinhala",
   subsets: ["sinhala"],
@@ -124,7 +134,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} ${sourceSerif.variable} ${allura.variable} antialiased`}
+      className={`${poppins.variable} ${bebasNeue.variable} ${inter.variable} ${notoSinhala.variable} ${notoDevanagari.variable} ${notoBengali.variable} ${sourceSerif.variable} ${allura.variable} ${instrumentSerif.variable} antialiased`}
     >
       <head>
         {/*
