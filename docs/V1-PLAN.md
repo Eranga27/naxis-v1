@@ -11,19 +11,23 @@ fact, nothing invented.
 
 ## Sitemap
 
-| Page | Route | Built from | Content |
+| Page | Route | Built from | Status |
 | --- | --- | --- | --- |
-| Home | `/` | Everything | Done |
-| About | `/about` | About artboard, profile p1 | Ready |
-| Services hub | `/services` | Profile pp2-5 | Ready |
-| Service pages x4 | `/services/[slug]` | Profile pp2-5 | Ready (upgrade the existing pages) |
-| Start a Project | `/contact` | MOQ artboard | Copy ready; contact details and enquiry delivery pending |
-| Compliance | `/compliance` | Profile p6 | Copy ready; official logos pending |
-| How We Work | `/how-we-work` | Profile p1 process, MOQ artboard | Copy ready; owner's Runable clips pending |
+| Home | `/` | Everything | Built; sections link out to the pages |
+| About | `/about` | About artboard, profile p1 | Built |
+| Services hub | `/services` | Profile pp2-5 | Built |
+| Service pages x4 | `/services/[slug]` | Profile pp2-5 | Built, one signature each |
+| Start a Project | `/contact` | MOQ artboard | Built; contact details and enquiry delivery pending |
+| Compliance | `/compliance` | Profile p6 | Built; official logos pending |
+| How We Work | `/how-we-work` | Profile p1 process, MOQ artboard | Built (photo version); owner's Runable clips pending |
 | Global Network | later | Homepage map | Blocked on per-country roles |
 | What We Make | not built | nothing | Categories aren't in any client material |
-| 404 | `not-found` | | Ready |
+| 404 | `not-found` | | Built |
 | Privacy notice | later | client / their adviser | Needed once the form collects details |
+
+Pages chain through their closing "next chapter": About → Services →
+How We Work → Compliance → Start a Project; each service page leads to
+the next service.
 
 ## Foundations (shared by every page)
 
@@ -82,12 +86,16 @@ fact, nothing invented.
 Each page: eslint + build clean, checked at phone / tablet / desktop and
 reduced motion, its own commits, pushed to `v1-homepage-rebuild`.
 
+Steps 1–6 were built on 2026-09-25. Step 7 waits on the client.
+
 ## Waiting on the client
 
 - Contact email / phone / WhatsApp, Australian address
 - Enquiry delivery: a verified sending domain + API key (Resend) set as
   `RESEND_API_KEY` / `ENQUIRY_TO` / `ENQUIRY_FROM` in Vercel
 - Official certification logos, and which facility holds which
+- Whether to use "Responsible sourcing. Stronger tomorrow." (from the tag
+  in the profile's page 6 photo) on the Compliance page
 - Years / figures behind "decades of experience"
 - Per-country roles for the Global Network page
 - Product categories (What We Make)

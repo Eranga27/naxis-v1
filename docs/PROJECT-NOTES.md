@@ -13,8 +13,16 @@ Lanka, India, Bangladesh, Vietnam, China, Italy). The site's job is B2B
 lead generation: brands wanting their own clothing line.
 
 Stack: Next.js 16.3.4 (App Router — read `AGENTS.md`; APIs differ from
-older Next), React 19.2.8, Tailwind v4, GSAP + ScrollTrigger, Lenis smooth
-scroll. No backend, no env vars.
+older Next), React 19.2.8, Tailwind v4, GSAP (ScrollTrigger, SplitText,
+DrawSVG, Draggable — all free now), Lenis smooth scroll.
+
+The only server code is `src/app/api/enquiry/route.ts`, which sends the
+Start a Project brief through Resend. It needs `RESEND_API_KEY`,
+`ENQUIRY_FROM` (a verified sending address) and `ENQUIRY_TO` in Vercel;
+none are set yet, so it answers 503 and the form falls back to a
+prefilled email / copy-to-clipboard. Optional `NEXT_PUBLIC_SITE_URL`
+overrides the canonical origin (`src/lib/site.ts`) once the client's
+domain is live.
 
 ## Branches and deploys
 
@@ -23,6 +31,9 @@ scroll. No backend, no env vars.
   Preview. V1 of the homepage shipped to `main` on 2026-09-24 (`46a559e`).
 - Workflow: work on `v1-homepage-rebuild`, push, wait for its Vercel
   preview to succeed, then fast-forward `main` — **only when the owner asks**.
+- The V1 inner pages (`docs/V1-PLAN.md`) were built on
+  `v1-homepage-rebuild` on 2026-09-25 and are **not on `main`** until the
+  owner reviews the preview and asks.
 - Plan: keep refining V1, then a full top-to-bottom V2 later.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
@@ -45,9 +56,9 @@ scroll. No backend, no env vars.
 ## Client source material (`client-details/`)
 
 - `NAXIS AUSTRALIA (1).pdf` — 6-page company profile. **Image-based**
-  (no text layer); extract page images with `pypdf` to read it. Its copy is
-  already transcribed verbatim into `src/content/services.ts`, the About
-  and MOQ sections, the process steps and the certifications list.
+  (no text layer); extract page images with `pypdf` (needs `cffi`) to read
+  it. Its copy is transcribed verbatim into `src/content/` (services,
+  about, MOQ, process, compliance).
 - 4 artboard PNGs: About (ivory), MOQ (ivory), and two "We make ideas
   wearable" (wattle/eucalyptus on ivory / brown).
 - The PDF's photos and certification logos appear AI-generated (e.g. the
@@ -64,8 +75,14 @@ scroll. No backend, no env vars.
   script (`layout.tsx`)
 - Wattle foliage is procedural vector art (`WattleFoliage.tsx`) until the
   client sends the layered artwork
-- Official certification logos + which facility holds which certificate
+- Official certification logos + which facility holds which certificate.
+  The tags' "what it covers" lines describe each standard, not NAXIS's
+  certificates (`src/content/compliance.ts`).
+- "Responsible sourcing. Stronger tomorrow." (Compliance page) is printed
+  on the swing tag in the profile's page 6 photo — confirm they want it
 - Per-country roles, proof points (years, capacity, clients), AU address
+- Enquiry delivery: Resend account + verified domain, then the three env
+  vars above; a privacy notice once the form sends real details
 
 ## Design system
 
@@ -81,12 +98,29 @@ scroll. No backend, no env vars.
 
 ## Code map
 
-- `src/app/page.tsx` — homepage section order.
-- `src/app/services/[slug]/page.tsx` — SSG service pages
-  (`dynamicParams = false`).
-- `src/content/services.ts` — single source for the Services section and
-  pages. `src/content/networkMap.ts` + `public/images/network-map.svg` are
-  **generated** by `scripts/build-world-map.mjs` — edit the script, not them.
+- `src/app/page.tsx` — homepage section order. Inner pages: `about`,
+  `services` (hub), `services/[slug]` (SSG, `dynamicParams = false`),
+  `how-we-work`, `compliance`, `contact` (Start a Project), and
+  `not-found.tsx` ("Lost in transit"). Each has an `opengraph-image.tsx`
+  drawn by `src/lib/og.tsx` with the vendored fonts in `src/assets/fonts`.
+- Page kit: `PageShell` (the view-transition wrapper + footer — every page
+  renders inside one), `PageHero` (photo hero with the homepage's
+  frame-to-card exit), `NextChapter` (the end-of-page link whose photo
+  becomes the next hero), `SignOff` (the client's lockup), and
+  `components/motion/` (`SplitReveal`, `ScrubWords`, `CurtainImage`,
+  `ThreadLine`). Hooks and constants in `src/lib/motion.ts`.
+- `src/content/` — single sources shared by the homepage and the pages,
+  client copy verbatim: `about`, `compliance`, `countries`, `moq`,
+  `process`, `services`. `src/content/networkMap.ts` +
+  `public/images/network-map.svg` are **generated** by
+  `scripts/build-world-map.mjs` — edit the script, not them.
+- `src/lib/navLinks.ts` — the menu and footer; `src/lib/site.ts` — origin,
+  name and `SITE_PAGES` (add every new page, it feeds the sitemap);
+  `src/lib/enquiry.ts` — the brief's fields, validation and email text,
+  shared by the form and the route handler.
+- Service signatures (`components/services/`), one per service page:
+  `SketchToSample`, `TheLine`, `TheLoupe`, `DoorstepJourney`; the map in
+  `services/[slug]/page.tsx` says which replace the stage list.
 - `src/lib/pinnedGallery.ts` + `TickRail.tsx` — shared scroll-pinned
   horizontal gallery (Capabilities, ProcessTimeline) at md and up, plus
   the shared tick painter.
@@ -119,6 +153,26 @@ scroll. No backend, no env vars.
   Process use the swipe deck; Services cards are dealt in (no sticky:
   tall cards would hide their links). Full-screen pinned sections use
   `h-svh`.
+- **Between pages** (`PageShell` + `globals.css`): React `<ViewTransition>`.
+  The old page sinks back and dims, a gold→emerald band wipes up and the
+  new page follows it; the header is anchored (`site-header`). Shared
+  photos morph into the next hero by name: `hero-about`, `hero-services`,
+  `hero-service-{slug}`, `hero-how-we-work`, `hero-compliance` (on
+  NextChapter cards, service cards, the homepage About photo and each
+  PageHero). Instant under reduced motion or without browser support.
+- **Menu** (`Nav.tsx`): full screen, opened as a circle clip from the
+  button; items rise in masks with a photo preview on hover.
+- **Inner pages**: PageHero repeats the homepage hero's exit and fires
+  `hero:framed`. About pins a word roll through the tagline's four words
+  (`ChapterScroller`). The Services hub previews each photo under the
+  cursor (touch: rows light at mid-screen). Service signatures: a pinned
+  DrawSVG sketch → pattern → grade → measure; a garment running a
+  production line (pinned on md+, scrubbed on phones); a loupe that
+  follows the cursor or is dragged; a pinned route map from six
+  countries to "your door". How We Work draws one thread down the page
+  that lights each stage (`StageThread`). Compliance hangs the
+  certifications as spring-driven swing tags on a `gsap.ticker` (only
+  while on screen) that flip on tap. The 404 loops a parcel round the map.
 
 ## GSAP / scroll gotchas learned the hard way
 
@@ -156,6 +210,17 @@ scroll. No backend, no env vars.
   in an always-rendered zero-size SVG.
 - After hot-reloading `page.tsx` while GSAP pins wrap sections, React can
   throw `insertBefore … not a child` — HMR residue; a fresh load is clean.
+- `ctx.add(fn)` runs `fn` straight away. For something that starts later
+  (a `once` trigger's `onEnter`), call `ctx.add(() => …)` inside that
+  callback, or register a named method: `const go = ctx.add("go", fn)`.
+- GSAP `x`/`y` on an SVG `<g>` replaces its `transform` attribute: put the
+  placement on an outer static `<g>` and animate an inner one.
+- `clip-path` (like `overflow: hidden`) flattens a `preserve-3d` element:
+  on a flip card, clip the faces, not the card.
+- A page reused across dynamic params (service → service) keeps its
+  instance, so no transition plays and effects go stale: key `PageShell`
+  by the slug. Preload the next hero on intent (`preloadHero`) so a
+  morph doesn't land on an unloaded image.
 
 ## Verifying visually
 
@@ -174,17 +239,22 @@ scroll. No backend, no env vars.
   intro waits out its 6s media timeout; for timing checks, stub
   `HTMLMediaElement.prototype.readyState` to 4 before load. Animations are
   best checked with a CDP screencast (`Page.startScreencast`) turned into
-  contact sheets, not single screenshots.
+  contact sheets, not single screenshots. The screencast sends no frames
+  during a view transition — take `Page.captureScreenshot` bursts there.
+  Headless Chrome reports a coarse pointer, so to test cursor features
+  patch `matchMedia` to answer `(pointer: fine)` before load.
 
 ## Next up
 
-- **V1 scope is in `docs/V1-PLAN.md`** (approved 2026-09-25): the inner
-  pages, their concepts, build order and what's waiting on the client.
-  Work through it in order and tick pages off there.
+- **V1 is built** (`docs/V1-PLAN.md`): every page the client material
+  supports. Next is the owner's review of the preview, then `main` when
+  they ask. Still to come: Global Network and What We Make pages (blocked
+  on client detail), the privacy notice, and turning on enquiry email.
 - **Scroll-scrubbed "thread to doorstep" sequence** (owner is producing
   2–3 clips in Runable): extract frames with ffmpeg to WebP/AVIF (≈150
   desktop / ≈75 mobile), draw to `<canvas>` from ScrollTrigger progress,
-  load on approach. Planned between Process and Services. Clip brief: 4–8s
+  load on approach. Planned between Process and Services, and as the
+  film version of How We Work's thread. Clip brief: 4–8s
   each, ≥1080p, 24–25fps, one continuous slow camera move, chained with
   first/last-frame, subject centred, no faces/hands/readable text.
 - Client questions above; "Delivering excellence through experience" is a
