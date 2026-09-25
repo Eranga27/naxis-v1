@@ -185,6 +185,9 @@ domain is live.
   `hero-service-{slug}`, `hero-how-we-work`, `hero-compliance` (on
   NextChapter cards, service cards, the homepage About photo and each
   PageHero). Instant under reduced motion or without browser support.
+- **Header** (`Nav.tsx`): clear over dark heroes, a near-opaque ink bar
+  elsewhere; it tucks up out of view while scrolling down and returns on
+  scroll up, at the top, on keyboard focus or with the menu open.
 - **Menu** (`Nav.tsx`): full screen, opened as a circle clip from the
   button; items rise in masks with a photo preview on hover.
 - **Inner pages**: PageHero repeats the homepage hero's exit and fires
@@ -253,6 +256,12 @@ domain is live.
   slice of it draws.
 - Additive WebGL layers over a transparent canvas: put the intensity in
   alpha, or where they fade to black they hide the page behind.
+- Anything transformed on every frame of a scroll sequence is repainted
+  every frame: keep its text-shadow blur modest (a 72px one on the hero
+  headline made the exit's frames ~50% slower), don't leave a finished
+  `filter: blur(0px)` on it (`clearProps: "filter"`), and avoid
+  `backdrop-filter` on fixed bars over pinned sections. Measure by timing
+  rAF frames while stepping `scrollTo` through the pin in headless Chrome.
 - A page reused across dynamic params (service → service) keeps its
   instance, so no transition plays and effects go stale: key `PageShell`
   by the slug. Preload the next hero on intent (`preloadHero`) so a
