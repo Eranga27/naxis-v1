@@ -9,6 +9,7 @@ import CurtainImage from "@/components/motion/CurtainImage";
 import ScrubWords from "@/components/motion/ScrubWords";
 import SplitReveal from "@/components/motion/SplitReveal";
 import SketchToSample from "@/components/services/SketchToSample";
+import TheLine from "@/components/services/TheLine";
 import { SERVICES, getService } from "@/content/services";
 import { CONTACT_HREF } from "@/lib/navLinks";
 
@@ -19,6 +20,7 @@ type Props = { params: Promise<{ slug: string }> };
 // stage-by-stage section.
 const SIGNATURES: Record<string, { Component: () => React.JSX.Element; coversStages?: boolean }> = {
   "product-development": { Component: SketchToSample },
+  manufacturing: { Component: TheLine },
 };
 
 // Only the four known services exist; anything else is a 404.
