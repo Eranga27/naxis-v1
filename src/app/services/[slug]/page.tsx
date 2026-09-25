@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import Reveal from "@/components/Reveal";
 import { SERVICES, getService } from "@/content/services";
+import { CONTACT_HREF } from "@/lib/navLinks";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -169,7 +170,7 @@ export default async function ServicePage({ params }: Props) {
               </h2>
               <div className="flex flex-wrap gap-4">
                 <Link
-                  href="/#contact"
+                  href={CONTACT_HREF}
                   className="inline-flex items-center gap-3 rounded-full bg-gold px-7 py-3.5 font-body text-sm font-semibold uppercase tracking-[0.1em] text-ink transition-colors hover:bg-gold-light"
                 >
                   Start the conversation →
