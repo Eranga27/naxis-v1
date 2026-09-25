@@ -120,7 +120,9 @@ domain is live.
   `ThreadLine`). Hooks and constants in `src/lib/motion.ts`.
 - `src/content/` — single sources shared by the homepage and the pages,
   client copy verbatim: `about`, `compliance`, `countries`, `moq`,
-  `process`, `services`. `src/content/networkMap.ts` +
+  `process`, `services`, `wheel` (each of the wheel's six values paired
+  with a verbatim line of client copy that bears it out, and that line's
+  page; the pairings are ours). `src/content/networkMap.ts` +
   `public/images/network-map.svg` are **generated** by
   `scripts/build-world-map.mjs` — edit the script, not them. Likewise
   `src/content/giantWheel.ts` (the wheel's rings as path data) and
@@ -131,6 +133,9 @@ domain is live.
   name and `SITE_PAGES` (add every new page, it feeds the sitemap);
   `src/lib/enquiry.ts` — the brief's fields, validation and email text,
   shared by the form and the route handler.
+- `GiantWheel.tsx` (server: draws the wheel's layers, so its path data
+  ships as markup) + `GiantWheelScene.tsx` (client: layout and motion,
+  given only the small geometry it needs).
 - Service signatures (`components/services/`), one per service page:
   `SketchToSample`, `TheLine`, `TheLoupe`, `DoorstepJourney`; the map in
   `services/[slug]/page.tsx` says which replace the stage list.
@@ -188,6 +193,16 @@ domain is live.
   twill weave and a lift) is laid in left to right, like patches sewn
   on. Two SVG lockups share the markup: one line over another on md+,
   stacked on phones. Reduced motion: the finished lockup, no pin.
+- **The NAXIS wheel** (`GiantWheel*.tsx`, between Services and Global
+  Network — its centre is Australia, where the globe starts): the
+  client's wheel on cream, each ring its own layer. Pinned, the rings
+  turn into register from their own offsets like a combination lock and
+  the icon disc spins in; then a spotlight (a band behind the word, an
+  emerald arc on the rim, a pointer) walks round the six values, dimming
+  the others, while each is read out beside the wheel with its line and
+  a link; finally the whole wheel lights. Side by side from lg; phones
+  and portrait tablets stack. Reduced motion: the finished wheel and the
+  six values as a list.
 - **Global Network** (`GlobalNetwork.tsx`): a night globe rising from the
   foot of a dark section (after moto-card.com, which the owner cited).
   The section pins: the globe rises, NAXIS Australia lights, and a route
@@ -246,8 +261,11 @@ these when adding motion:
   greyscale (`public/images/backdrop/`) instead of a CSS filter.
 - The globe on phones: 1.5x pixel ratio, no MSAA, pulses at 30fps only
   while pinned, no redraws while it scrolls in or out.
-- Pins on phones run shorter than on desktop (Hero, Ideas Wearable,
-  About's word roll, Sketch to Sample, the Logistics journey).
+- Pins on phones run shorter than on desktop (Hero, Ideas Wearable, the
+  NAXIS wheel, About's word roll, Sketch to Sample, the Logistics
+  journey).
+- The wheel's rings are separate `<svg>`/`<img>` layers turned with CSS
+  transforms, so turning them is compositing, not repainting.
 
 ## GSAP / scroll gotchas learned the hard way
 
@@ -259,7 +277,10 @@ these when adding motion:
 - `gsap.matchMedia()` instances: keep a reference and `mm.revert()` in
   cleanup. Nothing uses the deprecated `ScrollTrigger.matchMedia` any more.
   Use a conditions object (`{ isPhone, isWide, reduce }`) when branches
-  differ by size and reduced motion.
+  differ by size and reduced motion. gsap only runs the callback when at
+  least one condition matches, so keep a pair that always covers the
+  screen (`isPhone`/`isWide`): with only `isPhone` and `reduce`, the
+  wheel never set up on desktop.
 - Reveal masks around text that sits offset sideways: an overflow-hidden
   wrapper clips it (the hero read "IX" / "STANDARI" until the masks were
   released). Mask vertically only, e.g. `clip-path: inset(-0.3em -100vw

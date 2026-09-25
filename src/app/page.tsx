@@ -7,6 +7,7 @@ import ProcessTimeline from "@/components/ProcessTimeline";
 import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
 import ServicesStack from "@/components/ServicesStack";
+import GiantWheel from "@/components/GiantWheel";
 import Moq from "@/components/Moq";
 import ClosingCTA from "@/components/ClosingCTA";
 import HomeIntro from "@/components/HomeIntro";
@@ -26,6 +27,10 @@ export default function Home() {
         <IdeasWearable />
         <ProcessTimeline />
         <ServicesStack />
+        {/* What NAXIS does, then what it holds to: the client's wheel of
+            values, whose centre is Australia — where the globe after it
+            starts. */}
+        <GiantWheel />
         <GlobalNetwork />
         <CinematicDivider />
         <Moq />
