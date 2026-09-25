@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { NAV_LINKS } from "@/lib/navLinks";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(false);
+  // The header lives in the root layout and outlasts every page, so the
+  // bar's state is re-derived from each page as it arrives.
+  const pathname = usePathname();
 
   // Clear over the hero, where the header sits on the video; a blurred
   // ink bar from Mission onward, so section headings scrolling underneath
@@ -18,8 +22,14 @@ export default function Nav() {
   // logo would otherwise sit on cream with nothing behind it. Pages
   // without a Mission section (the service pages) go solid after a short
   // scroll instead.
+  //
+  // Inner pages mark a dark hero with data-dark-hero: clear over it, solid
+  // once it has scrolled up past the bar. Pages that open on a light
+  // ground have no such hero and get the solid bar from the top, where a
+  // clear one would leave the logo on bare cream.
   useEffect(() => {
     const mission = document.getElementById("mission");
+    const darkHero = document.querySelector<HTMLElement>("[data-dark-hero]");
     let heroFramed = false;
     let frame = 0;
     const update = () => {
@@ -27,7 +37,9 @@ export default function Nav() {
       setSolid(
         mission
           ? heroFramed || mission.getBoundingClientRect().top <= 80
-          : window.scrollY > 40
+          : darkHero
+            ? darkHero.getBoundingClientRect().bottom <= 80
+            : true
       );
     };
     const onScroll = () => {
@@ -47,11 +59,15 @@ export default function Nav() {
       window.removeEventListener("resize", onScroll);
       window.removeEventListener("hero:framed", onHeroFramed);
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <>
       <header
+        // Held still during page transitions (see ::view-transition-group
+        // (site-header) in globals.css) — the one fixed reference while
+        // the content beneath it changes.
+        style={{ viewTransitionName: "site-header" }}
         className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 transition-[background-color,padding,box-shadow] duration-500 ease-out md:px-12 ${
           solid
             ? "bg-ink/85 py-3 shadow-[0_10px_30px_rgba(16,13,9,0.25)] backdrop-blur-md md:py-3.5"

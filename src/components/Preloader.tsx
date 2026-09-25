@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { INTRO_SESSION_KEY } from "@/lib/intro";
 
 // Each greeting in its own script. Vietnamese and Italian are natively
 // Latin, so they stay as written.
@@ -74,8 +75,6 @@ const FILL_BEAT = 0.3;
 const ZOOM_DURATION = 1.25;
 // Exported so Hero can time its headline to land as the zoom does.
 export const VEIL_EXIT_MS = (FILL_BEAT + ZOOM_DURATION) * 1000;
-
-export const INTRO_SESSION_KEY = "naxis:intro-seen";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -280,6 +279,9 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       } catch {
         // private mode / storage disabled
       }
+      // Hides the veil markup on later client-side visits to the homepage
+      // before it can paint for a frame (see html.intro-seen in globals).
+      document.documentElement.classList.add("intro-seen");
       onReveal?.();
     };
 

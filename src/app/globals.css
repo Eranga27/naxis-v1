@@ -193,3 +193,70 @@ html.custom-cursor-active * {
 html.intro-seen [data-preloader] {
   display: none !important;
 }
+
+/* ---------------------------------------------------------------------
+   Page transitions (React <ViewTransition> in PageShell).
+   The outgoing page settles back and dims; the incoming one is wiped up
+   over it. The incoming page's group carries the brand gradient and is
+   revealed a beat ahead of the page itself, so a thin gold -> emerald
+   edge leads the wipe. The header stays put throughout.
+   --------------------------------------------------------------------- */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Everything outside a page (body ground, cursor, progress bar) swaps
+   without its own crossfade under the page wipe. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-old(.page-exit) {
+  transform-origin: 50% 0;
+  animation: page-exit 0.75s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+::view-transition-group(.page-enter) {
+  background: linear-gradient(90deg, var(--color-gold), var(--color-emerald-bright));
+  animation: page-wipe 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.1s both;
+}
+::view-transition-new(.page-enter) {
+  animation: page-wipe 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.15s both;
+}
+
+@keyframes page-exit {
+  to {
+    transform: translateY(-3%) scale(0.95);
+    opacity: 0.25;
+  }
+}
+
+@keyframes page-wipe {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

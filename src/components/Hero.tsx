@@ -3,9 +3,9 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { onReveal } from "@/lib/intro";
+import { INTRO_SESSION_KEY, onReveal } from "@/lib/intro";
 import { GOLD } from "@/lib/brand";
-import { VEIL_EXIT_MS, INTRO_SESSION_KEY } from "@/components/Preloader";
+import { VEIL_EXIT_MS } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
 

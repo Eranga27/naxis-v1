@@ -10,6 +10,8 @@ import {
   Allura,
 } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
+import RouteEffects from "@/components/RouteEffects";
+import Nav from "@/components/Nav";
 import CustomCursor from "@/components/CustomCursor";
 import ScrollProgress from "@/components/ScrollProgress";
 import "./globals.css";
@@ -122,8 +124,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-screen flex-col bg-ink text-cream font-body">
         <SmoothScroll />
+        <RouteEffects />
         <CustomCursor />
         <ScrollProgress />
+        {/* The header persists across pages; each page's content and
+            footer transition beneath it (see PageShell). */}
+        <Nav />
         {children}
       </body>
     </html>

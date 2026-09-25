@@ -1,4 +1,3 @@
-import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import Mission from "@/components/Mission";
 import AboutNaxis from "@/components/AboutNaxis";
@@ -10,15 +9,14 @@ import CinematicDivider from "@/components/CinematicDivider";
 import ServicesStack from "@/components/ServicesStack";
 import Moq from "@/components/Moq";
 import ClosingCTA from "@/components/ClosingCTA";
-import Footer from "@/components/Footer";
 import HomeIntro from "@/components/HomeIntro";
+import PageShell from "@/components/PageShell";
 
 export default function Home() {
   return (
     <>
       <HomeIntro />
-      <Nav />
-      <main className="flex-1">
+      <PageShell>
         <Hero />
         <Mission />
         <AboutNaxis />
@@ -32,8 +30,7 @@ export default function Home() {
         <CinematicDivider />
         <Moq />
         <ClosingCTA />
-      </main>
-      <Footer />
+      </PageShell>
     </>
   );
 }

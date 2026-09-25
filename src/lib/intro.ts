@@ -7,6 +7,9 @@
  * the callback immediately rather than waiting forever.
  */
 
+/** sessionStorage key: the intro has played (or the visit began elsewhere). */
+export const INTRO_SESSION_KEY = "naxis:intro-seen";
+
 let revealed = false;
 const waiters = new Set<() => void>();
 

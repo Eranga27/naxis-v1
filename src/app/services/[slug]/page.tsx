@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import PageShell from "@/components/PageShell";
 import Reveal from "@/components/Reveal";
 import { SERVICES, getService } from "@/content/services";
 
@@ -36,11 +35,9 @@ export default async function ServicePage({ params }: Props) {
   const [lead, ...rest] = service.body;
 
   return (
-    <>
-      <Nav />
-      <main className="flex-1">
+    <PageShell>
         {/* Hero banner */}
-        <section className="relative flex min-h-[72svh] items-end overflow-hidden bg-ink">
+        <section data-dark-hero className="relative flex min-h-[72svh] items-end overflow-hidden bg-ink">
           <Image
             src={service.image}
             alt={service.imageAlt}
@@ -209,8 +206,6 @@ export default async function ServicePage({ params }: Props) {
             </Reveal>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </PageShell>
   );
 }
