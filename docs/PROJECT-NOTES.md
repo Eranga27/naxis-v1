@@ -101,7 +101,7 @@ domain is live.
 - Utilities: `text-gradient-brand` / `-deep`, `bg-gradient-brand` / `-deep`.
 - Fonts: `font-headline` (Bebas Neue — section headlines), `font-body`
   (Inter), `font-serif`, `font-script` (Allura), `font-greeting`
-  (preloader), `font-native` (the greetings' own scripts).
+  (the preloader's "Welcome to").
 
 ## Code map
 
@@ -158,23 +158,16 @@ domain is live.
 
 ## Motion map (what plays where)
 
-- **Preloader** (`Preloader.tsx`): six greetings on flag backdrops, each
-  with its own ink/cream text tone (cream alone vanished on India's and
-  Italy's white centres). Each is the greeting as said ("Ayubowan") in
-  Instrument Serif italic, letters rising out of a blur, its own script
-  small above (Noto faces, `font-native`) and "from Sri Lanka" beneath,
-  the country's name lighting up and keeping a glow. (It was a
-  typewriter in the native scripts; the owner found it choppy.) Finale:
-  "Welcome to" rises the same way, then steps up over a big Bebas NAXIS
-  and an AUSTRALIA line. Exit: NAXIS turns black, the
+- **Preloader** (`Preloader.tsx`): "Welcome to" (Instrument Serif
+  italic) rises out of a blur, then steps up over a big Bebas NAXIS and
+  an AUSTRALIA line. (V1 opened with a greeting from each of the six
+  countries on its flag, plus a Skip pill; the client asked for V2 to
+  start at the welcome, so both went, with the Noto script fonts they
+  needed.) Exit: NAXIS turns black, the
   veil switches to `mix-blend-mode: lighten` so the letters show the hero,
   then it scales about the centre of the X until the hero fills the
-  screen. `VEIL_EXIT_MS` is reveal → veil gone; Hero times its headline
-  off it. A "Skip intro" pill (and Escape) appears after a moment and
-  cuts the greetings short: the one on screen steps out and the welcome
-  plays as usual, lockup and zoom included, so skipping never lands
-  flat on the hero. The pill goes once the welcome starts. Reduced
-  motion: static lockup, then fade. The `intro-seen`
+  screen. `VEIL_EXIT_MS` is reveal → veil gone; the hero times its
+  entrance off it. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
 - **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase

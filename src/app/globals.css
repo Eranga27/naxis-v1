@@ -34,13 +34,8 @@
   --font-body: var(--font-inter);
   --font-serif: var(--font-source-serif), Georgia, serif;
   --font-script: var(--font-allura), cursive;
-  /* The intro's greetings, and the native-script line above each one.
-     The native stack resolves per glyph, so each script falls through to
-     its own Noto face; Chinese uses the system CJK font. */
+  /* The intro's "Welcome to". */
   --font-greeting: var(--font-instrument-serif), Georgia, serif;
-  --font-native: var(--font-noto-sinhala), var(--font-noto-devanagari),
-    var(--font-noto-bengali), "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", "Noto Sans CJK SC", var(--font-inter), sans-serif;
 }
 
 /* Gold -> emerald brand gradients. On dark grounds the sweep ends in

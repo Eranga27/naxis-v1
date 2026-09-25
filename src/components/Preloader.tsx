@@ -4,20 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { INTRO_SESSION_KEY } from "@/lib/intro";
 
-// Hello from each country in the network: the greeting as it's said (in
-// Latin letters, set large), its own script above it where that differs,
-// and where it's from beneath — the country's name glowing.
-const GREETINGS = [
-  { word: "Ayubowan", native: "ආයුබෝවන්", country: "Sri Lanka", glow: "#FFD36B" },
-  { word: "Namaste", native: "नमस्ते", country: "India", glow: "#FFB86B" },
-  { word: "Shagotom", native: "স্বাগতম", country: "Bangladesh", glow: "#FFC94A" },
-  { word: "Xin chào", native: "", country: "Vietnam", glow: "#FFE56B" },
-  { word: "Nǐ hǎo", native: "你好", country: "China", glow: "#FFE36B" },
-  { word: "Ciao", native: "", country: "Italy", glow: "#FFFFFF" },
-];
-// The destination is a lockup: "Welcome to" rises in like the greetings,
-// then steps up to make room for the name set large in the hero's own
-// face, with the place underneath.
+// The intro is a lockup: "Welcome to" rises in, then steps up to make
+// room for the name set large in the headline face, with the place
+// underneath. (V1 opened with a greeting from each country first; the
+// client asked for it to start here.)
 const WELCOME = "Welcome to";
 const BRAND = "NAXIS";
 const PLACE = "Australia";
@@ -29,62 +19,22 @@ const ZOOM_LETTER = BRAND.indexOf("X");
 // preloadFonts below.
 const FONT_WAIT_MS = 1500;
 
-// Greeting text is ink or cream depending on what sits behind it, with a
-// soft halo in the opposite tone to lift it off the busier parts of a flag.
-const TONES = {
-  ink: { color: "#100d09", shadow: "0 1px 14px rgba(255,255,255,0.4)" },
-  cream: { color: "#FBF4E4", shadow: "0 2px 12px rgba(0,0,0,0.4)" },
-} as const;
-type Tone = keyof typeof TONES;
-
-// One backdrop per greeting above, same order — a loose mood cue built from
-// each country's flag palette, not a literal reproduction of the flag's
-// geometry. Bangladesh/Vietnam/China lean on their flags' actual two-tone
-// field+emblem colors; Sri Lanka/India/Italy get a third stop for their
-// tricolore-style flags.
-//
-// The tone is picked for the gradient's middle band, where the greeting
-// sits. One cream for every flag used to vanish on India's and Italy's
-// white centres (~1:1 contrast); per flag, every greeting clears 5.5:1
-// across the band it spans on a phone.
-const COUNTRY_BACKDROPS: Array<{ gradient: string; tone: Tone }> = [
-  { gradient: "linear-gradient(135deg, #8D153A 0%, #FFB612 50%, #007847 100%)", tone: "ink" }, // Sri Lanka
-  { gradient: "linear-gradient(135deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)", tone: "ink" }, // India
-  { gradient: "linear-gradient(135deg, #006A4E 0%, #F42A41 100%)", tone: "cream" }, // Bangladesh
-  { gradient: "linear-gradient(135deg, #DA251D 0%, #FFCD00 100%)", tone: "ink" }, // Vietnam
-  { gradient: "linear-gradient(135deg, #DE2910 0%, #FFDE00 100%)", tone: "ink" }, // China
-  { gradient: "linear-gradient(135deg, #008C45 0%, #F4F5F0 50%, #CD212A 100%)", tone: "ink" }, // Italy
-];
-
-// Rather than cut straight from the last flag gradient to flat white, the
-// destination gets one more crossfade — into a soft, low-saturation warm
-// wash (not another flag; this one's the brand, not a country) — so the
-// sequence still reads as one continuous fade rather than an abrupt stop.
+// A soft, low-saturation warm wash behind the lockup.
 const WELCOME_GRADIENT =
   "linear-gradient(135deg, #FDF8ED 0%, #F4EFE4 55%, #FBEFD8 100%)";
 
-const WORD_HOLD_MS = 800; // time to read a greeting once it's in
 const LOCKUP_HOLD_MS = 1300; // time to read the finished lockup
 const TEXT_FADE_MS = 400;
-const BG_FADE_MS = 650; // flag-gradient crossfade duration
 
 // The exit, in seconds from the moment the hero is revealed: the name's
-// letters fill with the hero footage, hold a beat, then the camera pushes
-// through the X into the hero.
+// letters become windows onto the hero, hold a beat, then the camera
+// pushes through the X into it.
 const FILL_BEAT = 0.3;
 const ZOOM_DURATION = 1.25;
-// Exported so Hero can time its headline to land as the zoom does.
+// Exported so the hero can time its entrance to the zoom.
 export const VEIL_EXIT_MS = (FILL_BEAT + ZOOM_DURATION) * 1000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** `#RRGGBB` at an alpha, for text-shadow strings GSAP can interpolate. */
-const rgba = (hex: string, alpha: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-};
-const glowShadow = (hex: string, strength: number) =>
-  `0 0 ${10 * strength}px ${rgba(hex, 0.9 * Math.min(strength, 1))}, 0 0 ${26 * strength}px ${rgba(hex, 0.65 * Math.min(strength, 1))}`;
 
 /** Fills an element with one inline-block span per letter, to animate. */
 function letterSpans(el: HTMLElement, text: string) {
@@ -92,7 +42,8 @@ function letterSpans(el: HTMLElement, text: string) {
   return Array.from(text).map((ch) => {
     const span = document.createElement("span");
     span.className = "inline-block";
-    span.textContent = ch === " " ? " " : ch;
+    // A plain space would collapse inside an inline-block span.
+    span.textContent = ch === " " ? "\u00a0" : ch;
     el.appendChild(span);
     return span;
   });
@@ -131,21 +82,14 @@ function textBand(el: HTMLElement) {
 type Props = {
   /** Fired the moment the hero starts showing through the veil. */
   onReveal?: () => void;
-  /** Resolves when the hero video is buffered; the veil waits on it. */
+  /** Resolves when the hero is ready to be seen; the veil waits on it. */
   waitForMedia?: () => Promise<void>;
 };
 
 export default function Preloader({ onReveal, waitForMedia }: Props) {
   const [done, setDone] = useState(false);
   const veilRef = useRef<HTMLDivElement>(null);
-  const greetRef = useRef<HTMLDivElement>(null);
-  const nativeRef = useRef<HTMLSpanElement>(null);
-  const wordRef = useRef<HTMLSpanElement>(null);
-  const fromRef = useRef<HTMLSpanElement>(null);
-  const countryRef = useRef<HTMLSpanElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
-  const bgLayerARef = useRef<HTMLDivElement>(null);
-  const bgLayerBRef = useRef<HTMLDivElement>(null);
   const lockupRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
   const maskRefs = useRef<Array<HTMLSpanElement | null>>([]);
@@ -155,45 +99,22 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
   const ruleRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const cancelled = useRef(false);
   const revealed = useRef(false);
-  const skipRef = useRef<HTMLButtonElement>(null);
-  // Set by the effect: ends the intro early (the Skip button, Escape).
-  const skipIntro = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     cancelled.current = false;
 
     const veil = veilRef.current;
-    const greet = greetRef.current;
-    const native = nativeRef.current;
-    const word = wordRef.current;
-    const from = fromRef.current;
-    const country = countryRef.current;
     const box = boxRef.current;
-    const bgLayerA = bgLayerARef.current;
-    const bgLayerB = bgLayerBRef.current;
     const lockup = lockupRef.current;
     const mark = markRef.current;
     const place = placeRef.current;
     const placeText = placeTextRef.current;
-    const masks = maskRefs.current.filter(
-      (el): el is HTMLSpanElement => el !== null
-    );
-    const letters = letterRefs.current.filter(
-      (el): el is HTMLSpanElement => el !== null
-    );
-    const rules = ruleRefs.current.filter(
-      (el): el is HTMLSpanElement => el !== null
-    );
+    const masks = maskRefs.current.filter((el): el is HTMLSpanElement => el !== null);
+    const letters = letterRefs.current.filter((el): el is HTMLSpanElement => el !== null);
+    const rules = ruleRefs.current.filter((el): el is HTMLSpanElement => el !== null);
     if (
       !veil ||
-      !greet ||
-      !native ||
-      !word ||
-      !from ||
-      !country ||
       !box ||
-      !bgLayerA ||
-      !bgLayerB ||
       !lockup ||
       !mark ||
       !place ||
@@ -212,30 +133,19 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       gsap.set(letters, { yPercent: 110 });
       gsap.set(rules, { scaleX: 0 });
     });
-    // The greetings' own tweens, apart, so skipping can stop them where
-    // they are without touching the lockup's.
-    const greetings = gsap.context(() => {});
-    // Runs a timeline inside a context and resolves when it ends — or at
-    // `resolveAt` seconds, letting the rest play on while the sequence
-    // moves ahead.
-    const play = (
-      build: (tl: gsap.core.Timeline) => void,
-      resolveAt?: number,
-      ctx: gsap.Context = tweens
-    ) =>
+    // Runs a timeline inside the context and resolves when it ends.
+    const play = (build: (tl: gsap.core.Timeline) => void) =>
       new Promise<void>((resolve) => {
-        ctx.add(() => {
-          const tl = gsap.timeline({ onComplete: resolveAt === undefined ? resolve : undefined });
+        tweens.add(() => {
+          const tl = gsap.timeline({ onComplete: resolve });
           build(tl);
-          if (resolveAt !== undefined) tl.call(resolve, undefined, resolveAt);
         });
       });
 
-    // The greeting fonts are unicode-range subsets, which the browser only
-    // fetches once a glyph from that script is first on screen — so a word
-    // would first appear in a fallback face and then visibly swap. Load
-    // every one (and the name's headline face) before starting instead,
-    // capped so a slow network can't hold the intro on a blank screen.
+    // "Welcome to" would otherwise first appear in a fallback face and
+    // then visibly swap, and the lockup is measured around the name's
+    // face. Load them before starting, capped so a slow network can't
+    // hold the intro on a blank screen.
     const preloadFonts = async () => {
       if (!document.fonts?.load) return;
       const face = (el: HTMLElement) => {
@@ -243,44 +153,13 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         return `${style.fontStyle} ${style.fontWeight} 48px ${style.fontFamily}`;
       };
       const loads = [
-        ...GREETINGS.flatMap((g) => [
-          document.fonts.load(face(word), g.word),
-          document.fonts.load(face(country), g.country),
-          ...(g.native ? [document.fonts.load(face(native), g.native)] : []),
-        ]),
         document.fonts.load(face(box), WELCOME),
-        document.fonts.load(face(from), "from"),
         document.fonts.load(face(placeText), PLACE),
         document.fonts.load(face(mark), BRAND),
       ].map((p) => p.catch(() => []));
       await Promise.race([Promise.all(loads), sleep(FONT_WAIT_MS)]);
     };
 
-    // Two stacked full-bleed layers, crossfaded between each other — the
-    // standard trick for animating a gradient smoothly, since browsers
-    // can't interpolate between two multi-stop gradients directly.
-    let activeLayer: 0 | 1 = 0;
-    const crossfadeBg = (gradient: string) => {
-      const layers = [bgLayerA, bgLayerB];
-      const showing = layers[activeLayer];
-      const hidden = layers[1 - activeLayer];
-      hidden.style.backgroundImage = gradient;
-      hidden.style.opacity = "1";
-      showing.style.opacity = "0";
-      activeLayer = (1 - activeLayer) as 0 | 1;
-    };
-    // The greeting transitions color and text-shadow over BG_FADE_MS, so
-    // the text shifts tone in step with the backdrop crossfade above
-    // rather than snapping.
-    const setTone = (tone: Tone) => {
-      greet.style.color = TONES[tone].color;
-      greet.style.textShadow = TONES[tone].shadow;
-      box.style.color = TONES[tone].color;
-    };
-    const showBackdrop = (i: number) => {
-      crossfadeBg(COUNTRY_BACKDROPS[i].gradient);
-      setTone(COUNTRY_BACKDROPS[i].tone);
-    };
     const fireReveal = () => {
       if (revealed.current) return;
       revealed.current = true;
@@ -302,9 +181,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       // private mode / storage disabled — treat as unseen
     }
 
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // Already played this session: never show the veil at all.
     if (seen) {
@@ -320,8 +197,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     // the Nav links underneath it while the intro is still playing. Every
     // other top-level body child is made inert until the veil is gone.
     const inerted = Array.from(document.body.children).filter(
-      (el): el is HTMLElement =>
-        el instanceof HTMLElement && el !== veil && !el.inert
+      (el): el is HTMLElement => el instanceof HTMLElement && el !== veil && !el.inert
     );
     inerted.forEach((el) => {
       el.inert = true;
@@ -330,47 +206,6 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       inerted.forEach((el) => {
         el.inert = false;
       });
-    };
-
-    // A greeting arrives: its letters rise out of a blur one after
-    // another, the script above and the "from" line settle in, and the
-    // country's name lights up letter by letter, then keeps a soft glow.
-    const greetIn = (i: number) => {
-      const g = GREETINGS[i];
-      native.textContent = g.native;
-      const chars = letterSpans(word, g.word);
-      const glows = letterSpans(country, g.country);
-      return play((tl) => {
-        tl.set(greet, { opacity: 1 })
-          .fromTo(
-            chars,
-            { yPercent: 70, opacity: 0, filter: "blur(10px)" },
-            { yPercent: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "expo.out", stagger: 0.045 },
-            0
-          )
-          .fromTo(native, { opacity: 0, y: 10 }, { opacity: 0.75, y: 0, duration: 0.6, ease: "power3.out" }, 0.1)
-          .fromTo(
-            from,
-            { opacity: 0, letterSpacing: "0.6em" },
-            { opacity: 1, letterSpacing: "0.32em", duration: 0.8, ease: "expo.out" },
-            0.2
-          )
-          .fromTo(
-            glows,
-            { opacity: 0.25, textShadow: glowShadow(g.glow, 0.01) },
-            { opacity: 1, textShadow: glowShadow(g.glow, 2.2), duration: 0.3, ease: "power2.out", stagger: 0.045 },
-            0.3
-          )
-          .to(glows, { textShadow: glowShadow(g.glow, 1.2), duration: 0.6, ease: "power2.inOut", stagger: 0.045 }, 0.6);
-        // Readable by now; the glow settles during the hold.
-      }, 0.75, greetings);
-    };
-    const greetOut = () => {
-      const chars = Array.from(word.children);
-      return play((tl) => {
-        tl.to(chars, { yPercent: -45, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power2.in", stagger: 0.025 }, 0)
-          .to([native, from], { opacity: 0, duration: 0.35, ease: "power2.in" }, 0);
-      }, undefined, greetings);
     };
 
     // Positions the lockup around the name, which sits dead centre:
@@ -396,10 +231,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       const xRect = masks[ZOOM_LETTER].getBoundingClientRect();
       const cx = xRect.left + xRect.width / 2;
       const cy = (caps.top + caps.bottom) / 2;
-      const reach = Math.hypot(
-        Math.max(cx, window.innerWidth - cx),
-        Math.max(cy, window.innerHeight - cy)
-      );
+      const reach = Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, window.innerHeight - cy));
       return {
         origin: `${cx - markRect.left}px ${cy - markRect.top}px`,
         scale: reach / (caps.size * 0.03),
@@ -407,10 +239,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     };
 
     const holdForMedia = async (minMs: number) => {
-      await Promise.all([
-        sleep(minMs),
-        waitForMedia ? waitForMedia().catch(() => {}) : Promise.resolve(),
-      ]);
+      await Promise.all([sleep(minMs), waitForMedia ? waitForMedia().catch(() => {}) : Promise.resolve()]);
     };
 
     const release = () => {
@@ -425,14 +254,12 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     };
 
     const runReduced = async () => {
-      // No greetings, no zoom — the finished lockup, briefly, then a plain
-      // fade. The name's face still has to be loaded before the lockup is
-      // measured around it.
+      // No zoom — the finished lockup, briefly, then a plain fade. The
+      // name's face still has to be loaded before the lockup is measured
+      // around it.
       await preloadFonts();
       if (cancelled.current) return;
       box.textContent = WELCOME;
-      crossfadeBg(WELCOME_GRADIENT);
-      setTone("ink");
       const lift = layoutLockup();
       gsap.set(box, { y: lift, opacity: 1 });
       gsap.set(letters, { yPercent: 0 });
@@ -454,44 +281,10 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         return;
       }
 
-      // Not cut short by a skip: the lockup is measured in these faces.
       await preloadFonts();
       if (cancelled.current) return;
 
-      for (let i = 0; i < GREETINGS.length && !skipping; i++) {
-        showBackdrop(i);
-        await greetStep(() => greetIn(i));
-        await greetStep(() => sleep(WORD_HOLD_MS));
-        if (cancelled.current) return;
-        await greetStep(greetOut);
-      }
-      if (cancelled.current) return;
-
-      // Skipped: whatever greeting is on screen stops where it is and
-      // steps out, straight into the welcome.
-      if (skipping) {
-        greetings.kill();
-        await play((tl) => {
-          tl.to(greet, { opacity: 0, duration: 0.35, ease: "power2.in" });
-        });
-        if (cancelled.current) return;
-      }
-
-      // From here the intro plays out as usual; there's nothing left to
-      // skip to.
-      welcoming = true;
-      if (skipRef.current) {
-        const button = skipRef.current;
-        tweens.add(() => {
-          gsap.killTweensOf(button);
-          gsap.to(button, { autoAlpha: 0, duration: 0.3 });
-        });
-      }
-
-      // One last crossfade into a soft brand wash rather than a hard cut
-      // to flat white — the destination, not another country.
-      crossfadeBg(WELCOME_GRADIENT);
-      setTone("ink");
+      // "Welcome to" rises out of a blur, letter by letter.
       const welcome = letterSpans(box, WELCOME);
       gsap.set(box, { opacity: 1 });
       await play((tl) => {
@@ -509,51 +302,32 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       const lift = layoutLockup();
       await play((tl) => {
         tl.to(box, { y: lift, duration: 1, ease: "expo.inOut" }, 0.1)
-          .fromTo(
-            letters,
-            { yPercent: 110 },
-            { yPercent: 0, duration: 1.1, ease: "expo.out", stagger: 0.07 },
-            0.35
-          )
-          .fromTo(
-            rules,
-            { scaleX: 0 },
-            { scaleX: 1, duration: 1, ease: "expo.inOut" },
-            0.75
-          )
+          .fromTo(letters, { yPercent: 110 }, { yPercent: 0, duration: 1.1, ease: "expo.out", stagger: 0.07 }, 0.35)
+          .fromTo(rules, { scaleX: 0 }, { scaleX: 1, duration: 1, ease: "expo.inOut" }, 0.75)
           .fromTo(
             placeText,
             { opacity: 0, letterSpacing: "1.1em", marginRight: "-1.1em" },
-            {
-              opacity: 1,
-              letterSpacing: "0.55em",
-              marginRight: "-0.55em",
-              duration: 1.2,
-              ease: "expo.out",
-            },
+            { opacity: 1, letterSpacing: "0.55em", marginRight: "-0.55em", duration: 1.2, ease: "expo.out" },
             0.8
           );
       });
       if (cancelled.current) return;
 
-      // Hold on the lockup until the hero media is actually ready, so the
-      // exit never lands on an unloaded video.
+      // Hold on the lockup until the hero is actually ready, so the exit
+      // never lands on an unloaded wheel.
       await holdForMedia(LOCKUP_HOLD_MS);
       if (cancelled.current) return;
 
       // The exit. The words around the name step aside and the name turns
       // pure black; the veil then switches to a lighten blend, which keeps
-      // whichever is lighter per channel — the pale wash beats the dark,
-      // graded hero, while black letters give way to it entirely. (Screen
-      // would do the same for black, but lets the hero ghost through a
-      // wash that isn't pure white.) So the letters become windows onto
-      // the hero, which starts its entrance right then and fills them
-      // with footage. Finally the name scales up about the centre of its
-      // X until the crossing strokes fill the screen: the camera pushes
-      // through the letter into the hero. expo.in on the scale reads as a
-      // steady push, since perceived zoom follows the log of the scale.
-      // The last few frames also fade the veil, in case an engine can't
-      // blend it over the video.
+      // whichever is lighter per channel — the pale wash beats the dark
+      // hero, while black letters give way to it entirely. So the letters
+      // become windows onto the hero, which starts its entrance right
+      // then. Finally the name scales up about the centre of its X until
+      // the crossing strokes fill the screen: the camera pushes through
+      // the letter into the hero. expo.in on the scale reads as a steady
+      // push, since perceived zoom follows the log of the scale. The last
+      // few frames also fade the veil, in case an engine can't blend it.
       gsap.set(masks, { clipPath: "none" });
       const zoom = zoomTarget();
       gsap.set(mark, { transformOrigin: zoom.origin });
@@ -564,60 +338,18 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
             veil.style.mixBlendMode = "lighten";
             fireReveal();
           }, 0.35)
-          .to(
-            mark,
-            { scale: zoom.scale, duration: ZOOM_DURATION, ease: "expo.in" },
-            0.35 + FILL_BEAT
-          )
-          .to(
-            veil,
-            { opacity: 0, duration: 0.2, ease: "none" },
-            0.35 + FILL_BEAT + ZOOM_DURATION - 0.2
-          );
+          .to(mark, { scale: zoom.scale, duration: ZOOM_DURATION, ease: "expo.in" }, 0.35 + FILL_BEAT)
+          .to(veil, { opacity: 0, duration: 0.2, ease: "none" }, 0.35 + FILL_BEAT + ZOOM_DURATION - 0.2);
       });
       if (cancelled.current) return;
 
       release();
     };
 
-    // Skip: the greetings take ~12s, a long wait on a phone. Offered after
-    // a moment, it cuts them short and goes straight to the welcome, which
-    // still forms the lockup and zooms through the X into the hero, so
-    // the arrival isn't lost. Escape does the same.
-    let skipping = false;
-    let welcoming = false;
-    let onSkip = () => {};
-    const skipped = new Promise<void>((resolve) => {
-      onSkip = resolve;
-    });
-    // Runs a step of the greetings unless they've been skipped, and stops
-    // waiting on it the moment they are.
-    const greetStep = (start: () => Promise<unknown>) =>
-      skipping ? Promise.resolve() : Promise.race([start(), skipped]);
-    const skip = () => {
-      if (skipping || welcoming || cancelled.current) return;
-      skipping = true;
-      onSkip();
-    };
-    skipIntro.current = skip;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") skip();
-    };
-    document.addEventListener("keydown", onKey);
-    const skipButton = skipRef.current;
-    if (skipButton && !reduceMotion) {
-      tweens.add(() => {
-        gsap.to(skipButton, { autoAlpha: 1, duration: 0.5, delay: 1.2 });
-      });
-    }
-
     void run();
 
     return () => {
       cancelled.current = true;
-      skipIntro.current = null;
-      document.removeEventListener("keydown", onKey);
-      greetings.revert();
       tweens.revert();
       document.body.style.overflow = prevOverflow;
       releaseInert();
@@ -630,25 +362,11 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     <div
       ref={veilRef}
       data-preloader
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-white"
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+      style={{ backgroundImage: WELCOME_GRADIENT }}
     >
-      {/* Two stacked layers crossfaded between each other to animate the
-          flag-gradient backdrop — see crossfadeBg above. */}
-      <div
-        ref={bgLayerARef}
-        aria-hidden="true"
-        className="absolute inset-0 z-0"
-        style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
-      />
-      <div
-        ref={bgLayerBRef}
-        aria-hidden="true"
-        className="absolute inset-0 z-0"
-        style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
-      />
-
-      {/* The name, dead centre, set in the hero's headline face. Each
-          letter rises out of its own mask; the masks clip only below the
+      {/* The name, dead centre, set in the headline face. Each letter
+          rises out of its own mask; the masks clip only below the
           baseline, so nothing above the capitals is ever cut. Hidden until
           the lockup is laid out. */}
       <div
@@ -657,10 +375,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
         style={{ visibility: "hidden" }}
       >
-        <div
-          ref={markRef}
-          className="flex font-headline text-[clamp(6rem,30vw,19rem)] font-normal leading-none text-ink"
-        >
+        <div ref={markRef} className="flex font-headline text-[clamp(6rem,30vw,19rem)] font-normal leading-none text-ink">
           {BRAND.split("").map((letter, i) => (
             <span
               key={i}
@@ -711,53 +426,14 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
         />
       </div>
 
-      {/* The greeting: its script, the word, and where it's from. Fixed
-          line heights so switching between scripts with different
-          vertical metrics never nudges the lines up or down. */}
-      <div
-        ref={greetRef}
-        aria-hidden="true"
-        className="relative z-20 flex flex-col items-center px-6 text-center"
-        style={{ opacity: 0, transition: `color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease` }}
-      >
-        <span
-          ref={nativeRef}
-          className="block h-[1.6em] font-native text-[clamp(1rem,2.2vw,1.5rem)] font-light leading-[1.6]"
-        />
-        <span
-          ref={wordRef}
-          className="block whitespace-nowrap font-greeting text-[clamp(3.5rem,12vw,8.5rem)] italic leading-[1.1] tracking-[-0.01em]"
-        />
-        <span
-          ref={fromRef}
-          className="mt-3 flex items-baseline gap-[0.6em] whitespace-nowrap font-body text-[clamp(0.9rem,1.9vw,1.35rem)] font-medium uppercase md:mt-4"
-          style={{ letterSpacing: "0.32em", marginRight: "-0.32em" }}
-        >
-          <span className="font-greeting text-[1.35em] normal-case italic tracking-normal">from</span>
-          <span ref={countryRef} className="font-semibold" />
-        </span>
-      </div>
-
-      {/* "Welcome to", in the greeting's face; laid over the centre and
-          lifted above the name once the lockup forms. */}
+      {/* "Welcome to": laid over the centre and lifted above the name once
+          the lockup forms. */}
       <span
         ref={boxRef}
         aria-hidden="true"
-        className="absolute z-20 whitespace-nowrap font-greeting text-[clamp(2.25rem,5.5vw,4.5rem)] italic leading-[1.2]"
+        className="absolute z-20 whitespace-nowrap font-greeting text-[clamp(2.25rem,5.5vw,4.5rem)] italic leading-[1.2] text-ink"
         style={{ opacity: 0 }}
       />
-
-      {/* Bottom centre on phones, within the thumb's reach; shown after a
-          moment by the effect. */}
-      <button
-        ref={skipRef}
-        type="button"
-        onClick={() => skipIntro.current?.()}
-        className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink/55 px-5 py-2.5 font-body text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-cream transition-colors hover:bg-ink/75 md:bottom-8 md:left-auto md:right-8 md:translate-x-0"
-        style={{ opacity: 0, visibility: "hidden" }}
-      >
-        Skip intro
-      </button>
     </div>
   );
 }
