@@ -143,18 +143,27 @@ domain is live.
 
 - **Preloader** (`Preloader.tsx`): six greetings on flag backdrops, each
   with its own ink/cream text tone (cream alone vanished on India's and
-  Italy's white centres). Finale: "Welcome to" types, then steps up over
-  a big Bebas NAXIS and an AUSTRALIA line. Exit: NAXIS turns black, the
+  Italy's white centres). Each is the greeting as said ("Ayubowan") in
+  Instrument Serif italic, letters rising out of a blur, its own script
+  small above (Noto faces, `font-native`) and "from Sri Lanka" beneath,
+  the country's name lighting up and keeping a glow. (It was a
+  typewriter in the native scripts; the owner found it choppy.) Finale:
+  "Welcome to" rises the same way, then steps up over a big Bebas NAXIS
+  and an AUSTRALIA line. Exit: NAXIS turns black, the
   veil switches to `mix-blend-mode: lighten` so the letters show the hero,
   then it scales about the centre of the X until the hero fills the
   screen. `VEIL_EXIT_MS` is reveal → veil gone; Hero times its headline
-  off it. Reduced motion: static lockup, then fade.
+  off it. Reduced motion: static lockup, then fade. The `intro-seen`
+  class (which hides the veil on later visits) goes on only when the veil
+  is released — added at the reveal, it cut the zoom off.
 - **Hero** (`Hero.tsx`): after the entrance, a pinned, scrubbed two-phase
   exit on every size. The statement moves to centre and grows, then the
   full-bleed frame clip-paths to a rounded card on cream, handing over to
   Mission seamlessly. It fires `hero:pinned` (Mission refreshes) and
   `hero:framed` (Nav goes solid over the cream). Below lg an "Operating
-  across" roller turns through the six countries.
+  across" roller turns through the six countries. Once the headline's
+  line masks release, it takes a layered shadow (`.hero-headline.is-lit`
+  in globals), over a soft shade pooled behind it.
 - **Global Network** (`GlobalNetwork.tsx`): a night globe rising from the
   foot of a dark section (after moto-card.com, which the owner cited).
   The section pins: the globe rises, NAXIS Australia lights, and a route
@@ -184,8 +193,9 @@ domain is live.
   cursor (touch: rows light at mid-screen). Service signatures: a pinned
   DrawSVG sketch → pattern → grade → measure; a garment running a
   production line (pinned on md+, scrubbed on phones); a loupe that
-  follows the cursor or is dragged; a pinned route map from six
-  countries to "your door". How We Work draws one thread down the page
+  follows the cursor or is dragged; a pinned route map where the shipment
+  leaves NAXIS Australia and fans out to the six countries, a door pin
+  landing at each (exports, matching the globe). How We Work draws one thread down the page
   that lights each stage (`StageThread`). Compliance hangs the
   certifications as spring-driven swing tags on a `gsap.ticker` (only
   while on screen) that flip on tap. The 404 loops a parcel round the map.
@@ -276,9 +286,12 @@ domain is live.
 
 ## Next up
 
-- **V1 is built** (`docs/V1-PLAN.md`): every page the client material
-  supports. Next is the owner's review of the preview, then `main` when
-  they ask. Still to come: Global Network and What We Make pages (blocked
+- **V1 is built and live** (`docs/V1-PLAN.md`): every page the client
+  material supports; the owner asked for it on `main` on 2026-09-25.
+  Preview deployments are behind Vercel Authentication, so the owner
+  can't open them on a phone without logging in to Vercel; to share
+  previews, turn it off (or use a shareable link) under the Vercel
+  project's Settings → Deployment Protection. Still to come: Global Network and What We Make pages (blocked
   on client detail), the privacy notice, and turning on enquiry email.
 - **Scroll-scrubbed "thread to doorstep" sequence** (owner is producing
   2–3 clips in Runable): extract frames with ffmpeg to WebP/AVIF (≈150
