@@ -11,6 +11,10 @@ import { SERVICES } from "@/content/services";
 export default function Nav() {
   const [open, setOpen] = useState(false);
   const [solid, setSolid] = useState(false);
+  // Tucked away while the visitor scrolls down, so the bar never sits over
+  // what they're reading; back as soon as they scroll up (or reach the
+  // top), which is when they're looking for it.
+  const [tucked, setTucked] = useState(false);
   // Hover target for the menu's photo preview (desktop).
   const [preview, setPreview] = useState(0);
   // The previews are only mounted once the menu has been opened, so nine
@@ -45,8 +49,18 @@ export default function Nav() {
     const darkHero = document.querySelector<HTMLElement>("[data-dark-hero]");
     let heroFramed = false;
     let frame = 0;
+    // A new page starts at the top, where the first update shows the bar.
+    let lastY = window.scrollY;
     const update = () => {
       frame = 0;
+      // Down by more than a nudge tucks it; up by a little brings it
+      // back. Near the top it always shows.
+      const y = window.scrollY;
+      const dy = y - lastY;
+      if (y < 120) setTucked(false);
+      else if (dy > 6) setTucked(true);
+      else if (dy < -6) setTucked(false);
+      if (Math.abs(dy) > 6 || y < 120) lastY = y;
       setSolid(
         mission
           ? heroFramed || mission.getBoundingClientRect().top <= 80
@@ -184,11 +198,15 @@ export default function Nav() {
         // (site-header) in globals.css) — the one fixed reference while
         // the content beneath it changes.
         style={{ viewTransitionName: "site-header" }}
-        className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 transition-[background-color,padding,box-shadow] duration-500 ease-out md:px-12 ${
+        // Shown again whenever something in it takes keyboard focus.
+        onFocus={() => setTucked(false)}
+        // No backdrop blur: it was re-run on every frame of the pinned
+        // scroll sequences beneath it. A near-opaque ink does the same job.
+        className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-8 transition-[translate,background-color,padding,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:px-12 ${
           solid
-            ? "bg-ink/85 py-3 shadow-[0_10px_30px_rgba(16,13,9,0.25)] backdrop-blur-md md:py-3.5"
+            ? "bg-ink/90 py-3 shadow-[0_10px_30px_rgba(16,13,9,0.25)] md:py-3.5"
             : "bg-transparent py-6 md:py-7"
-        }`}
+        } ${tucked && !open ? "-translate-y-[110%]" : "translate-y-0"}`}
       >
         {/* Gold -> emerald hairline along the solid bar's bottom edge */}
         <span
@@ -234,7 +252,7 @@ export default function Nav() {
             // A dark pill behind the cream bars, not a faint cream tint —
             // the header floats over both ink and cream sections, and a
             // cream-on-cream button vanished entirely over the latter.
-            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-ink/70 backdrop-blur-md transition-colors hover:bg-ink/90"
+            className="flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-full bg-ink/80 transition-colors hover:bg-ink"
           >
             <span className="block h-px w-4 bg-cream" />
             <span className="block h-px w-4 bg-cream" />
