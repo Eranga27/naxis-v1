@@ -66,6 +66,7 @@ const WELCOME_GRADIENT =
 const WORD_HOLD_MS = 800; // time to read a greeting once it's in
 const LOCKUP_HOLD_MS = 1300; // time to read the finished lockup
 const TEXT_FADE_MS = 400;
+const SKIP_FADE_MS = 450;
 const BG_FADE_MS = 650; // flag-gradient crossfade duration
 
 // The exit, in seconds from the moment the hero is revealed: the name's
@@ -155,6 +156,9 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
   const ruleRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const cancelled = useRef(false);
   const revealed = useRef(false);
+  const skipRef = useRef<HTMLButtonElement>(null);
+  // Set by the effect: ends the intro early (the Skip button, Escape).
+  const skipIntro = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     cancelled.current = false;
@@ -524,6 +528,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       // The last few frames also fade the veil, in case an engine can't
       // blend it over the video.
       gsap.set(masks, { clipPath: "none" });
+      if (skipRef.current) gsap.to(skipRef.current, { autoAlpha: 0, duration: 0.3 });
       const zoom = zoomTarget();
       gsap.set(mark, { transformOrigin: zoom.origin });
       await play((tl) => {
@@ -549,10 +554,39 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       release();
     };
 
+    // Skip: the whole sequence runs ~15s, a long wait on a phone. Offered
+    // after a moment, it stops the sequence where it is and fades straight
+    // into the hero. Escape does the same.
+    let skipped = false;
+    const skip = () => {
+      if (skipped || cancelled.current) return;
+      skipped = true;
+      cancelled.current = true;
+      tweens.kill();
+      fireReveal();
+      veil.style.mixBlendMode = "normal";
+      veil.style.transition = `opacity ${SKIP_FADE_MS}ms ease`;
+      veil.style.opacity = "0";
+      setTimeout(release, SKIP_FADE_MS);
+    };
+    skipIntro.current = skip;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") skip();
+    };
+    document.addEventListener("keydown", onKey);
+    const skipButton = skipRef.current;
+    if (skipButton && !reduceMotion) {
+      tweens.add(() => {
+        gsap.to(skipButton, { autoAlpha: 1, duration: 0.5, delay: 1.2 });
+      });
+    }
+
     void run();
 
     return () => {
       cancelled.current = true;
+      skipIntro.current = null;
+      document.removeEventListener("keydown", onKey);
       tweens.revert();
       document.body.style.overflow = prevOverflow;
       releaseInert();
@@ -565,18 +599,19 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
     <div
       ref={veilRef}
       data-preloader
-      aria-hidden="true"
       className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-white"
     >
       {/* Two stacked layers crossfaded between each other to animate the
           flag-gradient backdrop — see crossfadeBg above. */}
       <div
         ref={bgLayerARef}
+        aria-hidden="true"
         className="absolute inset-0 z-0"
         style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
       />
       <div
         ref={bgLayerBRef}
+        aria-hidden="true"
         className="absolute inset-0 z-0"
         style={{ opacity: 0, transition: `opacity ${BG_FADE_MS}ms ease` }}
       />
@@ -587,6 +622,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
           the lockup is laid out. */}
       <div
         ref={lockupRef}
+        aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
         style={{ visibility: "hidden" }}
       >
@@ -619,6 +655,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       {/* The place, under the name — its top is set in layoutLockup. */}
       <div
         ref={placeRef}
+        aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-4 sm:gap-7"
         style={{ visibility: "hidden" }}
       >
@@ -648,6 +685,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
           vertical metrics never nudges the lines up or down. */}
       <div
         ref={greetRef}
+        aria-hidden="true"
         className="relative z-20 flex flex-col items-center px-6 text-center"
         style={{ opacity: 0, transition: `color ${BG_FADE_MS}ms ease, text-shadow ${BG_FADE_MS}ms ease` }}
       >
@@ -673,9 +711,22 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
           lifted above the name once the lockup forms. */}
       <span
         ref={boxRef}
+        aria-hidden="true"
         className="absolute z-20 whitespace-nowrap font-greeting text-[clamp(2.25rem,5.5vw,4.5rem)] italic leading-[1.2]"
         style={{ opacity: 0 }}
       />
+
+      {/* Bottom centre on phones, within the thumb's reach; shown after a
+          moment by the effect. */}
+      <button
+        ref={skipRef}
+        type="button"
+        onClick={() => skipIntro.current?.()}
+        className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2 rounded-full bg-ink/55 px-5 py-2.5 font-body text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-cream transition-colors hover:bg-ink/75 md:bottom-8 md:left-auto md:right-8 md:translate-x-0"
+        style={{ opacity: 0, visibility: "hidden" }}
+      >
+        Skip intro
+      </button>
     </div>
   );
 }
