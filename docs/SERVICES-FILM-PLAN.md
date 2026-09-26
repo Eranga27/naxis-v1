@@ -220,74 +220,87 @@ Also join them in that order into one preview, service-film-preview.mp4 (just jo
   hero, as the photos do now (a view transition captures the canvas).
 - **Reduced motion / no JavaScript**: the four services as static
   cards with the anchor stills; no pin.
-- **Pipeline**: `scripts/build-service-film.mjs` (ffmpeg) turns the
-  master and its timecodes into the desktop and phone frame sets plus a
-  manifest (segment frame ranges, anchors); the masters stay in
-  `media-library/`.
+- **Pipeline**: `scripts/build-service-film.py` (ffmpeg via
+  imageio-ffmpeg) cuts the footage by an edit list into the desktop and
+  phone frame sets plus a manifest (segment frame ranges); the masters
+  stay in `media-library/services-film/`.
 
-## Where it stands
+## Where it stands (2026-09-26): the film, from Runable's footage
 
-Phase 0 is built (`ServicesFilm.tsx`, `scripts/build-service-film.py`):
-the stage plays stand-in frames made from the four service photos —
-wide 144 frames at 1440×810 (≈ 5.8MB), tall 92 at 540×960 (≈ 2.0MB).
-To swap in the real film:
+The stage plays the real film now. Runable's run (the credits ran out
+partway) made, in `media-library/services-film/`:
 
-1. The seven clips in `media-library/services-film/`, named so they sort
-   in order (see Export above).
-2. `pip install imageio-ffmpeg` and run `python3
-   scripts/build-service-film.py --clips media-library/services-film`
-   (add `--focus 0.6,0.62,…` — 7 x positions, 0–1 — if a clip's subject
-   isn't near 62% across, for the phone crop). It rewrites the frames and
-   `src/content/serviceFilm.ts`; the stage needs no change. Tested on
-   seven 1080p/24fps test clips of 4–5s. (An edited master instead:
-   `--master <video> --cuts <json>`, the json `{"cuts": [8 times in
-   seconds — where each of the seven segments begins, then where the
-   last ends], "focus": [optional, 7 values]}`.)
-3. Check the joins frame by frame, the weight (the budget above), and
-   the phones. If the wide frames look soft on large retina screens,
-   raise them to 1920×1080 in the script's `SETS` and re-check the
-   weight; the canvas follows the frames' resolution by itself.
+- **A1–A4**, one anchor still per service: the pattern table,
+  a sewing line, a mustard coat on the inspection table, the port at
+  sunset;
+- **H1_v1–v3**, three takes of hold 1 pushing in over A1's table. Only
+  **H1_v1** ends on the frame the next two clips start from;
+- **"H1 H2 my recommended morph"**: from that frame, a machine comes
+  down and the pattern paper sews into mustard cloth (morph 1>2, paper
+  becomes cloth);
+- **H2_factory**, from the same frame: Runable crossfades (to ~1.9s)
+  into a head-on close-up of the needle running a seam, then holds it;
+- **K0–K7**, a separate keyframe set in a different scene (a dress-form
+  atelier, a factory line…). No clip was made from them; K5, the
+  packed carton by the loading door, is the only one used;
+- frame grabs of the joins (`H1-last`, `H2-first`, `H2-last`, …).
 
-### What Runable actually made (2026-09-26), and the keyframe route
+The film is cut together by `media-library/services-film/edit.json`,
+which `scripts/build-service-film.py` reads (its docstring explains the
+pieces: clips, stills, crafted push-throughs):
 
-The first run used up the month's credits after making a shot list,
-**eight keyframes** and the first two hold clips. The keyframes turn out
-to be the film's skeleton — each segment runs from one to the next:
+| Segment | What plays |
+| --- | --- |
+| Hold 1, Development | H1_v1, all of it (20 frames: it moves a lot) |
+| Morph 1>2 | the recommended morph, then a crafted push through the needle into H2's close-up (the morph ends on the machine at the table, so nothing meets H2 exactly) |
+| Hold 2, Manufacturing | H2_factory 2.0–4.0s, after its own crossfade |
+| Morph 2>3 | H2_factory's last second, then a crafted push from the seam to A3's coat |
+| Hold 3, Quality | A3, pushed in slowly |
+| Morph 3>4 | push to K5's carton, a beat, push out to A4 |
+| Hold 4, Logistics | A4, pushed in slowly |
 
-| Segment | From | To |
+Wide 152 frames (≈ 5.4MB), tall 104 (≈ 2.0MB); on the throttled phone
+profile it steps like the stand-in did (≈ 43ms).
+
+`python3 scripts/build-service-film.py` rebuilds it (needs `pip install
+imageio-ffmpeg`, about a minute and a half). It also prints how far apart
+the two frames of each cut are: a clip made from the other's last frame
+comes out under ~12; much more means a push belongs there.
+
+### Upgrading it, a clip at a time
+
+Each new clip replaces one segment's crafted move: add it to the folder
+and change that segment's pieces in `edit.json`. Most effect per
+credit, in order:
+
+| Clip | Start frame | End frame |
 | --- | --- | --- |
-| Hold 1 | K0 atelier (hold start) | K1 pattern piece |
-| Morph 1→2 | K1 pattern piece | K2 factory line |
-| Hold 2 | K2 factory line | K3 stitched seam |
-| Morph 2→3 | K3 stitched seam | K4 QC table |
-| Hold 3 | K4 QC table | K5 packing |
-| Morph 3→4 | K5 packing | K6 port |
-| Hold 4 | K6 port | K7 port, final frame |
+| Morph 2>3, the stitch becomes the check | `H2-last.png` | `A3.png` |
+| Morph 3>4, the carton becomes the container | `A3.png` (or hold 3's last frame, if that's a clip) | `A4.png` |
+| Hold 3, Quality | `A3.png` | — (a slow push-in) |
+| Hold 4, Logistics | `A4.png` | — (a slow push-in) |
 
-So the film can be built now and upgraded a clip at a time:
-`build-service-film.py --keyframes media-library/services-film` takes
-K0–K7 (named `K0…`–`K7…`) and whichever clips exist, named `1-`…`7-`.
-A segment with its clip plays it; one without is a crafted move between
-its two keyframes (a push-in for a hold, a push-through dissolve for a
-morph), and where a crafted segment meets a real clip it starts or ends
-on the clip's own frame, so the joins stay exact. Each new clip dropped
-in replaces its segment on the next run. Best order to spend credits:
-the three morphs first (they carry the effect), then holds 3 and 4.
-
-One clip per task, and outside Agent mode if Runable's Video tool takes
-a start and an end image directly (the agent's planning costs credits
-too):
+A morph clip that starts on A3 plays straight after hold 3 only if the
+hold ends on A3 as it is: set hold 3's still to `"zoom": [1.1, 1.0]`
+(easing back to it), or keep a `"push"` between them. The same goes for
+A4 and hold 4. One clip per task, outside Agent mode if Runable's Video
+tool takes a start and an end image directly (the agent's planning costs
+credits too):
 
 ```
 Generate ONE 5-second video, 16:9, 1920x1080 or higher, 24fps, audio off.
-Start frame: the attached image [K1]. End frame: the attached image [K2].
+Start frame: the attached image [H2-last.png]. End frame: the attached image [A3.png].
 [The segment's prompt from the prompt pack above.]
 Generate only this one video: no variations, no extra images, no shot list, no questions.
 ```
 
+If the wide frames look soft on large retina screens, raise them to
+1920×1080 in the script's `SETS` and re-check the weight; the canvas
+follows the frames' resolution by itself.
+
 ## Phases
 
-0. **Before any footage (Claude)**: build the stage with stand-in
+0. **Before any footage (Claude, done)**: build the stage with stand-in
    frames made from the current four service photos (slow push-ins,
    dissolves for the morphs). It proves pinning, snapping, text sync,
    loading and phones, gives the client the structure to react to, and

@@ -155,13 +155,11 @@ domain is live.
 - `public/film/services/{wide,tall}/NNN.webp` + `src/content/serviceFilm.ts`
   — What We Do's film as scrub frames and their manifest (frame counts,
   each hold's and morph's frame range, a version for cache-busting),
-  **generated** by `scripts/build-service-film.py`: `--stand-in` from the
-  four service photos (what's there now), `--keyframes <dir>` from
-  Runable's eight keyframes K0–K7 plus whichever of the seven clips
-  exist (crafted moves between keyframes where a clip is missing, meeting
-  real clips on their own frames), or `--clips <dir>` from all seven
-  clips (or `--master <video> --cuts <json>`; the plan doc has them all). Needs
-  `pip install imageio-ffmpeg` for video (no system ffmpeg here).
+  **generated** by `scripts/build-service-film.py` from Runable's footage
+  in `media-library/services-film/`, cut by the edit list there
+  (`edit.json`: per segment, clips, stills and crafted push-throughs;
+  the script's docstring has the format). Change the edit, not the
+  frames. Needs `pip install imageio-ffmpeg` (no system ffmpeg here).
 - `public/logos/naxis-wordmark-light.png` — the header's logo: the
   client's wordmark with AXIS in white (their ask for V2), **generated**
   from `naxis-wordmark.png` by `scripts/build-header-logo.py`, which
@@ -354,9 +352,10 @@ domain is live.
   on. Two SVG lockups share the markup: one line over another on md+,
   stacked on phones. Reduced motion: the finished lockup, no pin.
 - **What We Do** (`ServicesFilm.tsx`, V2): the four services as one film
-  (`docs/SERVICES-FILM-PLAN.md`) — for now stand-in frames from the
-  service photos (slow push-ins, push-through dissolves), until the
-  owner's Runable film arrives. The intro sits above; the stage pins
+  (`docs/SERVICES-FILM-PLAN.md`), cut from the owner's Runable footage:
+  real clips for Development, the paper-to-cloth morph and Manufacturing;
+  crafted push-throughs and slow push-ins on their stills (A3, K5's
+  carton, A4) for the rest, until those clips are made. The intro sits above; the stage pins
   (0.6 screens a hold, 0.9 a morph; 0.45/0.75 on phones) and scrubs the
   frames on a canvas, crossfading neighbours in twelfths. Wide frames on
   landscape screens, tall (a portrait crop) below 0.85 aspect. Snap is
@@ -599,17 +598,16 @@ these when adding motion:
   project's Settings → Deployment Protection. Still to come: Global Network and What We Make pages (blocked
   on client detail), the privacy notice, and turning on enquiry email.
 - **The service film** (`docs/SERVICES-FILM-PLAN.md`): What We Do
-  (`ServicesFilm.tsx`, phase 0 done with stand-in frames) plays a film
-  the owner is making in Runable — a hold shot per service and a morph between
-  each (paper becomes cloth, the stitch becomes the check, the carton
-  becomes the container), scroll-scrubbed as WebP frames on a canvas,
-  snapping to services. The plan has the clip specs, the order of work
-  that makes the joins seamless, prompts, frame budgets and phases
-  (phase 0, built: the stage with stand-in frames). Runable's first run
-  made eight keyframes and holds 1–2 before the credits ran out; once
-  they're in `media-library/services-film/`, `--keyframes` builds the
-  whole film from them and each later clip upgrades its segment. It replaces the
-  earlier "thread to doorstep" idea.
+  (`ServicesFilm.tsx`) plays the owner's Runable film — a hold shot per
+  service and a morph between each (paper becomes cloth, the stitch
+  becomes the check, the carton becomes the container), scroll-scrubbed
+  as WebP frames on a canvas, snapping to services. Runable's credits
+  ran out after the four anchor stills, hold 1, the first morph and hold
+  2, so morphs 2>3 and 3>4 and holds 3 and 4 are crafted from stills for
+  now; the plan's "Upgrading it" table says which start and end frames
+  each missing clip needs, most effect first. Each new clip is one line
+  in `edit.json` and a re-run. It replaces the earlier "thread to
+  doorstep" idea.
 - Client questions above; "Delivering excellence through experience" is a
   sign-off lockup, not a headline.
 - The owner cited yarnity.com (a Webflow site) as the feel for the hero's

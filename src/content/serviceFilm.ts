@@ -4,19 +4,19 @@
 // The What We Do film's frames: how many in each set, and which
 // belong to each hold and morph ([first, end) per set).
 export const SERVICE_FILM = {
-  "source": "stand-in",
+  "source": "media-library/services-film/edit.json",
   "base": "/film/services",
-  "version": "ef46b26345",
+  "version": "daf6743ab5",
   "sets": {
     "wide": {
       "width": 1440,
       "height": 810,
-      "count": 144
+      "count": 152
     },
     "tall": {
       "width": 540,
       "height": 960,
-      "count": 92
+      "count": 104
     }
   },
   "segments": [
@@ -25,83 +25,83 @@ export const SERVICE_FILM = {
       "service": 0,
       "wide": [
         0,
-        12
+        20
       ],
       "tall": [
         0,
-        8
+        20
       ]
     },
     {
       "kind": "morph",
       "from": 0,
       "wide": [
-        12,
-        44
+        20,
+        52
       ],
       "tall": [
-        8,
-        28
+        20,
+        40
       ]
     },
     {
       "kind": "hold",
       "service": 1,
       "wide": [
-        44,
-        56
+        52,
+        64
       ],
       "tall": [
-        28,
-        36
+        40,
+        48
       ]
     },
     {
       "kind": "morph",
       "from": 1,
       "wide": [
-        56,
-        88
+        64,
+        96
       ],
       "tall": [
-        36,
-        56
+        48,
+        68
       ]
     },
     {
       "kind": "hold",
       "service": 2,
       "wide": [
-        88,
-        100
+        96,
+        108
       ],
       "tall": [
-        56,
-        64
+        68,
+        76
       ]
     },
     {
       "kind": "morph",
       "from": 2,
       "wide": [
-        100,
-        132
+        108,
+        140
       ],
       "tall": [
-        64,
-        84
+        76,
+        96
       ]
     },
     {
       "kind": "hold",
       "service": 3,
       "wide": [
-        132,
-        144
+        140,
+        152
       ],
       "tall": [
-        84,
-        92
+        96,
+        104
       ]
     }
   ]

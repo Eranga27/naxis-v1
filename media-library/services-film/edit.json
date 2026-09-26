@@ -1,0 +1,38 @@
+{
+  "about": "What We Do's film, for scripts/build-service-film.py (its docstring explains the pieces). The four anchors are A1-A4; H1_v1 is the one hold 1 take whose last frame the morph and H2 start from.",
+  "segments": [
+    {
+      "name": "hold 1: Development, pushing in over the pattern table (a big move, so more frames)",
+      "frames": { "wide": 20, "tall": 20 },
+      "pieces": [{ "clip": "H1_v1 (1).mp4", "focus": [[0.58, 0.5], [0.62, 0.5]] }]
+    },
+    {
+      "name": "morph 1>2: a machine comes down and the paper sews into cloth; then through the needle",
+      "pieces": [{ "clip": "H1 H2 my recommended morph.mp4", "focus": [[0.62, 0.5], [0.7, 0.45]] }, { "push": 2.0 }]
+    },
+    {
+      "name": "hold 2: Manufacturing, the needle running the seam (after the clip's own dissolve in)",
+      "pieces": [{ "clip": "H2_factory.mp4", "from": 2.0, "to": 4.0, "focus": [0.48, 0.5] }]
+    },
+    {
+      "name": "morph 2>3: the needle runs on, then the seam becomes the finished coat",
+      "pieces": [{ "clip": "H2_factory.mp4", "from": 4.0, "focus": [0.48, 0.5] }, { "push": 2.0 }]
+    },
+    {
+      "name": "hold 3: Quality control, the coat under the lamp",
+      "pieces": [{ "still": "A3.png", "focus": [0.62, 0.55] }]
+    },
+    {
+      "name": "morph 3>4: packed into the carton, out the loading door to the port",
+      "pieces": [
+        { "push": 2.0 },
+        { "still": "K5 Packing - morph start.png", "focus": [0.72, 0.6], "zoom": [1.0, 1.05], "seconds": 1.0 },
+        { "push": 2.0 }
+      ]
+    },
+    {
+      "name": "hold 4: Logistics, the port at sunset",
+      "pieces": [{ "still": "A4.png", "focus": [0.6, 0.5] }]
+    }
+  ]
+}

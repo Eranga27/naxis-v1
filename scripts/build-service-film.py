@@ -1,45 +1,46 @@
 """Build the What We Do film's frames (see docs/SERVICES-FILM-PLAN.md).
 
     pip install pillow numpy imageio-ffmpeg
-
-    # Stand-in, from the four service photos (slow push-ins, and a
-    # push-through dissolve for each morph):
-    python3 scripts/build-service-film.py --stand-in
-
-    # The real film as its seven clips, in order by file name (hold 1,
-    # morph 1>2, hold 2, ... hold 4); optionally where each clip's subject
-    # sits across the frame, for the tall crop:
-    python3 scripts/build-service-film.py --clips media-library/services-film [--focus 0.6,0.62,...]
-
-    # The keyframes, K0..K7 (each segment runs from one to the next: hold 1
-    # is K0>K1, morph 1>2 is K1>K2, ... hold 4 is K6>K7), plus whichever
-    # of the seven clips exist, named 1-... to 7-... in the same folder:
-    # a segment with its clip plays the clip; one without is a crafted
-    # move between its two keyframes (a push-in for a hold, a push-through
-    # dissolve for a morph), meeting any real clip on its actual frame:
-    python3 scripts/build-service-film.py --keyframes media-library/services-film
-
-    # Or one edited master and where each segment starts:
-    python3 scripts/build-service-film.py --master media-library/services-film/master.mp4 \\
-        --cuts media-library/services-film/cuts.json
+    python3 scripts/build-service-film.py [media-library/services-film/edit.json]
 
 The film runs hold 1, morph 1>2, hold 2, morph 2>3, hold 3, morph 3>4,
-hold 4 — a hold per service (the camera slowly pushing in) and a morph
-between each. The site scrubs it with the scroll, so it's cut into still
-frames rather than played as video:
+hold 4 — a hold per service and a morph between each. The site scrubs it
+with the scroll, so it's cut into still frames rather than played as
+video:
 
   - wide: 1440x810 WebP, 12 frames a hold and 32 a morph, for landscape
     screens;
-  - tall: 540x960 WebP, a portrait crop round each segment's subject,
-    8 a hold and 20 a morph, for phones and portrait tablets.
+  - tall: 540x960 WebP, a portrait crop round each shot's subject,
+    8 a hold and 20 a morph, for phones and portrait tablets;
+
+or a segment's own "frames": {"wide": 20, "tall": 13}, for a clip that
+moves a lot for its scroll (the site scrolls every hold, and every morph,
+the same distance, whatever its frames).
 
 A hold's first and last frames are its ends; a morph's frames lie
 strictly between the holds either side, so no frame repeats.
 
-cuts.json: {"cuts": [8 times in seconds: where hold 1, morph 1>2, ...
-hold 4 begin, then where hold 4 ends], "focus": [optional, 7 x
-positions 0-1: where each segment's subject sits, for the tall crop;
-default 0.62, as the clip brief asks]}.
+The edit (edit.json, next to the footage) says what plays in each of the
+seven segments, as a list of pieces played in order:
+
+  {"clip": "name.mp4", "from": 2.0, "to": 5.0, "focus": [0.6, 0.5]}
+      a clip, from/to in seconds (default: all of it);
+  {"still": "name.png", "zoom": [1.0, 1.1], "seconds": 2, "focus": ...}
+      a still, pushed in slowly;
+  "push" or {"push": 2.0}
+      a crafted push-through dissolve (the picture before pushing on,
+      the one after easing back from close, a dip in the light between)
+      from the piece before it to the piece after it, across segment
+      ends: a morph that's only "push" crafts the whole move.
+
+Two pieces with no push between them are a cut, so the second must start
+where the first ends (a clip made from the other's last frame); the
+script prints how far apart each cut's two frames are. A segment's frames
+are shared among its pieces by length: a clip's seconds, a still's
+`seconds` (default 2), a push's (default 1.5). `focus` is where the
+subject sits, x and y as shares of the frame, or a pair of them to pan
+from and to over the piece: the tall crop centres on it, and stills push
+in on it.
 
 Writes public/film/services/{wide,tall}/NNN.webp and
 src/content/serviceFilm.ts (frame counts, which frames belong to which
@@ -47,11 +48,11 @@ segment, and a version for cache-busting).
 """
 
 import argparse
+import functools
 import hashlib
 import json
 import math
 import pathlib
-import re
 import shutil
 import subprocess
 
@@ -59,6 +60,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+EDIT = ROOT / "media-library" / "services-film" / "edit.json"
 OUT_FRAMES = ROOT / "public" / "film" / "services"
 OUT_TS = ROOT / "src" / "content" / "serviceFilm.ts"
 
@@ -67,15 +69,12 @@ SETS = {
     "tall": {"size": (540, 960), "hold": 8, "morph": 20, "quality": 60},
 }
 KINDS = ["hold", "morph", "hold", "morph", "hold", "morph", "hold"]
+LABELS = ["hold 1", "morph 1>2", "hold 2", "morph 2>3", "hold 3", "morph 3>4", "hold 4"]
 
-# The stand-in's sources: the current service photos, in order, and where
-# each one's subject sits (x, y as a share of the photo).
-PHOTOS = [
-    ("product-development", (0.42, 0.62)),
-    ("manufacturing", (0.66, 0.55)),
-    ("quality", (0.42, 0.62)),
-    ("logistics", (0.5, 0.42)),
-]
+# A clip's last sample sits a hair before its end.
+TAIL = 0.05
+PUSH_SECONDS = 1.5
+STILL_SECONDS = 2.0
 
 
 def smooth(a: float, b: float, x: float) -> float:
@@ -94,40 +93,13 @@ def view(image: Image.Image, size: tuple[int, int], scale: float, focus: tuple[f
     return image.resize(size, Image.LANCZOS, box=(left, top, left + vw, top + vh))
 
 
-def stand_in(set_name: str) -> list[Image.Image]:
-    """The stand-in film: each photo pushed in slowly for its hold, and a
-    push-through dissolve (the photo before still pushing, the next easing
-    back from close, a dip in the light between) for each morph."""
-    spec = SETS[set_name]
-    photos = [(Image.open(ROOT / "public" / "images" / "services" / f"{name}.jpg").convert("RGB"), focus) for name, focus in PHOTOS]
-    frames: list[Image.Image] = []
-    for s, kind in enumerate(KINDS):
-        if kind == "hold":
-            image, focus = photos[s // 2]
-            n = spec["hold"]
-            for i in range(n):
-                t = i / (n - 1)
-                frames.append(view(image, spec["size"], 1.04 + 0.08 * t, focus))
-        else:
-            (a, fa), (b, fb) = photos[s // 2], photos[s // 2 + 1]
-            m = spec["morph"]
-            for i in range(m):
-                t = (i + 1) / (m + 1)
-                e = t * t * (3 - 2 * t)
-                out = view(a, spec["size"], 1.12 + 0.35 * e, fa)
-                into = view(b, spec["size"], 1.04 * (1 + 0.28 * (1 - e)), fb)
-                mix = Image.blend(out, into, smooth(0.18, 0.82, t))
-                dip = 1 - 0.28 * math.sin(math.pi * t)
-                frames.append(Image.eval(mix, lambda v, d=dip: int(v * d)))
-    return frames
-
-
 def ffmpeg() -> str:
     import imageio_ffmpeg
 
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+@functools.cache
 def probe(video: pathlib.Path) -> tuple[int, int, float]:
     """A video's width, height and duration (seconds)."""
     info = subprocess.run([ffmpeg(), "-i", str(video)], capture_output=True, text=True).stderr
@@ -147,142 +119,150 @@ def probe(video: pathlib.Path) -> tuple[int, int, float]:
     return size[0], size[1], duration
 
 
-def grab(master: pathlib.Path, at: float, size: tuple[int, int]) -> Image.Image:
+@functools.lru_cache(maxsize=8)
+def grab(video: pathlib.Path, at: float) -> Image.Image:
+    w, h, _ = probe(video)
     raw = subprocess.run(
-        [ffmpeg(), "-v", "error", "-ss", f"{at:.4f}", "-i", str(master), "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+        [ffmpeg(), "-v", "error", "-ss", f"{at:.4f}", "-i", str(video), "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
         capture_output=True,
         check=True,
     ).stdout
-    w, h = size
     return Image.fromarray(np.frombuffer(raw[: w * h * 3], np.uint8).reshape(h, w, 3), "RGB")
 
 
-VIDEO = {".mp4", ".mov", ".webm", ".mkv"}
-IMAGE = {".png", ".jpg", ".jpeg", ".webp"}
+class Shot:
+    """A clip or a still, and where its subject sits."""
+
+    def __init__(self, spec: dict, folder: pathlib.Path):
+        focus = spec.get("focus", [0.62, 0.5])
+        self.focus = (focus, focus) if isinstance(focus[0], (int, float)) else (focus[0], focus[1])
+        self.image = None
+        if "clip" in spec:
+            self.path = folder / spec["clip"]
+            duration = probe(self.path)[2]
+            self.start = float(spec.get("from", 0.0))
+            self.end = float(spec.get("to", duration - TAIL))
+            self.zoom = (1.0, 1.0)
+            self.seconds = self.end - self.start
+        else:
+            self.path = folder / spec["still"]
+            self.image = Image.open(self.path).convert("RGB")
+            self.zoom = tuple(spec.get("zoom", [1.0, 1.1]))
+            self.seconds = float(spec.get("seconds", STILL_SECONDS))
+        self.name = self.path.name
+
+    def at(self, u: float) -> tuple[Image.Image, float, tuple[float, float]]:
+        """The picture, its zoom and its focus, u 0-1 through the piece."""
+        (x0, y0), (x1, y1) = self.focus
+        focus = (x0 + (x1 - x0) * u, y0 + (y1 - y0) * u)
+        scale = self.zoom[0] + (self.zoom[1] - self.zoom[0]) * u
+        image = self.image or grab(self.path, round(self.start + (self.end - self.start) * u, 4))
+        return image, scale, focus
+
+    def frame(self, u: float, size: tuple[int, int]) -> Image.Image:
+        image, scale, focus = self.at(u)
+        return view(image, size, scale, focus)
 
 
-def between(a: Image.Image, b: Image.Image, size: tuple[int, int], kind: str, t: float, focus: tuple[float, float]) -> Image.Image:
-    """A crafted frame from one keyframe to the next, t 0-1. A hold pushes
-    in on the first and settles on the second late; a morph pushes through
-    the first into the second, easing back from close, with a dip in the
-    light between. At t=0 it's exactly `a`, at t=1 exactly `b`."""
+def push(a: Shot, b: Shot, t: float, size: tuple[int, int]) -> Image.Image:
+    """From the end of `a` to the start of `b`, t 0-1: `a` pushes on,
+    `b` eases back from close, with a dip in the light between. At t=0
+    it's exactly a's last frame, at t=1 exactly b's first."""
     e = t * t * (3 - 2 * t)
-    if kind == "hold":
-        out = view(a, size, 1 + 0.22 * e, focus)
-        into = view(b, size, 1 + 0.12 * (1 - e), focus)
-        return Image.blend(out, into, smooth(0.45, 1.0, t))
-    out = view(a, size, 1 + 0.35 * e, focus)
-    into = view(b, size, 1 + 0.3 * (1 - e), focus)
+    image, scale, focus = a.at(1.0)
+    out = view(image, size, scale * (1 + 0.35 * e), focus)
+    image, scale, focus = b.at(0.0)
+    into = view(image, size, scale * (1 + 0.3 * (1 - e)), focus)
     mix = Image.blend(out, into, smooth(0.2, 0.8, t))
     dip = 1 - 0.22 * math.sin(math.pi * t)
     return Image.eval(mix, lambda v, d=dip: int(v * d))
 
 
-def build(set_name: str, sources: list[tuple], focus: list[float]) -> list[Image.Image]:
-    """The film's frames, a segment at a time: a hold from its first frame
-    to its last, a morph strictly between the holds either side; each
-    cropped to the set's shape round the segment's subject. A segment's
-    source is ("video", path, start, end) or ("keys", first, last)."""
+def load(path: pathlib.Path) -> tuple[list[list], dict[str, list[int]]]:
+    """The edit's segments, each a list of Shots and push lengths (floats),
+    and how many frames each segment has in each set."""
+    edit = json.loads(path.read_text())
+    if len(edit["segments"]) != len(KINDS):
+        raise SystemExit(f"{path.name}: {len(KINDS)} segments (hold 1, morph 1>2, ... hold 4), not {len(edit['segments'])}")
+    segments = []
+    counts: dict[str, list[int]] = {name: [] for name in SETS}
+    for entry, kind in zip(edit["segments"], KINDS):
+        for name, spec in SETS.items():
+            counts[name].append(int(entry.get("frames", {}).get(name, spec[kind])))
+        pieces = []
+        for piece in entry["pieces"]:
+            if piece == "push":
+                pieces.append(PUSH_SECONDS)
+            elif "push" in piece:
+                pieces.append(float(piece["push"]))
+            else:
+                pieces.append(Shot(piece, path.parent))
+        segments.append(pieces)
+    for s, kind in enumerate(KINDS):
+        if kind == "hold" and not (isinstance(segments[s][0], Shot) and isinstance(segments[s][-1], Shot)):
+            raise SystemExit(f"{path.name}: {LABELS[s]} has to start and end on a clip or still")
+    return segments, counts
+
+
+def build(set_name: str, segments: list[list], counts: list[int]) -> list[Image.Image]:
+    """The film's frames, a segment at a time, each segment's frames
+    shared among its pieces by length."""
     spec = SETS[set_name]
+    size = spec["size"]
+    flat = [piece for pieces in segments for piece in pieces]
     frames: list[Image.Image] = []
-    for s, (kind, source) in enumerate(zip(KINDS, sources)):
-        n = spec[kind]
+    at = 0
+    for s, (kind, pieces) in enumerate(zip(KINDS, segments)):
+        n = counts[s]
         ts = [i / (n - 1) for i in range(n)] if kind == "hold" else [(i + 1) / (n + 1) for i in range(n)]
-        where = (focus[s], 0.5)
-        if source[0] == "video":
-            _, video, start, end = source
-            w, h, _ = probe(video)
-            for t in ts:
-                frames.append(view(grab(video, start + (end - start) * t, (w, h)), spec["size"], 1.0, where))
-            print(f"  {set_name} {kind} {s}: {n} frames from {video.name}")
-        else:
-            _, first, last = source
-            for t in ts:
-                frames.append(between(first, last, spec["size"], kind, t, where))
-            print(f"  {set_name} {kind} {s}: {n} frames between keyframes")
+        lengths = [p.seconds if isinstance(p, Shot) else p for p in pieces]
+        total = sum(lengths)
+        for t in ts:
+            # Which piece t falls in, and how far through it.
+            edge = 0.0
+            for k, length in enumerate(lengths):
+                share = length / total
+                if t <= edge + share + 1e-9 or k == len(lengths) - 1:
+                    u = min(1.0, max(0.0, (t - edge) / share))
+                    break
+                edge += share
+            piece = pieces[k]
+            if isinstance(piece, Shot):
+                frames.append(piece.frame(u, size))
+            else:
+                where = at + k
+                before = next(p for p in reversed(flat[:where]) if isinstance(p, Shot))
+                after = next(p for p in flat[where + 1 :] if isinstance(p, Shot))
+                frames.append(push(before, after, u, size))
+        at += len(pieces)
+        names = " + ".join(p.name if isinstance(p, Shot) else "push" for p in pieces)
+        print(f"  {set_name} {LABELS[s]}: {n} frames, {names}")
     return frames
+
+
+def check_cuts(segments: list[list]) -> None:
+    """How far apart the two frames of each cut are (RMS on 0-255; a clip
+    that really starts on the other's last frame is under ~12)."""
+    flat = [piece for pieces in segments for piece in pieces]
+    size = SETS["tall"]["size"]
+    for a, b in zip(flat, flat[1:]):
+        if isinstance(a, Shot) and isinstance(b, Shot):
+            x = np.asarray(a.frame(1.0, size), np.float32)
+            y = np.asarray(b.frame(0.0, size), np.float32)
+            gap = float(np.sqrt(((x - y) ** 2).mean()))
+            print(f"  cut {a.name} > {b.name}: {gap:.1f}{'  <- not a match; a push?' if gap > 20 else ''}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--stand-in", action="store_true")
-    source.add_argument("--master", type=pathlib.Path)
-    source.add_argument("--clips", type=pathlib.Path)
-    source.add_argument("--keyframes", type=pathlib.Path)
-    parser.add_argument("--cuts", type=pathlib.Path)
-    parser.add_argument("--focus", type=str)
+    parser.add_argument("edit", type=pathlib.Path, nargs="?", default=EDIT)
     args = parser.parse_args()
-    focus = [0.62] * len(KINDS)
-    if args.focus:
-        focus = [float(f) for f in args.focus.split(",")]
-    if len(focus) != len(KINDS):
-        raise SystemExit(f"focus: {len(KINDS)} values, not {len(focus)}")
-    sources: list[tuple] = []
-    label = "stand-in"
-    # A hold's last sample sits a hair before the end of its video.
-    tail = 0.05
-    if args.clips:
-        clips = sorted(p for p in args.clips.iterdir() if p.suffix.lower() in VIDEO)
-        if len(clips) != len(KINDS):
-            raise SystemExit(f"--clips: {len(KINDS)} videos in order (hold 1, morph 1>2, ... hold 4), found {len(clips)}")
-        for kind, clip in zip(KINDS, clips):
-            duration = probe(clip)[2]
-            sources.append(("video", clip, 0.0, duration - tail if kind == "hold" else duration))
-        label = args.clips.name
-    if args.keyframes:
-        folder = args.keyframes
-        keys = {int(m.group(1)): p for p in folder.iterdir() if p.suffix.lower() in IMAGE and (m := re.match(r"[Kk](\d)", p.stem))}
-        missing = [k for k in range(len(KINDS) + 1) if k not in keys]
-        if missing:
-            raise SystemExit(f"--keyframes: missing K{', K'.join(map(str, missing))}")
-        clips = {int(m.group(1)) - 1: p for p in folder.iterdir() if p.suffix.lower() in VIDEO and (m := re.match(r"(\d)-", p.name))}
-
-        def frame_of(clip: pathlib.Path, at: float) -> Image.Image:
-            w, h, _ = probe(clip)
-            return grab(clip, at, (w, h))
-
-        # The picture at each join: where a real clip meets it, the clip's
-        # own last (or first) frame, so a crafted segment meets the clip
-        # exactly even if the clip drifted from its keyframe; otherwise
-        # the keyframe.
-        joins = []
-        for j in range(len(KINDS) + 1):
-            before, after = clips.get(j - 1), clips.get(j)
-            if before:
-                joins.append(frame_of(before, probe(before)[2] - tail))
-            elif after:
-                joins.append(frame_of(after, 0.0))
-            else:
-                joins.append(Image.open(keys[j]).convert("RGB"))
-        for s, kind in enumerate(KINDS):
-            if s in clips:
-                duration = probe(clips[s])[2]
-                sources.append(("video", clips[s], 0.0, duration - tail if kind == "hold" else duration))
-            else:
-                sources.append(("keys", joins[s], joins[s + 1]))
-        real = ", ".join(str(s + 1) for s in sorted(clips))
-        label = f"keyframes, clips {real}" if real else "keyframes"
-    if args.master:
-        if not args.cuts:
-            raise SystemExit("--master needs --cuts")
-        spec = json.loads(args.cuts.read_text())
-        cuts = [float(c) for c in spec["cuts"]]
-        if len(cuts) != len(KINDS) + 1:
-            raise SystemExit(f"cuts: {len(KINDS) + 1} times, not {len(cuts)}")
-        focus = [float(f) for f in spec.get("focus", focus)]
-        duration = probe(args.master)[2]
-        for s in range(len(KINDS)):
-            end = cuts[s + 1]
-            if s == len(KINDS) - 1:
-                end = min(end, duration) - tail
-            sources.append(("video", args.master, cuts[s], end))
-        label = args.master.name
+    segments, counts = load(args.edit)
+    check_cuts(segments)
 
     digest = hashlib.sha1()
-    counts = {}
     for set_name, spec in SETS.items():
-        frames = stand_in(set_name) if args.stand_in else build(set_name, sources, focus)
+        frames = build(set_name, segments, counts[set_name])
         out = OUT_FRAMES / set_name
         shutil.rmtree(out, ignore_errors=True)
         out.mkdir(parents=True)
@@ -292,26 +272,25 @@ def main() -> None:
             frame.save(path, "WEBP", quality=spec["quality"], method=6)
             digest.update(path.read_bytes())
             total += path.stat().st_size
-        counts[set_name] = len(frames)
         print(f"{out.relative_to(ROOT)}: {len(frames)} frames, {total / 1e6:.1f}MB")
 
     # Which frames belong to which segment, per set.
-    segments = []
+    manifest_segments = []
     at = {name: 0 for name in SETS}
     for s, kind in enumerate(KINDS):
         entry = {"kind": kind, "service": s // 2} if kind == "hold" else {"kind": kind, "from": s // 2}
-        for name, spec in SETS.items():
-            n = spec[kind]
+        for name in SETS:
+            n = counts[name][s]
             entry[name] = [at[name], at[name] + n]
             at[name] += n
-        segments.append(entry)
+        manifest_segments.append(entry)
 
     manifest = {
-        "source": label,
+        "source": args.edit.resolve().relative_to(ROOT).as_posix(),
         "base": "/film/services",
         "version": digest.hexdigest()[:10],
-        "sets": {name: {"width": spec["size"][0], "height": spec["size"][1], "count": counts[name]} for name, spec in SETS.items()},
-        "segments": segments,
+        "sets": {name: {"width": spec["size"][0], "height": spec["size"][1], "count": sum(counts[name])} for name, spec in SETS.items()},
+        "segments": manifest_segments,
     }
     OUT_TS.write_text(
         "// GENERATED by scripts/build-service-film.py (see\n"
