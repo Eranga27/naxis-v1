@@ -161,6 +161,27 @@ number, title, summary, highlights and "Learn more" change with it.
   manifest (segment frame ranges, anchors); the masters stay in
   `media-library/`.
 
+## Where it stands
+
+Phase 0 is built (`ServicesFilm.tsx`, `scripts/build-service-film.py`):
+the stage plays stand-in frames made from the four service photos —
+wide 144 frames at 1440×810 (≈ 5.8MB), tall 92 at 540×960 (≈ 2.0MB).
+To swap in the real film:
+
+1. Put the master and a cuts file in `media-library/services-film/`:
+   `cuts.json` = `{"cuts": [8 times in seconds — where hold 1, morph
+   1→2, hold 2, morph 2→3, hold 3, morph 3→4 and hold 4 begin, then
+   where hold 4 ends], "focus": [optional: 7 x positions, 0–1, of each
+   segment's subject for the phone crop; default 0.62]}`.
+2. `pip install imageio-ffmpeg` and run `python3
+   scripts/build-service-film.py --master media-library/services-film/master.mp4
+   --cuts media-library/services-film/cuts.json`. It rewrites the frames
+   and `src/content/serviceFilm.ts`; the stage needs no change.
+3. Check the joins frame by frame, the weight (the budget above), and
+   the phones. If the wide frames look soft on large retina screens,
+   raise them to 1920×1080 in the script's `SETS` and re-check the
+   weight; the canvas follows the frames' resolution by itself.
+
 ## Phases
 
 0. **Before any footage (Claude)**: build the stage with stand-in

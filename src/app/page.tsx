@@ -6,7 +6,7 @@ import Capabilities from "@/components/Capabilities";
 import ProcessTimeline from "@/components/ProcessTimeline";
 import GlobalNetwork from "@/components/GlobalNetwork";
 import CinematicDivider from "@/components/CinematicDivider";
-import ServicesStack from "@/components/ServicesStack";
+import ServicesFilm from "@/components/ServicesFilm";
 import GiantWheel from "@/components/GiantWheel";
 import Moq from "@/components/Moq";
 import ClosingCTA from "@/components/ClosingCTA";
@@ -28,7 +28,7 @@ export default function Home() {
             after the concrete proof, not before it. */}
         <Capabilities />
         <ProcessTimeline />
-        <ServicesStack />
+        <ServicesFilm />
         {/* What NAXIS does, then what it holds to: the client's wheel of
             values, whose centre is Australia — where the globe after it
             starts. */}
