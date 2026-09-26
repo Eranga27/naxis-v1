@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, ViewTransition } from "react";
-import Image from "next/image";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -19,10 +18,32 @@ const PARAGRAPHS = [
   "We believe great apparel is built through experience, innovation, integrity and strong partnerships. We don't simply source products — we take responsibility for the entire journey, from factory floor to your door.",
 ];
 
+// "A to Z" — the client's mark for the whole journey, in their Giant
+// Wheel's own gold, green and brown (giantWheel.ts: the values' gold, the
+// bars' green, the motto's brown).
+const A_TO_Z = { a: "#b06d21", dash: "#005839", z: "#4e2518" };
+// The journey the dash runs through, in the client's words (the second
+// paragraph), and what it adds up to.
+const STAGES = [
+  "Concept",
+  "Design",
+  "Product development",
+  "Sourcing",
+  "Manufacturing",
+  "Quality assurance",
+  "Logistics",
+  "Final delivery",
+];
+const JOURNEY = [...STAGES, "The complete journey"];
+
 export default function AboutNaxis() {
   const sectionRef = useRef<HTMLElement>(null);
-  const imgWrapRef = useRef<HTMLDivElement>(null);
-  const imgInnerRef = useRef<HTMLDivElement>(null);
+  const journeyRef = useRef<HTMLDivElement>(null);
+  const aRef = useRef<HTMLSpanElement>(null);
+  const dashRef = useRef<HTMLSpanElement>(null);
+  const zRef = useRef<HTMLSpanElement>(null);
+  const captionRef = useRef<HTMLDivElement>(null);
+  const stagesRef = useRef<HTMLSpanElement>(null);
   const revealRefs = useRef<Array<HTMLElement | null>>([]);
   const lineLeftRef = useRef<HTMLDivElement>(null);
   const lineRightRef = useRef<HTMLDivElement>(null);
@@ -30,9 +51,15 @@ export default function AboutNaxis() {
 
   useIsomorphicLayoutEffect(() => {
     const section = sectionRef.current;
-    const imgWrap = imgWrapRef.current;
-    const imgInner = imgInnerRef.current;
-    if (!section || !imgWrap || !imgInner) return;
+    const journey = journeyRef.current;
+    const a = aRef.current;
+    const dash = dashRef.current;
+    const z = zRef.current;
+    const caption = captionRef.current;
+    const stages = stagesRef.current;
+    if (!section || !journey || !a || !dash || !z || !caption || !stages) return;
+    // One line of the caption, as a share of the whole stack.
+    const line = 100 / JOURNEY.length;
 
     const ctx = gsap.context(() => {
       const reveals = revealRefs.current.filter(
@@ -44,41 +71,42 @@ export default function AboutNaxis() {
 
       if (reduceMotion) {
         gsap.set(reveals, { opacity: 1, y: 0 });
-        gsap.set(imgWrap, { clipPath: "inset(0% 0 0 0)" });
+        // The finished mark, the caption on where the journey ends.
+        gsap.set(stages, { yPercent: -line * STAGES.length });
         if (lineLeftRef.current) gsap.set(lineLeftRef.current, { scaleX: 1 });
         if (lineRightRef.current) gsap.set(lineRightRef.current, { scaleX: 1 });
         if (taglineRef.current) gsap.set(taglineRef.current, { opacity: 1 });
         return;
       }
 
-      // Image curtain lift — matches the established reveal pattern in Capabilities.
-      gsap.fromTo(
-        imgWrap,
-        { clipPath: "inset(100% 0 0 0)" },
-        {
-          clipPath: "inset(0% 0 0 0)",
-          ease: "power3.out",
-          duration: 1.2,
-          scrollTrigger: { trigger: section, start: "top 80%", once: true },
-        }
-      );
-
-      // Subtle vertical parallax on the photo itself — keeps the outer
-      // clip-path perfectly still while the image drifts.
-      gsap.fromTo(
-        imgInner,
-        { yPercent: -10 },
-        {
-          yPercent: 10,
-          ease: "none",
-          scrollTrigger: {
-            trigger: section,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        }
-      );
+      // A to Z, played as the journey: A rises in gold, the green dash
+      // draws out from it like a thread while the caption steps through
+      // the stages, and Z lands in brown at the end of it. On wide
+      // screens the mark holds beside the text (sticky) and this plays
+      // across the reading of it — Z arrives about when "from factory
+      // floor to your door" does; stacked, it plays as the mark scrolls
+      // through.
+      const wide = window.matchMedia("(min-width: 1024px)").matches;
+      const rise = { yPercent: 0, rotationX: 0, duration: 0.1, ease: "power3.out" };
+      const sunk = { yPercent: 108, rotationX: -70, transformPerspective: 600, transformOrigin: "50% 100%" };
+      const play = gsap.timeline({
+        scrollTrigger: {
+          trigger: wide ? section : journey,
+          start: wide ? "top 55%" : "top 85%",
+          end: wide ? "bottom 80%" : "bottom 30%",
+          scrub: 1,
+        },
+      });
+      play
+        .fromTo(a, sunk, rise, 0)
+        .fromTo(caption, { opacity: 0 }, { opacity: 1, duration: 0.06 }, 0.06)
+        .fromTo(dash, { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.68, ease: "none" }, 0.1)
+        .fromTo(z, sunk, { ...rise, ease: "back.out(1.8)" }, 0.8);
+      // A stage per stretch of the dash, each rolling in like an odometer.
+      STAGES.slice(1).forEach((_, i) => {
+        play.to(stages, { yPercent: -line * (i + 1), duration: 0.035, ease: "power2.inOut" }, 0.1 + (0.68 * (i + 1)) / STAGES.length);
+      });
+      play.to(stages, { yPercent: -line * STAGES.length, duration: 0.05, ease: "power2.inOut" }, 0.92);
 
       // Text block stagger — label, headline, then each paragraph.
       gsap.fromTo(
@@ -169,30 +197,50 @@ export default function AboutNaxis() {
           About NAXIS Australia
         </p>
 
-        {/* Two-column layout: photo left, text right */}
+        {/* Two columns: the A–Z mark left (the client's call, in place of
+            a photo), text right */}
         <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
-          {/* Photo column. The About page's hero is the same photo, so it
-              carries across the page transition and becomes it. */}
-          <ViewTransition name="hero-about" share="morph" default="none">
           <div
-            ref={imgWrapRef}
-            className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden rounded-2xl lg:w-[38%]"
-            style={{ clipPath: "inset(100% 0 0 0)" }}
+            ref={journeyRef}
+            aria-hidden="true"
+            className="flex w-full flex-shrink-0 flex-col items-center py-4 lg:sticky lg:top-[30vh] lg:w-[38%] lg:py-0"
           >
-            <div ref={imgInnerRef} className="absolute inset-[-15%]">
-              <Image
-                src="/images/about-hero.jpg"
-                alt="NAXIS apparel product development and manufacturing"
-                fill
-                sizes="(min-width: 1024px) 38vw, 100vw"
-                className="object-cover"
-                priority
+            <div
+              className="flex items-center font-mark text-[clamp(6.5rem,30vw,10rem)] font-black leading-none lg:text-[clamp(6rem,13vw,13rem)]"
+              style={{ textShadow: "0 0.04em 0.08em rgba(74,42,28,0.18)" }}
+            >
+              {/* Each letter rises out of its own slot. */}
+              <span className="block overflow-hidden px-[0.03em] pb-[0.02em]">
+                <span ref={aRef} className="block" style={{ color: A_TO_Z.a }}>
+                  A
+                </span>
+              </span>
+              <span
+                ref={dashRef}
+                className="mx-[0.1em] block h-[0.13em] w-[0.5em] shadow-[0_0.04em_0.08em_rgba(74,42,28,0.18)]"
+                style={{ background: A_TO_Z.dash }}
               />
+              <span className="block overflow-hidden px-[0.03em] pb-[0.02em]">
+                <span ref={zRef} className="block" style={{ color: A_TO_Z.z }}>
+                  Z
+                </span>
+              </span>
             </div>
-            {/* Subtle ink vignette at the bottom */}
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/20 to-transparent" />
+            {/* The stage the dash has reached, rolling on as it draws. */}
+            <div
+              ref={captionRef}
+              className="mt-5 h-[1.8em] overflow-hidden font-body text-[0.7rem] font-semibold uppercase tracking-[0.3em] md:mt-7 md:text-xs lg:text-sm"
+            >
+              <span ref={stagesRef} className="block">
+                {JOURNEY.map((stage, i) => (
+                  <span key={stage} className="flex h-[1.8em] items-center justify-center gap-3 whitespace-nowrap">
+                    {i < STAGES.length && <span style={{ color: A_TO_Z.a }}>{String(i + 1).padStart(2, "0")}</span>}
+                    <span className={i < STAGES.length ? "text-ink/65" : "text-brown"}>{stage}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
           </div>
-          </ViewTransition>
 
           {/* Text column */}
           <div className="flex flex-col justify-center lg:pt-4">

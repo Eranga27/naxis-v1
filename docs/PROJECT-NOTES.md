@@ -323,6 +323,16 @@ domain is live.
   and, under reduced motion, the rounded sheet that slides over the
   still hero (Mission had it before). Reduced motion: the finished
   composition, no pin.
+- **About, on the homepage** (`AboutNaxis.tsx`): on `v2` the photo is
+  gone for the client's "A–Z" (their mock: A gold, dash green, Z brown),
+  set in `font-mark` in the wheel's own colours (#b06d21 / #005839 /
+  #4e2518) — the whole journey, A to Z. On lg it holds beside the text
+  (sticky) and plays across the reading of it: A rises, the green dash
+  draws out like a thread while a caption rolls through the stages in
+  the client's words (Concept … Final delivery, from the second
+  paragraph), and Z lands about when "from factory floor to your door"
+  does, the caption settling on "The complete journey". Stacked, it
+  plays as the mark scrolls through. Reduced motion: the finished mark.
 - **Ideas Wearable** (`IdeasWearable.tsx`, off the homepage on `v2`: the
   line now lives in the second section; the file stays until the client
   signs that off): the client's phrase told as
@@ -362,8 +372,8 @@ domain is live.
   new page follows it; the header is anchored (`site-header`). Shared
   photos morph into the next hero by name: `hero-about`, `hero-services`,
   `hero-service-{slug}`, `hero-how-we-work`, `hero-compliance` (on
-  NextChapter cards, service cards, the homepage About photo and each
-  PageHero). Instant under reduced motion or without browser support.
+  NextChapter cards, service cards and each PageHero; on `main` the
+  homepage About photo too, which V2 replaced with the A–Z mark). Instant under reduced motion or without browser support.
 - **Header** (`Nav.tsx`): the logo alone (no backing circle) at 50px
   tall, 2.5x its V1 size, with a soft drop shadow for pale photo tops;
   clear over dark heroes, a near-opaque ink bar elsewhere; it tucks up out of view while scrolling down and returns on
