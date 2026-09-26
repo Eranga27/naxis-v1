@@ -32,6 +32,10 @@ const PARALLEL = 6;
 // worth, most of them ahead of it, decoding at most this many at once.
 const DECODED_BYTES = 128e6;
 const DECODERS = 4;
+// How long the film takes to catch up with the scroll, in seconds. Lenis
+// already smooths the wheel, so this only takes the edge off touch and
+// trackpad steps; more reads as lag.
+const SCRUB = 0.2;
 
 /**
  * What We Do (V2): the four services as one film (see
@@ -271,7 +275,7 @@ function FilmStage() {
           start: "top top",
           end: () => "+=" + window.innerHeight * total,
           pin: true,
-          scrub: 0.6,
+          scrub: SCRUB,
           invalidateOnRefresh: true,
           // Never at rest mid-morph: on to whichever service is nearer.
           snap: {

@@ -362,7 +362,8 @@ domain is live.
   two frames of hold 1's moving camera, the crossfade was a double
   exposure). Frames are fetched as bytes and decoded to bitmaps off the
   main thread, only round the playhead (about 128MB's worth, most of it
-  ahead, the rest released). Wide frames on
+  ahead, the rest released). The scrub trails the scroll by 0.2s: Lenis
+  already smooths the wheel, and 0.6 on top of it read as lag. Wide frames on
   landscape screens, tall (a portrait crop) below 0.85 aspect. Snap is
   judged by where the scroll stopped (`self.progress`), not the
   momentum-projected value — returning that unchanged flung a fast
