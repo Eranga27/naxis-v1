@@ -171,11 +171,9 @@ export default function Mission() {
     <section
       ref={sectionRef}
       id="mission"
-      // With motion, the hero's frame closes to a card on cream before the
-      // pin releases, so Mission simply continues that cream. Without
-      // motion the hero stays full-bleed and dark, and Mission slides over
-      // it as a rounded, shadowed sheet instead.
-      className="relative z-20 w-full bg-cream px-6 py-28 sm:px-10 md:px-16 md:py-36 lg:px-20 lg:py-44 motion-reduce:rounded-t-[24px] motion-reduce:shadow-[0_-25px_60px_rgba(16,13,9,0.55)] motion-reduce:sm:rounded-t-[32px] motion-reduce:md:rounded-t-[44px]"
+      // Continues the cream of the section before it (the client's name
+      // and line, BrandStatement).
+      className="relative z-20 w-full bg-cream px-6 py-28 sm:px-10 md:px-16 md:py-36 lg:px-20 lg:py-44"
     >
       {/* Centered independently of the label/list column above and below,
           and deliberately wide with no flanking copy — a large, bold,

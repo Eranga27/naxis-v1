@@ -5,6 +5,7 @@ import {
   Source_Serif_4,
   Allura,
   Instrument_Serif,
+  Montserrat,
 } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
 import RouteEffects from "@/components/RouteEffects";
@@ -61,6 +62,15 @@ const instrumentSerif = Instrument_Serif({
   display: "swap",
 });
 
+// The client's own marks: the geometric sans of their Giant Wheel's
+// lettering and of the "We make ideas wearable" artboards. Variable, so
+// one file covers the name's bold and the artboard line's black.
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -99,7 +109,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${bebasNeue.variable} ${inter.variable} ${sourceSerif.variable} ${allura.variable} ${instrumentSerif.variable} antialiased`}
+      className={`${bebasNeue.variable} ${inter.variable} ${sourceSerif.variable} ${allura.variable} ${instrumentSerif.variable} ${montserrat.variable} antialiased`}
     >
       <head>
         {/*

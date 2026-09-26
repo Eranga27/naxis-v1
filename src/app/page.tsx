@@ -1,7 +1,7 @@
 import DialWheelHero from "@/components/DialWheelHero";
+import BrandStatement from "@/components/BrandStatement";
 import Mission from "@/components/Mission";
 import AboutNaxis from "@/components/AboutNaxis";
-import IdeasWearable from "@/components/IdeasWearable";
 import Capabilities from "@/components/Capabilities";
 import ProcessTimeline from "@/components/ProcessTimeline";
 import GlobalNetwork from "@/components/GlobalNetwork";
@@ -19,12 +19,14 @@ export default function Home() {
       <HomeIntro />
       <PageShell>
         <DialWheelHero />
+        {/* The client's name and line, in their own colours, straight
+            after the wheel. */}
+        <BrandStatement />
         <Mission />
         <AboutNaxis />
         {/* A mid-page interlude between what NAXIS makes and how —
             after the concrete proof, not before it. */}
         <Capabilities />
-        <IdeasWearable />
         <ProcessTimeline />
         <ServicesStack />
         {/* What NAXIS does, then what it holds to: the client's wheel of

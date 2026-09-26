@@ -32,12 +32,12 @@ export default function Nav() {
   const metaRefs = useRef<Array<HTMLElement | null>>([]);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
-  // Clear over the hero, where the header sits on the video; a blurred
-  // ink bar from Mission onward, so section headings scrolling underneath
-  // stop colliding with the logo and buttons. Keyed off Mission's top
-  // edge rather than a scroll offset, since the hero's pin changes how
-  // far down Mission actually starts. The hero also reports when its
-  // frame has closed in to a card on cream ("hero:framed"), where the
+  // Clear over the hero; an ink bar from the section after it
+  // (marked data-after-hero) onward, so section headings scrolling
+  // underneath stop colliding with the logo and buttons. Keyed off that
+  // section's top edge rather than a scroll offset, since the hero's pin
+  // changes how far down it actually starts. The hero also reports when
+  // its frame has closed in to a card on cream ("hero:framed"), where the
   // logo would otherwise sit on cream with nothing behind it.
   //
   // Inner pages mark a dark hero with data-dark-hero: clear over it, solid
@@ -45,7 +45,7 @@ export default function Nav() {
   // ground have no such hero and get the solid bar from the top, where a
   // clear one would leave the logo on bare cream.
   useEffect(() => {
-    const mission = document.getElementById("mission");
+    const afterHero = document.querySelector<HTMLElement>("[data-after-hero]");
     const darkHero = document.querySelector<HTMLElement>("[data-dark-hero]");
     let heroFramed = false;
     let frame = 0;
@@ -56,19 +56,20 @@ export default function Nav() {
       // Down by more than a nudge tucks it; up by a little brings it
       // back. Near the top it always shows — except on the homepage, where
       // the hero has the screen to itself (the client's call): nothing
-      // shows until Mission reaches the bar, and from there it comes back
-      // on the way up. Keyboard focus still brings it out (onFocus below).
+      // shows until the section after it reaches the bar, and from there
+      // it comes back on the way up. Keyboard focus still brings it out
+      // (onFocus below).
       const y = window.scrollY;
       const dy = y - lastY;
-      const overHero = !!mission && mission.getBoundingClientRect().top > 80;
+      const overHero = !!afterHero && afterHero.getBoundingClientRect().top > 80;
       if (overHero) setTucked(true);
       else if (y < 120) setTucked(false);
       else if (dy > 6) setTucked(true);
       else if (dy < -6) setTucked(false);
       if (Math.abs(dy) > 6 || y < 120) lastY = y;
       setSolid(
-        mission
-          ? heroFramed || mission.getBoundingClientRect().top <= 80
+        afterHero
+          ? heroFramed || afterHero.getBoundingClientRect().top <= 80
           : darkHero
             ? heroFramed || darkHero.getBoundingClientRect().bottom <= 80
             : true

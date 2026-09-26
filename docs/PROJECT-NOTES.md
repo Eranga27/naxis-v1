@@ -38,15 +38,19 @@ domain is live.
 - `v2` → V2, branched from `main` at `df4c3f0` (V1 as the client
   reviewed it: ~70% satisfied, with a first round of changes). V2 work
   goes here and only here; `main` stays V1 until the owner says
-  otherwise. Its pushes get Vercel previews like any branch.
+  otherwise. Its pushes get Vercel previews like any branch. On
+  2026-09-26 it was fast-forwarded to `v2-hero-d` (`bd005ad`): the owner
+  is working with hero D until the client confirms it, so `v2` carries D
+  (and the header kept off the hero), with the other heroes' components
+  still in the tree, unused, until then.
 - `v2-hero-section` → a snapshot of `v2` at `e3299bd`: V2 with hero A, the
   flat CSS wheel, kept whole at the owner's request when hero B was made.
 - `v2-hero-b` → V2 with hero B (the forged 3D wheel), at `9feb516`; `v2`
   itself is still there too.
 - `v2-hero-c` → V2 with hero C (the woven wheel), branched from `v2`.
 - `v2-hero-d` → V2 with hero D (the wheel close up), branched from
-  `v2-hero-c` at `24ea974`. Only this branch has the header kept off the
-  homepage hero (see Header below).
+  `v2-hero-c` at `24ea974`; a snapshot of D as the client first saw it
+  (`v2` has moved on from it).
   The four heroes are alternatives for the client to choose between;
   each branch has its own preview. Once one is chosen, bring it to `v2`
   and drop the other heroes' components.
@@ -75,9 +79,12 @@ domain is live.
   it. Its copy is transcribed verbatim into `src/content/` (services,
   about, MOQ, process, compliance).
 - 4 artboard PNGs: About (ivory), MOQ (ivory), and two "We make ideas
-  wearable" (wattle/eucalyptus on ivory / brown). The homepage sets that
-  phrase in the site's own faces and green and gold, not the artboards'
-  rainbow letters: the owner found those broke from the rest of the site.
+  wearable" (wattle/eucalyptus on ivory / brown). V1 set that phrase in
+  the site's own faces and green and gold (the owner found the
+  artboards' rainbow letters broke from the rest of the site); for V2
+  the client asked for their own colours back, so `BrandStatement.tsx`
+  sets it letter by letter in the colours sampled from the ivory
+  artboard, in Montserrat Black for its heavy geometric sans.
 - `NAXIS GIANT WHEEL - v2.pdf` — the "Giant Wheel": six values round the
   rim (Quality, Reliability, Flawless, Flexible, Fast, Integrity),
   "Delivering excellence through experience", NAXIS Australia, and a
@@ -115,7 +122,8 @@ domain is live.
 - Utilities: `text-gradient-brand` / `-deep`, `bg-gradient-brand` / `-deep`.
 - Fonts: `font-headline` (Bebas Neue — section headlines), `font-body`
   (Inter), `font-serif`, `font-script` (Allura), `font-greeting`
-  (the preloader's "Welcome to").
+  (the preloader's "Welcome to"), `font-mark` (Montserrat, variable —
+  the client's marks: the wheel's lettering and the artboards' line).
 
 ## Code map
 
@@ -292,7 +300,27 @@ domain is live.
   Reduced motion: the finished wheel, still, no pin. The V1 video hero
   (`Hero.tsx`) is on `main`; its video and poster files are still in
   `public/` (the poster is the menu's Home preview).
-- **Ideas Wearable** (`IdeasWearable.tsx`): the client's phrase told as
+- **NAXIS Australia + the line** (`BrandStatement.tsx`, V2's second
+  section, the client's call): NAXIS in bright gold foil (bright at the
+  top, the wheel's gold at the foot so it holds on cream), AUSTRALIA in
+  the wordmark's brown between two gold rules — the wheel's name ring,
+  straightened — and beside it (below, under lg) "WE MAKE / IDEAS /
+  WEARABLE." in the artboards' colours. It continues the hero card's
+  cream (its light pool and bokeh fade out at the top, so no seam
+  shows). Rising in, NAXIS comes up letter by letter in the middle of the
+  stage (each out of its own slot, tipping up), a light runs across the
+  gold and AUSTRALIA tracks in; pinned (1.2 screens, 0.9 on phones), the
+  name glides aside (up, when stacked) — a FLIP from layout offsets —
+  a rule draws between them and the line's letters pop in one by one,
+  tilted and springing (`back.out`). Out-of-focus wattle (gold radial
+  discs, two eucalyptus green) drifts at its own depths, bobbing on CSS
+  `brand-float`. It carries `data-after-hero` (the header keys off it)
+  and, under reduced motion, the rounded sheet that slides over the
+  still hero (Mission had it before). Reduced motion: the finished
+  composition, no pin.
+- **Ideas Wearable** (`IdeasWearable.tsx`, off the homepage on `v2`: the
+  line now lives in the second section; the file stays until the client
+  signs that off): the client's phrase told as
   how a garment is made, on pattern paper (a dot grid on bark). Chalk
   guides and "WE MAKE" arrive as it scrolls in; pinned, "ideas" is
   sketched in pencil outline and inked in, then a running stitch goes
@@ -320,7 +348,7 @@ domain is live.
   fade out. three.js and textures load as it approaches; it renders only
   while on screen. Reduced motion: the finished network, still. No WebGL:
   a list of the countries, no pin.
-- **Phones**: Hero and Ideas Wearable pin (shorter pins); Capabilities and
+- **Phones**: Hero and the NAXIS Australia section pin (shorter pins); Capabilities and
   Process use the swipe deck; Services cards are dealt in (no sticky:
   tall cards would hide their links). Full-screen pinned sections use
   `h-svh`.
@@ -334,10 +362,11 @@ domain is live.
 - **Header** (`Nav.tsx`): clear over dark heroes, a near-opaque ink bar
   elsewhere; it tucks up out of view while scrolling down and returns on
   scroll up, at the top, on keyboard focus or with the menu open. On
-  `v2-hero-d` the homepage hero has no header at all (the owner's ask:
-  nothing over the wheel): it stays tucked until Mission's top has come
-  up under it, whichever way you scroll, and appears on scrolling back up
-  from there. Keyboard focus still brings it back.
+  `v2` (and `v2-hero-d`) the homepage hero has no header at all (the owner's ask:
+  nothing over the wheel): it stays tucked until the section after the
+  hero (`[data-after-hero]`, now BrandStatement) has come up under it,
+  whichever way you scroll, and appears on scrolling back up from there.
+  Keyboard focus still brings it back.
 - **Menu** (`Nav.tsx`): full screen, opened as a circle clip from the
   button; items rise in masks with a photo preview on hover.
 - **Inner pages**: PageHero repeats the homepage hero's exit and fires
@@ -372,8 +401,8 @@ these when adding motion:
   greyscale (`public/images/backdrop/`) instead of a CSS filter.
 - The globe on phones: 1.5x pixel ratio, no MSAA, pulses at 30fps only
   while pinned, no redraws while it scrolls in or out.
-- Pins on phones run shorter than on desktop (Hero, Ideas Wearable, the
-  NAXIS wheel, About's word roll, Sketch to Sample, the Logistics
+- Pins on phones run shorter than on desktop (Hero, the NAXIS Australia
+  section, the NAXIS wheel, About's word roll, Sketch to Sample, the Logistics
   journey).
 - The wheel's rings are separate `<svg>`/`<img>` layers turned with CSS
   transforms, so turning them is compositing, not repainting.

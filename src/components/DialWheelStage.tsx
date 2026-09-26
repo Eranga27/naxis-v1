@@ -57,8 +57,8 @@ const noSubscription = () => () => {};
  * pointer a little.
  *
  * Scrolling pins it and pulls the camera back to the whole wheel, laid
- * back, while the stage closes to a card on cream for Mission. It rests
- * while off screen. Without WebGL 2, or under reduced motion, the still
+ * back, while the stage closes to a card on the cream of the section
+ * after (BrandStatement). It rests while off screen. Without WebGL 2, or under reduced motion, the still
  * close-up (passed in as `fallback`) stands in.
  */
 export default function DialWheelStage({ fallback }: { fallback: React.ReactNode }) {
@@ -228,7 +228,7 @@ export default function DialWheelStage({ fallback }: { fallback: React.ReactNode
 
     // Scrolling on: the section pins, the camera pulls back to the whole
     // wheel, laid back, and the stage closes to a card on the cream of
-    // Mission.
+    // the section after.
     let framed = false;
     const announce = (next: boolean) => {
       if (next === framed) return;

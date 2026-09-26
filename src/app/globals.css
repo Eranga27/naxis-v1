@@ -36,6 +36,8 @@
   --font-script: var(--font-allura), cursive;
   /* The intro's "Welcome to". */
   --font-greeting: var(--font-instrument-serif), Georgia, serif;
+  /* The client's marks: the wheel's lettering, the artboards' line. */
+  --font-mark: var(--font-montserrat), "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Gold -> emerald brand gradients. On dark grounds the sweep ends in
@@ -261,6 +263,23 @@ html.custom-cursor-active * {
   }
   .wheel-cue {
     animation: wheel-cue 2.2s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+  }
+}
+
+/* The second section's wattle bokeh (BrandStatement): each disc bobs
+   slowly on its own clock. Still under reduced motion. */
+@keyframes brand-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.2vmin, -2.4vmin, 0) scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brand-float {
+    animation: brand-float 13s ease-in-out infinite;
   }
 }
 
