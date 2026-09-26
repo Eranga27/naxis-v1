@@ -28,3 +28,12 @@ of this move — confirmed via a repo-wide grep before relocating them.
 | `ideas-wearable.mp4` | 36MB background for "We make ideas wearable", played at 25% opacity behind a dark scrim. Replaced by vector wattle/eucalyptus foliage matching the client's artboard. |
 | `ideas-wearable-poster.jpg` | That video's poster (an unrelated stock photo). |
 
+
+## `services-film/` (V2, What We Do)
+
+The owner's Runable footage for the service film: the four anchor
+stills (A1–A4), the clips (H1_v1–v3, the recommended morph, H2_factory),
+the K0–K7 keyframes and frame grabs of the joins, as uploaded. `edit.json`
+says how they're cut together; `scripts/build-service-film.py` turns that
+into the frames the site serves (`public/film/services/`). See
+`docs/SERVICES-FILM-PLAN.md`.
