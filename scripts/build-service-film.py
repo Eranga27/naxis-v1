@@ -6,7 +6,12 @@
     # push-through dissolve for each morph):
     python3 scripts/build-service-film.py --stand-in
 
-    # The real film: the graded master and where each segment starts.
+    # The real film as its seven clips, in order by file name (hold 1,
+    # morph 1>2, hold 2, ... hold 4); optionally where each clip's subject
+    # sits across the frame, for the tall crop:
+    python3 scripts/build-service-film.py --clips media-library/services-film [--focus 0.6,0.62,...]
+
+    # Or one edited master and where each segment starts:
     python3 scripts/build-service-film.py --master media-library/services-film/master.mp4 \\
         --cuts media-library/services-film/cuts.json
 
@@ -114,16 +119,23 @@ def ffmpeg() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def probe(master: pathlib.Path) -> tuple[int, int]:
-    info = subprocess.run([ffmpeg(), "-i", str(master)], capture_output=True, text=True).stderr
+def probe(video: pathlib.Path) -> tuple[int, int, float]:
+    """A video's width, height and duration (seconds)."""
+    info = subprocess.run([ffmpeg(), "-i", str(video)], capture_output=True, text=True).stderr
+    size = duration = None
     for line in info.splitlines():
-        if "Video:" in line:
+        if "Duration:" in line and duration is None:
+            h, m, sec = line.split("Duration:")[1].split(",")[0].strip().split(":")
+            duration = int(h) * 3600 + int(m) * 60 + float(sec)
+        if "Video:" in line and size is None:
             for part in line.split(","):
                 part = part.strip().split(" ")[0]
                 if "x" in part and part.replace("x", "").isdigit():
-                    w, h = part.split("x")
-                    return int(w), int(h)
-    raise SystemExit(f"no video stream in {master}")
+                    w, h2 = part.split("x")
+                    size = (int(w), int(h2))
+    if not size or duration is None:
+        raise SystemExit(f"no video stream in {video}")
+    return size[0], size[1], duration
 
 
 def grab(master: pathlib.Path, at: float, size: tuple[int, int]) -> Image.Image:
@@ -136,26 +148,24 @@ def grab(master: pathlib.Path, at: float, size: tuple[int, int]) -> Image.Image:
     return Image.fromarray(np.frombuffer(raw[: w * h * 3], np.uint8).reshape(h, w, 3), "RGB")
 
 
-def from_master(set_name: str, master: pathlib.Path, cuts: list[float], focus: list[float]) -> list[Image.Image]:
-    """Frames sampled from the master: a hold from its first frame to its
+def from_video(set_name: str, sources: list[tuple[pathlib.Path, float, float]], focus: list[float]) -> list[Image.Image]:
+    """Frames sampled from the film, a segment at a time (a video, and the
+    stretch of it that's the segment): a hold from its first frame to its
     last, a morph strictly between the holds either side; each cropped to
     the set's shape round the segment's subject."""
     spec = SETS[set_name]
-    size = probe(master)
     frames: list[Image.Image] = []
-    for s, kind in enumerate(KINDS):
-        start, end = cuts[s], cuts[s + 1]
-        # The very last frame of the film sits a hair before its end.
-        end_hold = end - 0.02 if s == len(KINDS) - 1 else end
+    for s, (kind, (video, start, end)) in enumerate(zip(KINDS, sources)):
+        w, h, _ = probe(video)
         if kind == "hold":
             n = spec["hold"]
-            times = [start + (end_hold - start) * i / (n - 1) for i in range(n)]
+            times = [start + (end - start) * i / (n - 1) for i in range(n)]
         else:
             m = spec["morph"]
             times = [start + (end - start) * (i + 1) / (m + 1) for i in range(m)]
         for at in times:
-            frames.append(view(grab(master, at, size), spec["size"], 1.0, (focus[s], 0.5)))
-        print(f"  {set_name} {kind} {s}: {len(times)} frames")
+            frames.append(view(grab(video, at, (w, h)), spec["size"], 1.0, (focus[s], 0.5)))
+        print(f"  {set_name} {kind} {s}: {len(times)} frames from {video.name}")
     return frames
 
 
@@ -164,8 +174,25 @@ def main() -> None:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--stand-in", action="store_true")
     source.add_argument("--master", type=pathlib.Path)
+    source.add_argument("--clips", type=pathlib.Path)
     parser.add_argument("--cuts", type=pathlib.Path)
+    parser.add_argument("--focus", type=str)
     args = parser.parse_args()
+    focus = [0.62] * len(KINDS)
+    if args.focus:
+        focus = [float(f) for f in args.focus.split(",")]
+    if len(focus) != len(KINDS):
+        raise SystemExit(f"focus: {len(KINDS)} values, not {len(focus)}")
+    sources: list[tuple[pathlib.Path, float, float]] = []
+    # A hold's last sample sits a hair before the end of its video.
+    tail = 0.05
+    if args.clips:
+        clips = sorted(p for p in args.clips.iterdir() if p.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"})
+        if len(clips) != len(KINDS):
+            raise SystemExit(f"--clips: {len(KINDS)} videos in order (hold 1, morph 1>2, ... hold 4), found {len(clips)}")
+        for kind, clip in zip(KINDS, clips):
+            duration = probe(clip)[2]
+            sources.append((clip, 0.0, duration - tail if kind == "hold" else duration))
     if args.master:
         if not args.cuts:
             raise SystemExit("--master needs --cuts")
@@ -173,12 +200,18 @@ def main() -> None:
         cuts = [float(c) for c in spec["cuts"]]
         if len(cuts) != len(KINDS) + 1:
             raise SystemExit(f"cuts: {len(KINDS) + 1} times, not {len(cuts)}")
-        focus = [float(f) for f in spec.get("focus", [0.62] * len(KINDS))]
+        focus = [float(f) for f in spec.get("focus", focus)]
+        duration = probe(args.master)[2]
+        for s in range(len(KINDS)):
+            end = cuts[s + 1]
+            if s == len(KINDS) - 1:
+                end = min(end, duration) - tail
+            sources.append((args.master, cuts[s], end))
 
     digest = hashlib.sha1()
     counts = {}
     for set_name, spec in SETS.items():
-        frames = stand_in(set_name) if args.stand_in else from_master(set_name, args.master, cuts, focus)
+        frames = stand_in(set_name) if args.stand_in else from_video(set_name, sources, focus)
         out = OUT_FRAMES / set_name
         shutil.rmtree(out, ignore_errors=True)
         out.mkdir(parents=True)
@@ -203,7 +236,7 @@ def main() -> None:
         segments.append(entry)
 
     manifest = {
-        "source": "stand-in" if args.stand_in else args.master.name,
+        "source": "stand-in" if args.stand_in else (args.clips or args.master).name,
         "base": "/film/services",
         "version": digest.hexdigest()[:10],
         "sets": {name: {"width": spec["size"][0], "height": spec["size"][1], "count": counts[name]} for name, spec in SETS.items()},

@@ -71,13 +71,18 @@ number, title, summary, highlights and "Learn more" change with it.
    hold's first frame in the edit (works, less magical).
 5. **Check the joins** — play H1 → M12 → H2 back to back; nothing
    should jump. Small drifts get a 4–6 frame dissolve in the edit.
-6. **Grade and export** — all seven clips in one timeline (CapCut or
-   DaVinci Resolve), exposure and colour evened out; export the whole
-   master (high-bitrate H.264/H.265) **and** the seven clips, with the
-   timecode where each starts.
-7. **Deliver** — commit them to the repo under
-   `media-library/services-film/` (tracked masters, not served; each
-   file under GitHub's 100MB), or say where they are.
+6. **Export** — the seven clips as they came out of Runable (MP4, full
+   resolution, no audio needed), named in order: `1-hold-development`,
+   `2-morph-paper-to-cloth`, `3-hold-manufacturing`,
+   `4-morph-stitch-to-check`, `5-hold-quality`,
+   `6-morph-carton-to-container`, `7-hold-logistics`. No edit is needed:
+   the frame script reads the clips in order. (An edited master with cut
+   times still works, if colour needs evening out in an editor first.)
+7. **Deliver** — upload them to the repo on the `v2` branch under
+   `media-library/services-film/` (GitHub's web upload takes files up
+   to 25MB; a 5s 1080p clip is usually 5–20MB), or say where they are.
+   A pilot first — hold 1, morph 1→2, hold 2 — proves the look and the
+   join in the real section before the rest is made.
 
 ### Prompts (starting points; each + the style suffix)
 
@@ -168,15 +173,17 @@ the stage plays stand-in frames made from the four service photos —
 wide 144 frames at 1440×810 (≈ 5.8MB), tall 92 at 540×960 (≈ 2.0MB).
 To swap in the real film:
 
-1. Put the master and a cuts file in `media-library/services-film/`:
-   `cuts.json` = `{"cuts": [8 times in seconds — where hold 1, morph
-   1→2, hold 2, morph 2→3, hold 3, morph 3→4 and hold 4 begin, then
-   where hold 4 ends], "focus": [optional: 7 x positions, 0–1, of each
-   segment's subject for the phone crop; default 0.62]}`.
+1. The seven clips in `media-library/services-film/`, named so they sort
+   in order (see Export above).
 2. `pip install imageio-ffmpeg` and run `python3
-   scripts/build-service-film.py --master media-library/services-film/master.mp4
-   --cuts media-library/services-film/cuts.json`. It rewrites the frames
-   and `src/content/serviceFilm.ts`; the stage needs no change.
+   scripts/build-service-film.py --clips media-library/services-film`
+   (add `--focus 0.6,0.62,…` — 7 x positions, 0–1 — if a clip's subject
+   isn't near 62% across, for the phone crop). It rewrites the frames and
+   `src/content/serviceFilm.ts`; the stage needs no change. Tested on
+   seven 1080p/24fps test clips of 4–5s. (An edited master instead:
+   `--master <video> --cuts <json>`, the json `{"cuts": [8 times in
+   seconds — where each of the seven segments begins, then where the
+   last ends], "focus": [optional, 7 values]}`.)
 3. Check the joins frame by frame, the weight (the budget above), and
    the phones. If the wide frames look soft on large retina screens,
    raise them to 1920×1080 in the script's `SETS` and re-check the
