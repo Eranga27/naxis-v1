@@ -562,13 +562,15 @@ these when adding motion:
   previews, turn it off (or use a shareable link) under the Vercel
   project's Settings → Deployment Protection. Still to come: Global Network and What We Make pages (blocked
   on client detail), the privacy notice, and turning on enquiry email.
-- **Scroll-scrubbed "thread to doorstep" sequence** (owner is producing
-  2–3 clips in Runable): extract frames with ffmpeg to WebP/AVIF (≈150
-  desktop / ≈75 mobile), draw to `<canvas>` from ScrollTrigger progress,
-  load on approach. Planned between Process and Services, and as the
-  film version of How We Work's thread. Clip brief: 4–8s
-  each, ≥1080p, 24–25fps, one continuous slow camera move, chained with
-  first/last-frame, subject centred, no faces/hands/readable text.
+- **The service film** (`docs/SERVICES-FILM-PLAN.md`): What We Do
+  (`ServicesStack.tsx`) becomes one pinned stage with a film the owner
+  is making in Runable — a hold shot per service and a morph between
+  each (paper becomes cloth, the stitch becomes the check, the carton
+  becomes the container), scroll-scrubbed as WebP frames on a canvas,
+  snapping to services. The plan has the clip specs, the order of work
+  that makes the joins seamless, prompts, frame budgets and phases
+  (phase 0: build it with stand-in frames from the current photos).
+  It replaces the earlier "thread to doorstep" idea.
 - Client questions above; "Delivering excellence through experience" is a
   sign-off lockup, not a headline.
 - The owner cited yarnity.com (a Webflow site) as the feel for the hero's
