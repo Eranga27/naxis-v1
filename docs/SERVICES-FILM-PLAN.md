@@ -248,6 +248,43 @@ To swap in the real film:
    raise them to 1920×1080 in the script's `SETS` and re-check the
    weight; the canvas follows the frames' resolution by itself.
 
+### What Runable actually made (2026-09-26), and the keyframe route
+
+The first run used up the month's credits after making a shot list,
+**eight keyframes** and the first two hold clips. The keyframes turn out
+to be the film's skeleton — each segment runs from one to the next:
+
+| Segment | From | To |
+| --- | --- | --- |
+| Hold 1 | K0 atelier (hold start) | K1 pattern piece |
+| Morph 1→2 | K1 pattern piece | K2 factory line |
+| Hold 2 | K2 factory line | K3 stitched seam |
+| Morph 2→3 | K3 stitched seam | K4 QC table |
+| Hold 3 | K4 QC table | K5 packing |
+| Morph 3→4 | K5 packing | K6 port |
+| Hold 4 | K6 port | K7 port, final frame |
+
+So the film can be built now and upgraded a clip at a time:
+`build-service-film.py --keyframes media-library/services-film` takes
+K0–K7 (named `K0…`–`K7…`) and whichever clips exist, named `1-`…`7-`.
+A segment with its clip plays it; one without is a crafted move between
+its two keyframes (a push-in for a hold, a push-through dissolve for a
+morph), and where a crafted segment meets a real clip it starts or ends
+on the clip's own frame, so the joins stay exact. Each new clip dropped
+in replaces its segment on the next run. Best order to spend credits:
+the three morphs first (they carry the effect), then holds 3 and 4.
+
+One clip per task, and outside Agent mode if Runable's Video tool takes
+a start and an end image directly (the agent's planning costs credits
+too):
+
+```
+Generate ONE 5-second video, 16:9, 1920x1080 or higher, 24fps, audio off.
+Start frame: the attached image [K1]. End frame: the attached image [K2].
+[The segment's prompt from the prompt pack above.]
+Generate only this one video: no variations, no extra images, no shot list, no questions.
+```
+
 ## Phases
 
 0. **Before any footage (Claude)**: build the stage with stand-in

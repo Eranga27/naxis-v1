@@ -11,6 +11,14 @@
     # sits across the frame, for the tall crop:
     python3 scripts/build-service-film.py --clips media-library/services-film [--focus 0.6,0.62,...]
 
+    # The keyframes, K0..K7 (each segment runs from one to the next: hold 1
+    # is K0>K1, morph 1>2 is K1>K2, ... hold 4 is K6>K7), plus whichever
+    # of the seven clips exist, named 1-... to 7-... in the same folder:
+    # a segment with its clip plays the clip; one without is a crafted
+    # move between its two keyframes (a push-in for a hold, a push-through
+    # dissolve for a morph), meeting any real clip on its actual frame:
+    python3 scripts/build-service-film.py --keyframes media-library/services-film
+
     # Or one edited master and where each segment starts:
     python3 scripts/build-service-film.py --master media-library/services-film/master.mp4 \\
         --cuts media-library/services-film/cuts.json
@@ -43,6 +51,7 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import shutil
 import subprocess
 
@@ -148,24 +157,49 @@ def grab(master: pathlib.Path, at: float, size: tuple[int, int]) -> Image.Image:
     return Image.fromarray(np.frombuffer(raw[: w * h * 3], np.uint8).reshape(h, w, 3), "RGB")
 
 
-def from_video(set_name: str, sources: list[tuple[pathlib.Path, float, float]], focus: list[float]) -> list[Image.Image]:
-    """Frames sampled from the film, a segment at a time (a video, and the
-    stretch of it that's the segment): a hold from its first frame to its
-    last, a morph strictly between the holds either side; each cropped to
-    the set's shape round the segment's subject."""
+VIDEO = {".mp4", ".mov", ".webm", ".mkv"}
+IMAGE = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def between(a: Image.Image, b: Image.Image, size: tuple[int, int], kind: str, t: float, focus: tuple[float, float]) -> Image.Image:
+    """A crafted frame from one keyframe to the next, t 0-1. A hold pushes
+    in on the first and settles on the second late; a morph pushes through
+    the first into the second, easing back from close, with a dip in the
+    light between. At t=0 it's exactly `a`, at t=1 exactly `b`."""
+    e = t * t * (3 - 2 * t)
+    if kind == "hold":
+        out = view(a, size, 1 + 0.22 * e, focus)
+        into = view(b, size, 1 + 0.12 * (1 - e), focus)
+        return Image.blend(out, into, smooth(0.45, 1.0, t))
+    out = view(a, size, 1 + 0.35 * e, focus)
+    into = view(b, size, 1 + 0.3 * (1 - e), focus)
+    mix = Image.blend(out, into, smooth(0.2, 0.8, t))
+    dip = 1 - 0.22 * math.sin(math.pi * t)
+    return Image.eval(mix, lambda v, d=dip: int(v * d))
+
+
+def build(set_name: str, sources: list[tuple], focus: list[float]) -> list[Image.Image]:
+    """The film's frames, a segment at a time: a hold from its first frame
+    to its last, a morph strictly between the holds either side; each
+    cropped to the set's shape round the segment's subject. A segment's
+    source is ("video", path, start, end) or ("keys", first, last)."""
     spec = SETS[set_name]
     frames: list[Image.Image] = []
-    for s, (kind, (video, start, end)) in enumerate(zip(KINDS, sources)):
-        w, h, _ = probe(video)
-        if kind == "hold":
-            n = spec["hold"]
-            times = [start + (end - start) * i / (n - 1) for i in range(n)]
+    for s, (kind, source) in enumerate(zip(KINDS, sources)):
+        n = spec[kind]
+        ts = [i / (n - 1) for i in range(n)] if kind == "hold" else [(i + 1) / (n + 1) for i in range(n)]
+        where = (focus[s], 0.5)
+        if source[0] == "video":
+            _, video, start, end = source
+            w, h, _ = probe(video)
+            for t in ts:
+                frames.append(view(grab(video, start + (end - start) * t, (w, h)), spec["size"], 1.0, where))
+            print(f"  {set_name} {kind} {s}: {n} frames from {video.name}")
         else:
-            m = spec["morph"]
-            times = [start + (end - start) * (i + 1) / (m + 1) for i in range(m)]
-        for at in times:
-            frames.append(view(grab(video, at, (w, h)), spec["size"], 1.0, (focus[s], 0.5)))
-        print(f"  {set_name} {kind} {s}: {len(times)} frames from {video.name}")
+            _, first, last = source
+            for t in ts:
+                frames.append(between(first, last, spec["size"], kind, t, where))
+            print(f"  {set_name} {kind} {s}: {n} frames between keyframes")
     return frames
 
 
@@ -175,6 +209,7 @@ def main() -> None:
     source.add_argument("--stand-in", action="store_true")
     source.add_argument("--master", type=pathlib.Path)
     source.add_argument("--clips", type=pathlib.Path)
+    source.add_argument("--keyframes", type=pathlib.Path)
     parser.add_argument("--cuts", type=pathlib.Path)
     parser.add_argument("--focus", type=str)
     args = parser.parse_args()
@@ -183,16 +218,51 @@ def main() -> None:
         focus = [float(f) for f in args.focus.split(",")]
     if len(focus) != len(KINDS):
         raise SystemExit(f"focus: {len(KINDS)} values, not {len(focus)}")
-    sources: list[tuple[pathlib.Path, float, float]] = []
+    sources: list[tuple] = []
+    label = "stand-in"
     # A hold's last sample sits a hair before the end of its video.
     tail = 0.05
     if args.clips:
-        clips = sorted(p for p in args.clips.iterdir() if p.suffix.lower() in {".mp4", ".mov", ".webm", ".mkv"})
+        clips = sorted(p for p in args.clips.iterdir() if p.suffix.lower() in VIDEO)
         if len(clips) != len(KINDS):
             raise SystemExit(f"--clips: {len(KINDS)} videos in order (hold 1, morph 1>2, ... hold 4), found {len(clips)}")
         for kind, clip in zip(KINDS, clips):
             duration = probe(clip)[2]
-            sources.append((clip, 0.0, duration - tail if kind == "hold" else duration))
+            sources.append(("video", clip, 0.0, duration - tail if kind == "hold" else duration))
+        label = args.clips.name
+    if args.keyframes:
+        folder = args.keyframes
+        keys = {int(m.group(1)): p for p in folder.iterdir() if p.suffix.lower() in IMAGE and (m := re.match(r"[Kk](\d)", p.stem))}
+        missing = [k for k in range(len(KINDS) + 1) if k not in keys]
+        if missing:
+            raise SystemExit(f"--keyframes: missing K{', K'.join(map(str, missing))}")
+        clips = {int(m.group(1)) - 1: p for p in folder.iterdir() if p.suffix.lower() in VIDEO and (m := re.match(r"(\d)-", p.name))}
+
+        def frame_of(clip: pathlib.Path, at: float) -> Image.Image:
+            w, h, _ = probe(clip)
+            return grab(clip, at, (w, h))
+
+        # The picture at each join: where a real clip meets it, the clip's
+        # own last (or first) frame, so a crafted segment meets the clip
+        # exactly even if the clip drifted from its keyframe; otherwise
+        # the keyframe.
+        joins = []
+        for j in range(len(KINDS) + 1):
+            before, after = clips.get(j - 1), clips.get(j)
+            if before:
+                joins.append(frame_of(before, probe(before)[2] - tail))
+            elif after:
+                joins.append(frame_of(after, 0.0))
+            else:
+                joins.append(Image.open(keys[j]).convert("RGB"))
+        for s, kind in enumerate(KINDS):
+            if s in clips:
+                duration = probe(clips[s])[2]
+                sources.append(("video", clips[s], 0.0, duration - tail if kind == "hold" else duration))
+            else:
+                sources.append(("keys", joins[s], joins[s + 1]))
+        real = ", ".join(str(s + 1) for s in sorted(clips))
+        label = f"keyframes, clips {real}" if real else "keyframes"
     if args.master:
         if not args.cuts:
             raise SystemExit("--master needs --cuts")
@@ -206,12 +276,13 @@ def main() -> None:
             end = cuts[s + 1]
             if s == len(KINDS) - 1:
                 end = min(end, duration) - tail
-            sources.append((args.master, cuts[s], end))
+            sources.append(("video", args.master, cuts[s], end))
+        label = args.master.name
 
     digest = hashlib.sha1()
     counts = {}
     for set_name, spec in SETS.items():
-        frames = stand_in(set_name) if args.stand_in else from_video(set_name, sources, focus)
+        frames = stand_in(set_name) if args.stand_in else build(set_name, sources, focus)
         out = OUT_FRAMES / set_name
         shutil.rmtree(out, ignore_errors=True)
         out.mkdir(parents=True)
@@ -236,7 +307,7 @@ def main() -> None:
         segments.append(entry)
 
     manifest = {
-        "source": "stand-in" if args.stand_in else (args.clips or args.master).name,
+        "source": label,
         "base": "/film/services",
         "version": digest.hexdigest()[:10],
         "sets": {name: {"width": spec["size"][0], "height": spec["size"][1], "count": counts[name]} for name, spec in SETS.items()},

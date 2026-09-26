@@ -156,9 +156,11 @@ domain is live.
   — What We Do's film as scrub frames and their manifest (frame counts,
   each hold's and morph's frame range, a version for cache-busting),
   **generated** by `scripts/build-service-film.py`: `--stand-in` from the
-  four service photos (what's there now), or `--clips <dir>` from the
-  real film's seven clips, in order by name (or `--master <video>
-  --cuts <json>` from an edited master; the plan doc has both). Needs
+  four service photos (what's there now), `--keyframes <dir>` from
+  Runable's eight keyframes K0–K7 plus whichever of the seven clips
+  exist (crafted moves between keyframes where a clip is missing, meeting
+  real clips on their own frames), or `--clips <dir>` from all seven
+  clips (or `--master <video> --cuts <json>`; the plan doc has them all). Needs
   `pip install imageio-ffmpeg` for video (no system ffmpeg here).
 - `public/logos/naxis-wordmark-light.png` — the header's logo: the
   client's wordmark with AXIS in white (their ask for V2), **generated**
@@ -603,9 +605,10 @@ these when adding motion:
   becomes the container), scroll-scrubbed as WebP frames on a canvas,
   snapping to services. The plan has the clip specs, the order of work
   that makes the joins seamless, prompts, frame budgets and phases
-  (phase 0, built: the stage with stand-in frames). When the film
-  arrives: `build-service-film.py --master … --cuts …`, check the joins,
-  tune the frame counts and sizes against the budget. It replaces the
+  (phase 0, built: the stage with stand-in frames). Runable's first run
+  made eight keyframes and holds 1–2 before the credits ran out; once
+  they're in `media-library/services-film/`, `--keyframes` builds the
+  whole film from them and each later clip upgrades its segment. It replaces the
   earlier "thread to doorstep" idea.
 - Client questions above; "Delivering excellence through experience" is a
   sign-off lockup, not a headline.
