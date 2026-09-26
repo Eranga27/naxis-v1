@@ -3,7 +3,7 @@
   "segments": [
     {
       "name": "hold 1: Development, pushing in over the pattern table (a big move, so more frames)",
-      "frames": { "wide": 20, "tall": 20 },
+      "frames": { "wide": 40, "tall": 40 },
       "pieces": [{ "clip": "H1_v1 (1).mp4", "focus": [[0.58, 0.5], [0.62, 0.5]] }]
     },
     {

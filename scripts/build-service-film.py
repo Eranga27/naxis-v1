@@ -8,10 +8,10 @@ hold 4 — a hold per service and a morph between each. The site scrubs it
 with the scroll, so it's cut into still frames rather than played as
 video:
 
-  - wide: 1440x810 WebP, 12 frames a hold and 32 a morph, for landscape
+  - wide: 1440x810 WebP, 16 frames a hold and 44 a morph, for landscape
     screens;
   - tall: 540x960 WebP, a portrait crop round each shot's subject,
-    8 a hold and 20 a morph, for phones and portrait tablets;
+    12 a hold and 30 a morph, for phones and portrait tablets;
 
 or a segment's own "frames": {"wide": 20, "tall": 13}, for a clip that
 moves a lot for its scroll (the site scrolls every hold, and every morph,
@@ -65,8 +65,8 @@ OUT_FRAMES = ROOT / "public" / "film" / "services"
 OUT_TS = ROOT / "src" / "content" / "serviceFilm.ts"
 
 SETS = {
-    "wide": {"size": (1440, 810), "hold": 12, "morph": 32, "quality": 62},
-    "tall": {"size": (540, 960), "hold": 8, "morph": 20, "quality": 60},
+    "wide": {"size": (1440, 810), "hold": 16, "morph": 44, "quality": 62},
+    "tall": {"size": (540, 960), "hold": 12, "morph": 30, "quality": 60},
 }
 KINDS = ["hold", "morph", "hold", "morph", "hold", "morph", "hold"]
 LABELS = ["hold 1", "morph 1>2", "hold 2", "morph 2>3", "hold 3", "morph 3>4", "hold 4"]

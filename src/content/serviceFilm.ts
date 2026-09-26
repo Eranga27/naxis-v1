@@ -6,17 +6,17 @@
 export const SERVICE_FILM = {
   "source": "media-library/services-film/edit.json",
   "base": "/film/services",
-  "version": "daf6743ab5",
+  "version": "b087446e18",
   "sets": {
     "wide": {
       "width": 1440,
       "height": 810,
-      "count": 152
+      "count": 220
     },
     "tall": {
       "width": 540,
       "height": 960,
-      "count": 104
+      "count": 166
     }
   },
   "segments": [
@@ -25,83 +25,83 @@ export const SERVICE_FILM = {
       "service": 0,
       "wide": [
         0,
-        20
+        40
       ],
       "tall": [
         0,
-        20
+        40
       ]
     },
     {
       "kind": "morph",
       "from": 0,
       "wide": [
-        20,
-        52
+        40,
+        84
       ],
       "tall": [
-        20,
-        40
+        40,
+        70
       ]
     },
     {
       "kind": "hold",
       "service": 1,
       "wide": [
-        52,
-        64
+        84,
+        100
       ],
       "tall": [
-        40,
-        48
+        70,
+        82
       ]
     },
     {
       "kind": "morph",
       "from": 1,
       "wide": [
-        64,
-        96
+        100,
+        144
       ],
       "tall": [
-        48,
-        68
+        82,
+        112
       ]
     },
     {
       "kind": "hold",
       "service": 2,
       "wide": [
-        96,
-        108
+        144,
+        160
       ],
       "tall": [
-        68,
-        76
+        112,
+        124
       ]
     },
     {
       "kind": "morph",
       "from": 2,
       "wide": [
-        108,
-        140
+        160,
+        204
       ],
       "tall": [
-        76,
-        96
+        124,
+        154
       ]
     },
     {
       "kind": "hold",
       "service": 3,
       "wide": [
-        140,
-        152
+        204,
+        220
       ],
       "tall": [
-        96,
-        104
+        154,
+        166
       ]
     }
   ]

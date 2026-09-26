@@ -251,7 +251,7 @@ pieces: clips, stills, crafted push-throughs):
 
 | Segment | What plays |
 | --- | --- |
-| Hold 1, Development | H1_v1, all of it (20 frames: it moves a lot) |
+| Hold 1, Development | H1_v1, all of it (40 frames: it moves a lot) |
 | Morph 1>2 | the recommended morph, then a crafted push through the needle into H2's close-up (the morph ends on the machine at the table, so nothing meets H2 exactly) |
 | Hold 2, Manufacturing | H2_factory 2.0–4.0s, after its own crossfade |
 | Morph 2>3 | H2_factory's last second, then a crafted push from the seam to A3's coat |
@@ -259,13 +259,16 @@ pieces: clips, stills, crafted push-throughs):
 | Morph 3>4 | push to K5's carton, a beat, push out to A4 |
 | Hold 4, Logistics | A4, pushed in slowly |
 
-Wide 152 frames (≈ 5.4MB), tall 104 (≈ 2.0MB); on the throttled phone
-profile it steps like the stand-in did (≈ 43ms). At rest the stage
+Wide 220 frames (≈ 7.8MB: 16 a hold, 44 a morph, 40 for hold 1), tall
+166 (≈ 3.3MB: 12, 30 and 40), inside the budget above; that density is
+what keeps a camera move from stepping when the scroll is quick. The
+frames are decoded ahead of the playhead, so on the throttled phone
+profile it steps at ≈ 34ms (p90 40) either way. At rest the stage
 settles on a whole frame (a crossfade paused between two frames of a
 moving camera is a double exposure).
 
 `python3 scripts/build-service-film.py` rebuilds it (needs `pip install
-imageio-ffmpeg`, about a minute and a half). It also prints how far apart
+imageio-ffmpeg`, a couple of minutes). It also prints how far apart
 the two frames of each cut are: a clip made from the other's last frame
 comes out under ~12; much more means a push belongs there.
 
