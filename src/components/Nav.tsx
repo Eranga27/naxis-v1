@@ -221,18 +221,23 @@ export default function Nav() {
             solid ? "opacity-60" : "opacity-0"
           }`}
         />
+        {/* The logo alone, at 2.5x its old size (the client's call), with
+            AXIS in white (scripts/build-header-logo.py): the bar behind it
+            is always dark — clear over a dark hero, ink everywhere else. A
+            soft shadow, not a backing shape, keeps it clear where a hero
+            photo is pale at the top. */}
         <Link
           href="/#top"
           aria-label="NAXIS Australia — home"
-          className="inline-flex h-11 items-center justify-center rounded-full bg-cream/[0.07] p-3 transition-colors hover:bg-cream/15 md:h-12 md:p-3.5"
+          className="inline-flex h-[50px] items-center justify-center transition-opacity hover:opacity-80"
         >
-          <span className="relative block h-full aspect-[1200/980]">
+          <span className="relative block h-full aspect-[1200/980] [filter:drop-shadow(0_2px_8px_rgba(16,13,9,0.45))]">
             <Image
-              src="/logos/naxis-wordmark.png"
+              src="/logos/naxis-wordmark-light.png"
               alt="NAXIS"
               fill
               priority
-              sizes="150px"
+              sizes="62px"
               className="object-contain"
             />
           </span>
