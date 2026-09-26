@@ -360,7 +360,9 @@ domain is live.
   frames on a canvas, crossfading neighbours in twelfths; a moment after
   the scroll stops it eases to the nearest whole frame (paused between
   two frames of hold 1's moving camera, the crossfade was a double
-  exposure). Wide frames on
+  exposure). Frames are fetched as bytes and decoded to bitmaps off the
+  main thread, only round the playhead (about 128MB's worth, most of it
+  ahead, the rest released). Wide frames on
   landscape screens, tall (a portrait crop) below 0.85 aspect. Snap is
   judged by where the scroll stopped (`self.progress`), not the
   momentum-projected value — returning that unchanged flung a fast
@@ -464,6 +466,12 @@ these when adding motion:
   throttled phone profile that took the stage from 78ms to 45ms a step
   (neighbours ~34); switching drawing off entirely matches them, so the
   rest is the canvas, which real phones draw on the GPU.
+- The film's frames are decoded ahead of the playhead
+  (`createImageBitmap` from fetched bytes). Drawn from `<img>`s, a frame
+  was decoded at raster time on its first showing: scrolling down stepped
+  at p90 60ms on the throttled phone profile, scrolling back up over the
+  same frames 36. Decoded ahead, p90 40 both ways. Only a window stays
+  decoded: a 1440x810 frame is 4.7MB decoded, all of them ~1GB.
 - Hero D on phones: the 2048 artwork, 1.5x pixel ratio (desktop is
   capped at ~4.2M pixels, so a big screen at 2x doesn't cost 8M a pass),
   2x MSAA instead of 4x, no paper tooth, 45 motes instead of 110.

@@ -27,6 +27,11 @@ const LENGTH: Record<SetName, { hold: number; morph: number }> = {
 const TALL_BELOW = 0.85;
 // Frames fetched at once while loading.
 const PARALLEL = 6;
+// Decoded, a frame is its full size in memory (4.7MB wide, 2MB tall), so
+// only those round the playhead are kept decoded: about this many bytes'
+// worth, most of them ahead of it, decoding at most this many at once.
+const DECODED_BYTES = 128e6;
+const DECODERS = 4;
 
 /**
  * What We Do (V2): the four services as one film (see
@@ -93,24 +98,69 @@ function FilmStage() {
     // between two frames of a moving camera it's a double exposure.
     const play = { frame: 0 };
     const display = { frame: 0 };
-    const images: Array<HTMLImageElement | null> = new Array(count).fill(null);
-    const ready: boolean[] = new Array(count).fill(false);
+    const frameSize = FILM.sets[set];
+    // Every frame's bytes are fetched once (the whole film is a few MB), but
+    // decoded only round the playhead, to bitmaps and off the main thread,
+    // ahead of it in the direction it's going. Drawing a bitmap never waits
+    // on a decode, so the film doesn't stall on a frame's first showing.
+    const blobs: Array<Blob | null> = new Array(count).fill(null);
+    const bitmaps = new Map<number, ImageBitmap>();
+    const decoding = new Set<number>();
+    const keep = Math.min(48, Math.max(16, Math.floor(DECODED_BYTES / (frameSize.width * frameSize.height * 4))));
+    const ahead = Math.round(keep * 0.7);
+    const behind = keep - ahead;
+    let head = 0;
+    let heading = 1;
+    let disposed = false;
     let drawn = "";
     let width = 0;
     let height = 0;
     // The rail runs down the right on wide screens, across the top on narrow.
     let vertical = true;
 
-    const cover = (image: HTMLImageElement) => {
-      const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
-      const w = image.naturalWidth * scale;
-      const h = image.naturalHeight * scale;
+    const inWindow = (i: number) => (heading > 0 ? i >= head - behind && i <= head + ahead : i >= head - ahead && i <= head + behind);
+    // Drops the bitmaps the playhead has left behind and decodes the
+    // nearest missing ones, a few at a time.
+    const decodeNear = () => {
+      for (const [i, bitmap] of bitmaps) {
+        if (!inWindow(i)) {
+          bitmap.close();
+          bitmaps.delete(i);
+        }
+      }
+      for (let d = 0; d <= ahead && decoding.size < DECODERS; d++) {
+        for (const i of d === 0 ? [head] : d <= behind ? [head + heading * d, head - heading * d] : [head + heading * d]) {
+          const blob = blobs[i];
+          if (!blob || bitmaps.has(i) || decoding.has(i) || decoding.size >= DECODERS) continue;
+          decoding.add(i);
+          createImageBitmap(blob)
+            .then((bitmap) => {
+              if (disposed || !inWindow(i)) {
+                bitmap.close();
+                return;
+              }
+              bitmaps.set(i, bitmap);
+              draw();
+            })
+            .catch(() => {})
+            .finally(() => {
+              decoding.delete(i);
+              if (!disposed) decodeNear();
+            });
+        }
+      }
+    };
+
+    const cover = (image: ImageBitmap) => {
+      const scale = Math.max(width / frameSize.width, height / frameSize.height);
+      const w = frameSize.width * scale;
+      const h = frameSize.height * scale;
       context.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
     };
     const nearestReady = (i: number) => {
       for (let d = 0; d < count; d++) {
-        if (i - d >= 0 && ready[i - d]) return i - d;
-        if (i + d < count && ready[i + d]) return i + d;
+        if (bitmaps.has(i - d)) return i - d;
+        if (bitmaps.has(i + d)) return i + d;
       }
       return -1;
     };
@@ -118,19 +168,25 @@ function FilmStage() {
       const f = Math.min(count - 1, Math.max(0, display.frame));
       const a = Math.floor(f);
       const frac = f - a;
-      const shown = ready[a] ? a : nearestReady(a);
+      if (a !== head) {
+        heading = a > head ? 1 : -1;
+        head = a;
+        decodeNear();
+      }
+      const shown = bitmaps.has(a) ? a : nearestReady(a);
       if (shown < 0) return;
       // A twelfth of a frame is as fine as the crossfade needs.
       const step = Math.round(frac * 12);
-      const blend = shown === a && step > 0 && a + 1 < count && ready[a + 1];
+      const next = bitmaps.get(a + 1);
+      const blend = shown === a && step > 0 && next !== undefined;
       const key = `${shown}:${blend ? step : 0}:${width}`;
       if (key === drawn) return;
       drawn = key;
       context.globalAlpha = 1;
-      cover(images[shown]!);
+      cover(bitmaps.get(shown)!);
       if (blend) {
         context.globalAlpha = step / 12;
-        cover(images[a + 1]!);
+        cover(next);
         context.globalAlpha = 1;
       }
       // The canvas starts hidden (unpainted, it's black) over the poster.
@@ -140,7 +196,6 @@ function FilmStage() {
     // The canvas at no more pixels than the frames have once they cover
     // the stage (more is only upscaling, and each draw costs by the
     // pixel), and no more than the screen's own.
-    const frameSize = FILM.sets[set];
     const size = () => {
       const cover = Math.max(stage.clientWidth / frameSize.width, stage.clientHeight / frameSize.height);
       const ratio = Math.min(window.devicePixelRatio || 1, Math.max(0.75, 1 / cover));
@@ -154,7 +209,7 @@ function FilmStage() {
     const sized = new ResizeObserver(size);
     sized.observe(stage);
 
-    // Load every frame, nearest the playhead first (in viewing order from
+    // Fetch every frame, nearest the playhead first (in viewing order from
     // the top of the section), a few at a time.
     let loading = false;
     const load = () => {
@@ -168,18 +223,13 @@ function FilmStage() {
       });
       let next = 0;
       const pump = () => {
-        if (next >= order.length) return;
+        if (disposed || next >= order.length) return;
         const i = order[next++];
-        const image = new Image();
-        image.decoding = "async";
-        image.src = frameUrl(set, i);
-        images[i] = image;
-        image
-          .decode()
-          .then(() => {
-            ready[i] = true;
-            drawn = "";
-            draw();
+        fetch(frameUrl(set, i))
+          .then((response) => (response.ok ? response.blob() : Promise.reject(new Error(response.statusText))))
+          .then((blob) => {
+            blobs[i] = blob;
+            if (inWindow(i)) decodeNear();
           })
           .catch(() => {})
           .finally(pump);
@@ -301,6 +351,9 @@ function FilmStage() {
     }, section);
 
     return () => {
+      disposed = true;
+      bitmaps.forEach((bitmap) => bitmap.close());
+      bitmaps.clear();
       sized.disconnect();
       // The settle is made after the context, so it isn't reverted with it.
       gsap.killTweensOf(display);
