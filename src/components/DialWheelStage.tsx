@@ -16,11 +16,13 @@ const ART_SRC = { wide: "/images/wheel/original-4096.webp", phone: "/images/whee
 const TURN = Math.PI * 2;
 // Each ring's own pace and direction (rad/s; negative is clockwise as
 // seen): values, motto, name, disc. Slower than the other heroes — this
-// close, a slow turn still carries the lettering across the screen.
-const SPIN = [-TURN / 240, TURN / 300, -TURN / 200, TURN / 360];
+// close, a slow turn still carries the lettering across the screen. The
+// disc at the centre holds still (the owner's call), so the N and the
+// icons stay upright while the rings turn about them.
+const SPIN = [-TURN / 240, TURN / 300, -TURN / 200, 0];
 // How far each ring is wound off the artwork's arrangement before the
-// intro, the way it turns (so it coasts on into place).
-const WIND = [-2.6, 2, -3, 1.6];
+// intro, the way it turns (so it coasts on into place); not the disc.
+const WIND = [-2.6, 2, -3, 0];
 
 let glSupport: boolean | null = null;
 const hasWebGL = () => {
@@ -144,9 +146,10 @@ export default function DialWheelStage({ fallback }: { fallback: React.ReactNode
       shot.light.x = Math.sin(time * 0.06) * 0.26 + pointer.sx * 0.4;
       shot.light.y = Math.cos(time * 0.045) * 0.18 + pointer.sy * 0.3;
       shot.shine = st.shine;
-      // A slow, barely-there drift, as if on a slider.
-      shot.azimuth = st.azimuth + Math.sin(time * 0.05) * 0.03 + pointer.sx * 0.015;
-      shot.elevation = st.elevation + Math.sin(time * 0.037 + 1) * 0.02 - pointer.sy * 0.01;
+      // A slow drift, as if on a slider: enough that the steps between
+      // the rings shift against each other, which is what sells the depth.
+      shot.azimuth = st.azimuth + Math.sin(time * 0.05) * 0.05 + pointer.sx * 0.02;
+      shot.elevation = st.elevation + Math.sin(time * 0.037 + 1) * 0.03 - pointer.sy * 0.012;
       shot.dolly = st.dolly * (1 + Math.sin(time * 0.043) * 0.012);
       shot.exit = st.exit;
       scene.render(shot);

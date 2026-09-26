@@ -203,13 +203,18 @@ domain is live.
   centre sits at the bottom right, the N just peeking in); on a phone,
   the upper half. The face is `original-4096.webp` (2048 on phones), the
   client's artwork exactly, cut into its four rings, which step down
-  towards the centre (each step a thin gold wall that throws a hairline
-  shadow, worked out in the shader) and turn at their own slow paces
-  (240/300/200/360s a turn). The shading comes from the same image: ink
-  stands a touch proud of the white (relief from a blurred mip), the
-  gold (lettering, rims, the N; not the icons' oranges) is foil that
-  glints pale gold as it passes under the key light, and where the light
-  is full the face is exactly the artwork. Each surface writes its
+  towards the centre (each step a 45° gold lip over a wall, in the white
+  inside a rim, throwing a shadow worked out in the shader). The outer
+  three turn at their own slow paces (240/300/200s a turn) about the
+  icon disc, which holds still (the owner's call: the N stays upright).
+  The shading comes from the same image: ink stands proud of the white
+  (relief from a blurred mip) and throws a small shadow away from the
+  light (a four-step march towards it through the same mip), the gold
+  (lettering, rims, the N; not the icons' oranges) is foil that glints
+  pale gold as it passes under the key light, and where the light is
+  full the face is exactly the artwork. A fill from the camera's side
+  lights only the metal, so the lips and walls facing the lens read as
+  gold, not dark bronze. Each surface writes its
   circle of confusion into alpha, so depth of field is two passes (focus
   on the frame's centre: the far rim and near centre soften); bloom takes
   only what's brighter than the paper (a float target; without
@@ -225,7 +230,7 @@ domain is live.
   back to the whole medallion, laid back on the table, as the stage
   closes to a card. Reduced motion or no WebGL 2: `DialStill.tsx`, the
   same close-up face on in CSS (ring layers masked from the one image,
-  turning unless motion is reduced), no pin. The Scroll cue sits on a
+  the outer three turning unless motion is reduced), no pin. The Scroll cue sits on a
   dark capsule where it has to cross the white face.
 - **Hero C** (`WovenWheelHero.tsx` → `WovenWheelStage.tsx` +
   `src/lib/wovenScene.ts`, on `v2-hero-c`): the Giant Wheel woven from

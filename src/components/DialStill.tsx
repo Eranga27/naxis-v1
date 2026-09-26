@@ -15,19 +15,21 @@ const RINGS = [0, 1, 2, 3].map((k) => {
   const inner = BOUNDS[k + 1] > 0 ? `transparent ${pct(BOUNDS[k + 1])}, #000 ${pct(BOUNDS[k + 1])}, ` : "";
   return `radial-gradient(circle closest-side, ${inner}#000 ${outer}, transparent ${outer})`;
 });
-// Their turns, as in the moving hero: values, motto, name, disc.
+// Their turns, as in the moving hero: values, motto, name. The disc at
+// the centre holds still.
 const SPIN: Record<string, string>[] = [
   { "--spin": "240s" },
   { "--spin": "300s", "--spin-dir": "reverse" },
   { "--spin": "200s" },
-  { "--spin": "360s", "--spin-dir": "reverse" },
+  {},
 ];
 
 /**
  * Hero D's stand-in, without WebGL or under reduced motion: the same
  * close-up of the client's wheel, a quarter of it filling the frame (half
  * on phones), face on and in its own colours, lit from the top left. Its
- * rings turn slowly unless motion is reduced, when it is simply still.
+ * rings turn slowly about the still centre disc unless motion is reduced,
+ * when it is simply still.
  * No pin, no scroll sequence.
  */
 export default function DialStill() {
@@ -51,7 +53,7 @@ export default function DialStill() {
         }}
       >
         {RINGS.map((mask, k) => (
-          <div key={k} className="wheel-spin absolute inset-0" style={{ ...SPIN[k], maskImage: mask, WebkitMaskImage: mask } as React.CSSProperties}>
+          <div key={k} className={`${k < 3 ? "wheel-spin " : ""}absolute inset-0`} style={{ ...SPIN[k], maskImage: mask, WebkitMaskImage: mask } as React.CSSProperties}>
             <Image
               src="/images/wheel/original-2048.webp"
               alt=""

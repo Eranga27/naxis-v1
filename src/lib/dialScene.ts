@@ -7,12 +7,13 @@ import { GIANT_WHEEL as W } from "@/content/giantWheel";
 //
 // Its face is the artwork exactly as drawn (public/images/wheel/
 // original-*.webp, a plain render of their PDF), cut into its four rings,
-// each turning on its own. The rings step down towards the centre like
-// the bezels of a dial, each step a thin gold wall, so the key light
-// throws a hairline shadow inside every rim. The same image gives the
-// face its relief: the ink stands a touch proud of the white, and the
-// gold (lettering, rims, the N) is foil — it catches the light as it
-// passes. Everything is drawn in the artwork's own colours: where the
+// the outer three turning on their own about the still centre disc. The
+// rings step down towards the centre like the bezels of a dial, each step
+// a machined gold lip and wall, so the key light throws a shadow inside
+// every rim. The same image gives the face its relief: the ink stands
+// proud of the white and casts its own small shadow away from the light,
+// and the gold (lettering, rims, the N) is foil — it catches the light as
+// it passes. Everything is drawn in the artwork's own colours: where the
 // light falls full, the face is exactly the client's.
 //
 // After it: depth of field worked out from each pixel's distance (the
@@ -52,11 +53,15 @@ export type DialFrame = {
 const [R1, R2, R3, R4] = W.radii;
 const EDGE = R1 + W.rimWidth / 2;
 const BOUNDS = [1, (R2 - 8) / EDGE, (R3 - 7) / EDGE, (R4 + 6) / EDGE, 0];
-// Each ring sits this far below the one outside it.
-const STEP = 0.011;
+// Each ring sits this far below the one outside it, and each step
+// breaks over a small 45° lip (both in the white inside a rim).
+const STEP = 0.022;
+const LIP = 0.005;
+// How far the ink stands proud of the white.
+const RELIEF = 0.005;
 // The outer edge's chamfer, and the medallion's thickness.
 const BEVEL = 0.012;
-const THICK = 0.07;
+const THICK = 0.09;
 // The artwork's gold, as drawn (sRGB, used as is, like the texture).
 const hex = (value: string) =>
   new THREE.Vector3(parseInt(value.slice(1, 3), 16) / 255, parseInt(value.slice(3, 5), 16) / 255, parseInt(value.slice(5, 7), 16) / 255);
@@ -67,9 +72,11 @@ const GOLD = hex(W.rimColours[0]);
 // units the frame is tall there, and the camera's angle off square
 // (azimuth to the right, elevation below), which makes the far rim recede.
 type Shot = { x: number; y: number; frame: number; azimuth: number; elevation: number };
-const WIDE: Shot = { x: -0.4, y: 0.4, frame: 1.02, azimuth: 0.26, elevation: 0.3 };
-const TALL: Shot = { x: -0.1, y: 0.52, frame: 1.85, azimuth: 0.12, elevation: 0.34 };
-const FOV = 28;
+const WIDE: Shot = { x: -0.4, y: 0.4, frame: 1.02, azimuth: 0.3, elevation: 0.42 };
+const TALL: Shot = { x: -0.1, y: 0.52, frame: 1.85, azimuth: 0.15, elevation: 0.44 };
+// A touch wider than a portrait lens, and so nearer: the far rim falls
+// away faster, and the steps between the rings show.
+const FOV = 32;
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -123,6 +130,7 @@ const ringFragment = /* glsl */ `
   uniform sampler2D uNoise;
   uniform float uTexel;
   uniform float uBump;
+  uniform float uRelief;
   uniform float uPaper;
   uniform float uEdge;
   uniform float uStep;
@@ -160,9 +168,11 @@ const ringFragment = /* glsl */ `
 
     // Relief from the ink, turned with the ring.
     vec2 e = vec2(uTexel * 2.5, 0.0);
-    float hx = inkAt(uv + e.xy) - inkAt(uv - e.xy);
-    float hy = inkAt(uv + e.yx) - inkAt(uv - e.yx);
-    vec3 n = vec3(-hx * uBump, -hy * uBump, 1.0);
+    float hE = inkAt(uv + e.xy);
+    float hW = inkAt(uv - e.xy);
+    float hN = inkAt(uv + e.yx);
+    float hS = inkAt(uv - e.yx);
+    vec3 n = vec3(-(hE - hW) * uBump, -(hN - hS) * uBump, 1.0);
     float ink = 1.0 - smoothstep(0.55, 0.85, min(base.r, min(base.g, base.b)));
     if (uPaper > 0.0) n.xy += (texture2D(uNoise, p * 1.4).rg - 0.5) * uPaper * (1.0 - ink);
     n = normalize(n);
@@ -171,6 +181,18 @@ const ringFragment = /* glsl */ `
     vec3 V = normalize(cameraPosition - vWorld);
     vec3 L = normalize(uLight - vWorld);
     float lit = pool(vWorld);
+
+    // The raised ink throws a small shadow away from the light: walk
+    // towards the light (turned into the ring's own frame) and see
+    // whether ink stands higher than the ray climbing from here.
+    vec2 toward = vec2(vAxis.x * L.x + vAxis.y * L.y, -vAxis.y * L.x + vAxis.x * L.y);
+    vec2 reach = toward / max(L.z, 0.15) * uRelief * 0.5;
+    float h0 = (hE + hW + hN + hS) * 0.25;
+    float inkShadow = 0.0;
+    for (int i = 1; i <= 4; i++) {
+      float s = float(i) * 0.25;
+      inkShadow = max(inkShadow, smoothstep(0.0, 0.35, inkAt(uv + reach * s) - h0 - s));
+    }
     // Relief shading, relative to the flat face, so the face itself keeps
     // the artwork's colours where the light is full.
     float shade = clamp(max(dot(N, L), 0.0) / max(L.z, 0.12), 0.35, 1.8);
@@ -180,11 +202,13 @@ const ringFragment = /* glsl */ `
     float shadow = 0.0;
     float corner = 1.0;
     if (uStep > 0.0) {
-      vec2 q = vWorld.xy + L.xy * (uStep / max(L.z, 0.05));
-      shadow = smoothstep(uEdge - 0.003, uEdge + 0.006, length(q));
-      corner = 1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.016, uEdge - r));
+      float climb = uStep / max(L.z, 0.05);
+      vec2 q = vWorld.xy + L.xy * climb;
+      // Softer the further it falls from the wall.
+      shadow = smoothstep(uEdge - 0.002, uEdge + 0.003 + climb * 0.2, length(q));
+      corner = 1.0 - 0.38 * (1.0 - smoothstep(0.0, 0.03, uEdge - r));
     }
-    float key = lit * (1.0 - shadow * 0.85);
+    float key = lit * (1.0 - shadow * 0.8) * (1.0 - inkShadow * 0.55);
     vec3 col = base * (0.3 + 0.72 * key * shade) * corner;
 
     // Highlights: foil glints and sheens, glossy ink a little, the white
@@ -216,6 +240,7 @@ const metalVertex = /* glsl */ `
 // The steps' walls, the chamfer and the outer edge: gold.
 const metalFragment = /* glsl */ `
   uniform vec3 uGold;
+  uniform vec3 uFill;
   varying vec3 vWorld;
   varying vec3 vNormal;
   ${lightGlsl}
@@ -228,6 +253,12 @@ const metalFragment = /* glsl */ `
     float nh = max(dot(N, H), 0.0);
     vec3 col = uGold * (0.24 + 0.85 * lit * max(dot(N, L), 0.0));
     col += (uGold * 1.4 + 0.08) * (pow(nh, 60.0) * 1.8 + pow(nh, 8.0) * 0.18) * lit;
+    // A soft fill from the camera's side: the walls and lips that face the
+    // lens turn away from the key light, and would read as dark bronze.
+    vec3 F = normalize(uFill - vWorld);
+    float nf = max(dot(N, normalize(F + V)), 0.0);
+    col += uGold * 0.5 * max(dot(N, F), 0.0);
+    col += (uGold * 1.3 + 0.1) * (pow(nf, 50.0) * 0.9 + pow(nf, 6.0) * 0.15);
     // A soft studio reflection, up and to the left, where the light is.
     vec3 R = reflect(-V, N);
     col += uGold * smoothstep(0.2, 0.9, dot(R, normalize(vec3(-0.5, 0.6, 0.6)))) * 0.3;
@@ -430,8 +461,12 @@ function band(r0: number, z0: number, r1: number, z1: number, nr: number, nz: nu
 
 function metalGeometry(segments: number) {
   const parts = [
-    // Each step's wall, facing in, from the ring below up to the ring outside.
-    ...[1, 2, 3].map((k) => band(BOUNDS[k], -STEP * k, BOUNDS[k], -STEP * (k - 1), -1, 0, segments)),
+    // Each step: a 45° lip where the ring outside breaks over it, then a
+    // wall down to the ring below, both facing in.
+    ...[1, 2, 3].flatMap((k) => [
+      band(BOUNDS[k] + LIP, -STEP * (k - 1), BOUNDS[k], -STEP * (k - 1) - LIP, -1, 1, segments),
+      band(BOUNDS[k], -STEP * (k - 1) - LIP, BOUNDS[k], -STEP * k, -1, 0, segments),
+    ]),
     // The chamfer round the outer edge, and the edge itself.
     band(1, 0, 1 + BEVEL, -BEVEL, 1, 1, segments),
     band(1 + BEVEL, -BEVEL, 1 + BEVEL, -THICK, 1, 0, segments),
@@ -516,11 +551,12 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
   art.needsUpdate = true;
   const noise = noiseTexture();
 
-  // The four rings, stepping down towards the centre. Each reaches a
-  // little under the ring outside it, so no seam opens as they turn.
+  // The four rings, stepping down towards the centre. Each stops short of
+  // its inner edge for the lip, and reaches a little under the ring
+  // outside it, so no seam opens as they turn.
   const segments = phone ? 256 : 384;
   const rings = [0, 1, 2, 3].map((k) => {
-    const inner = BOUNDS[k + 1];
+    const inner = BOUNDS[k + 1] > 0 ? BOUNDS[k + 1] + LIP : 0;
     const outer = BOUNDS[k] + (k > 0 ? 0.01 : 0);
     const geometry = inner > 0 ? new THREE.RingGeometry(inner, outer, segments, 1) : new THREE.CircleGeometry(outer, segments);
     const material = new THREE.ShaderMaterial({
@@ -529,7 +565,8 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
         uArt: { value: art },
         uNoise: { value: noise },
         uTexel: { value: 1 / image.width },
-        uBump: { value: 0.55 },
+        uBump: { value: 0.8 },
+        uRelief: { value: RELIEF },
         uPaper: { value: phone ? 0 : 0.05 },
         uEdge: { value: BOUNDS[k] },
         uStep: { value: k > 0 ? STEP : 0 },
@@ -544,8 +581,9 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
     return mesh;
   });
 
+  const fill = { value: new THREE.Vector3() };
   const metalMaterial = new THREE.ShaderMaterial({
-    uniforms: shared,
+    uniforms: { ...shared, uFill: fill },
     vertexShader: metalVertex,
     fragmentShader: metalFragment,
     side: THREE.DoubleSide,
@@ -703,6 +741,7 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
     // centre; its glint lands on the outer ring.
     shared.uLight.value.set(focusPoint.x - 0.65 + f.light.x, focusPoint.y + 0.77 + f.light.y, 1.1);
     aim.set(focusPoint.x + 0.12, focusPoint.y - 0.12, 0);
+    fill.value.set(focusPoint.x + 0.7, focusPoint.y - 0.9, 1.6);
     shared.uSpotDir.value.copy(aim).sub(shared.uLight.value).normalize();
     shared.uExposure.value = f.exposure;
     shared.uFocus.value = distance + f.focus;
