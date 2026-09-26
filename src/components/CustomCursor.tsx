@@ -241,14 +241,18 @@ export default function CustomCursor() {
         aria-hidden="true"
         className="pointer-events-none fixed left-0 top-0 z-[10000] h-1.5 w-1.5 rounded-full bg-white mix-blend-difference will-change-transform"
       />
+      {/* The labelled disc ("Scroll", "Inspect"…) in black and white, like
+          the ring and dot (the client's call: the brand gradient read as
+          one more colour over the photos). A hairline of white holds its
+          edge over dark photos. */}
       <div
         ref={labelRef}
         aria-hidden="true"
-        className="bg-gradient-brand pointer-events-none fixed left-0 top-0 z-[10000] flex h-20 w-20 items-center justify-center rounded-full shadow-[0_8px_30px_rgba(16,13,9,0.35)] will-change-transform"
+        className="pointer-events-none fixed left-0 top-0 z-[10000] flex h-20 w-20 items-center justify-center rounded-full border border-white/70 bg-black shadow-[0_8px_30px_rgba(16,13,9,0.35)] will-change-transform"
       >
         <span
           ref={labelTextRef}
-          className="font-body text-[0.65rem] font-bold uppercase tracking-[0.2em] text-ink"
+          className="font-body text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white"
         />
       </div>
     </>
