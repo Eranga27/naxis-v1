@@ -205,6 +205,8 @@ function FilmStage() {
       const ratio = Math.min(window.devicePixelRatio || 1, Math.max(0.75, 1 / cover));
       width = canvas.width = Math.round(stage.clientWidth * ratio);
       height = canvas.height = Math.round(stage.clientHeight * ratio);
+      // Resizing resets the context; the default smoothing is the cheap one.
+      context.imageSmoothingQuality = "high";
       vertical = window.matchMedia("(min-width: 768px)").matches;
       drawn = "";
       draw();
