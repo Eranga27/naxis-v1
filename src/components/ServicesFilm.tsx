@@ -14,6 +14,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 type SetName = keyof typeof FILM.sets;
 const frameUrl = (set: SetName, i: number) => `${FILM.base}/${set}/${String(i).padStart(3, "0")}.webp?v=${FILM.version}`;
+// A hold frame at the footage's full resolution and high quality, for when
+// the film is at rest on it.
+const restUrl = (set: SetName, i: number) => `${FILM.base}/${set}-rest/${String(i).padStart(3, "0")}.webp?v=${FILM.version}`;
 
 // How far the page scrolls through each segment, in screen heights: a
 // hold is a slow push-in, a morph the change from one service to the
@@ -59,6 +62,8 @@ export default function ServicesFilm() {
  * The frames load a couple of screens before the section, nearest first;
  * until one is ready the stage shows the first frame as a still (the
  * poster), and a frame not yet loaded falls back to the nearest that is.
+ * They're squeezed to stream, so where the film comes to rest, that frame
+ * at the footage's full resolution fades in over the canvas.
  * At rest the picture drifts very slowly, so it never looks frozen.
  */
 function FilmStage() {
@@ -67,6 +72,7 @@ function FilmStage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const driftRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLSpanElement>(null);
+  const stillRef = useRef<HTMLImageElement>(null);
   const chapterRefs = useRef<Array<HTMLElement | null>>([]);
   // Scrolls to a service (the rail; keyboard focus on a hidden service).
   const goToRef = useRef<(service: number) => void>(() => {});
@@ -78,9 +84,10 @@ function FilmStage() {
     const canvas = canvasRef.current;
     const drift = driftRef.current;
     const rail = railRef.current;
+    const still = stillRef.current;
     const chapters = chapterRefs.current.filter((el): el is HTMLElement => el !== null);
     const context = canvas?.getContext("2d", { alpha: false });
-    if (!section || !stage || !canvas || !drift || !rail || !context || chapters.length !== SERVICES.length) return;
+    if (!section || !stage || !canvas || !drift || !rail || !still || !context || chapters.length !== SERVICES.length) return;
 
     const set: SetName = stage.clientWidth / stage.clientHeight < TALL_BELOW ? "tall" : "wide";
     const count = FILM.sets[set].count;
@@ -243,6 +250,33 @@ function FilmStage() {
       for (let k = 0; k < PARALLEL; k++) pump();
     };
 
+    // At rest on a hold frame (the film only comes to rest in a hold), that
+    // frame at full resolution fades in over the canvas; any scroll hides it
+    // at once (it's the same picture, only sharper, so there's no jump).
+    let resting = 0;
+    const holdFrame = (i: number) => holds.some((s) => i >= s.frames[0] && i < s.frames[1]);
+    const hideStill = () => {
+      resting++;
+      if (still.style.opacity !== "0") {
+        still.style.transition = "none";
+        still.style.opacity = "0";
+      }
+    };
+    const showStill = (i: number) => {
+      if (!holdFrame(i)) return;
+      const token = ++resting;
+      const url = restUrl(set, i);
+      if (still.getAttribute("src") !== url) still.src = url;
+      still.decode().then(
+        () => {
+          if (token !== resting) return;
+          still.style.transition = "opacity 0.35s ease-out";
+          still.style.opacity = "1";
+        },
+        () => {}
+      );
+    };
+
     // Which service the stage is on: its hold, or the nearer side of a morph.
     const serviceAt = (p: number) => {
       const seg = segments.find((s) => p >= s.start && p <= s.end) ?? segments[segments.length - 1];
@@ -255,15 +289,18 @@ function FilmStage() {
       gsap.set(chapters.slice(1), { opacity: 0, y: 26 });
 
       // Drawn with the playhead while it moves; a moment after it stops, on
-      // to the nearest whole frame.
+      // to the nearest whole frame, and then that frame at full resolution.
       let settling: gsap.core.Tween | null = null;
       const rest = gsap
         .delayedCall(0.18, () => {
-          const whole = Math.round(play.frame);
-          if (Math.abs(whole - display.frame) > 0.01) settling = gsap.to(display, { frame: whole, duration: 0.35, ease: "power1.out", onUpdate: draw });
+          const whole = Math.min(count - 1, Math.round(play.frame));
+          if (Math.abs(whole - display.frame) > 0.01) {
+            settling = gsap.to(display, { frame: whole, duration: 0.35, ease: "power1.out", onUpdate: draw, onComplete: () => showStill(whole) });
+          } else showStill(whole);
         })
         .pause();
       const scrubbed = () => {
+        hideStill();
         settling?.kill();
         display.frame = play.frame;
         draw();
@@ -344,7 +381,16 @@ function FilmStage() {
       };
 
       // The frames start loading a couple of screens before the section.
-      ScrollTrigger.create({ trigger: section, start: "top bottom+=200%", once: true, onEnter: load });
+      // (With the first frame at full resolution for when the stage arrives.)
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top bottom+=200%",
+        once: true,
+        onEnter: () => {
+          load();
+          rest.restart(true);
+        },
+      });
 
       // A very slow drift, only while the section is on screen.
       const breathe = gsap.to(drift, { scale: 1.035, duration: 10, ease: "sine.inOut", repeat: -1, yoyo: true, paused: true });
@@ -358,6 +404,7 @@ function FilmStage() {
 
     return () => {
       disposed = true;
+      resting++;
       bitmaps.forEach((bitmap) => bitmap.close());
       bitmaps.clear();
       sized.disconnect();
@@ -393,6 +440,8 @@ function FilmStage() {
                 <img src={frameUrl("wide", 0)} alt="" className="h-full w-full object-cover" />
               </picture>
               <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block h-full w-full opacity-0 transition-opacity duration-300" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- its source is set from script, and the file is already made at its size */}
+              <img ref={stillRef} alt="" aria-hidden="true" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-0" />
             </div>
           </div>
         </ViewTransition>

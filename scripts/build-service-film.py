@@ -17,6 +17,11 @@ or a segment's own "frames": {"wide": 20, "tall": 13}, for a clip that
 moves a lot for its scroll (the site scrolls every hold, and every morph,
 the same distance, whatever its frames).
 
+Those are squeezed to stream (the whole film is fetched), so every hold
+frame (where the film can come to rest) is also written at the footage's
+own resolution and high quality, to {wide,tall}-rest/NNN.webp: the site
+fetches the one it stops on and fades it in over the canvas.
+
 A hold's first and last frames are its ends; a morph's frames lie
 strictly between the holds either side, so no frame repeats.
 
@@ -42,7 +47,7 @@ subject sits, x and y as shares of the frame, or a pair of them to pan
 from and to over the piece: the tall crop centres on it, and stills push
 in on it.
 
-Writes public/film/services/{wide,tall}/NNN.webp and
+Writes public/film/services/{wide,tall}/NNN.webp, {wide,tall}-rest/ and
 src/content/serviceFilm.ts (frame counts, which frames belong to which
 segment, and a version for cache-busting).
 """
@@ -67,6 +72,12 @@ OUT_TS = ROOT / "src" / "content" / "serviceFilm.ts"
 SETS = {
     "wide": {"size": (1440, 810), "hold": 16, "morph": 44, "quality": 62},
     "tall": {"size": (540, 960), "hold": 12, "morph": 30, "quality": 60},
+}
+# Each hold frame again at the footage's full resolution (the tall crop of
+# a 1080p frame is 608 wide), for when the film is at rest on it.
+REST = {
+    "wide": {"size": (1920, 1080), "quality": 86},
+    "tall": {"size": (608, 1080), "quality": 86},
 }
 KINDS = ["hold", "morph", "hold", "morph", "hold", "morph", "hold"]
 LABELS = ["hold 1", "morph 1>2", "hold 2", "morph 2>3", "hold 3", "morph 3>4", "hold 4"]
@@ -204,13 +215,15 @@ def load(path: pathlib.Path) -> tuple[list[list], dict[str, list[int]]]:
     return segments, counts
 
 
-def build(set_name: str, segments: list[list], counts: list[int]) -> list[Image.Image]:
+def build(set_name: str, segments: list[list], counts: list[int]) -> tuple[list[Image.Image], dict[int, Image.Image]]:
     """The film's frames, a segment at a time, each segment's frames
-    shared among its pieces by length."""
+    shared among its pieces by length; and each hold frame at rest size,
+    by its index."""
     spec = SETS[set_name]
     size = spec["size"]
     flat = [piece for pieces in segments for piece in pieces]
     frames: list[Image.Image] = []
+    rest: dict[int, Image.Image] = {}
     at = 0
     for s, (kind, pieces) in enumerate(zip(KINDS, segments)):
         n = counts[s]
@@ -228,16 +241,19 @@ def build(set_name: str, segments: list[list], counts: list[int]) -> list[Image.
                 edge += share
             piece = pieces[k]
             if isinstance(piece, Shot):
-                frames.append(piece.frame(u, size))
+                render = functools.partial(piece.frame, u)
             else:
                 where = at + k
                 before = next(p for p in reversed(flat[:where]) if isinstance(p, Shot))
                 after = next(p for p in flat[where + 1 :] if isinstance(p, Shot))
-                frames.append(push(before, after, u, size))
+                render = functools.partial(push, before, after, u)
+            if kind == "hold":
+                rest[len(frames)] = render(REST[set_name]["size"])
+            frames.append(render(size))
         at += len(pieces)
         names = " + ".join(p.name if isinstance(p, Shot) else "push" for p in pieces)
         print(f"  {set_name} {LABELS[s]}: {n} frames, {names}")
-    return frames
+    return frames, rest
 
 
 def check_cuts(segments: list[list]) -> None:
@@ -262,17 +278,20 @@ def main() -> None:
 
     digest = hashlib.sha1()
     for set_name, spec in SETS.items():
-        frames = build(set_name, segments, counts[set_name])
-        out = OUT_FRAMES / set_name
-        shutil.rmtree(out, ignore_errors=True)
-        out.mkdir(parents=True)
-        total = 0
-        for i, frame in enumerate(frames):
-            path = out / f"{i:03d}.webp"
-            frame.save(path, "WEBP", quality=spec["quality"], method=6)
-            digest.update(path.read_bytes())
-            total += path.stat().st_size
-        print(f"{out.relative_to(ROOT)}: {len(frames)} frames, {total / 1e6:.1f}MB")
+        frames, rest = build(set_name, segments, counts[set_name])
+        for out, images, quality in (
+            (OUT_FRAMES / set_name, dict(enumerate(frames)), spec["quality"]),
+            (OUT_FRAMES / f"{set_name}-rest", rest, REST[set_name]["quality"]),
+        ):
+            shutil.rmtree(out, ignore_errors=True)
+            out.mkdir(parents=True)
+            total = 0
+            for i, frame in images.items():
+                path = out / f"{i:03d}.webp"
+                frame.save(path, "WEBP", quality=quality, method=6)
+                digest.update(path.read_bytes())
+                total += path.stat().st_size
+            print(f"{out.relative_to(ROOT)}: {len(images)} frames, {total / 1e6:.1f}MB")
 
     # Which frames belong to which segment, per set.
     manifest_segments = []
@@ -290,6 +309,7 @@ def main() -> None:
         "base": "/film/services",
         "version": digest.hexdigest()[:10],
         "sets": {name: {"width": spec["size"][0], "height": spec["size"][1], "count": sum(counts[name])} for name, spec in SETS.items()},
+        "rest": {name: {"width": spec["size"][0], "height": spec["size"][1]} for name, spec in REST.items()},
         "segments": manifest_segments,
     }
     OUT_TS.write_text(

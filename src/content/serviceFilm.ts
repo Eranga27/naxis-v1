@@ -6,7 +6,7 @@
 export const SERVICE_FILM = {
   "source": "media-library/services-film/edit.json",
   "base": "/film/services",
-  "version": "b087446e18",
+  "version": "9e0515ac4c",
   "sets": {
     "wide": {
       "width": 1440,
@@ -17,6 +17,16 @@ export const SERVICE_FILM = {
       "width": 540,
       "height": 960,
       "count": 166
+    }
+  },
+  "rest": {
+    "wide": {
+      "width": 1920,
+      "height": 1080
+    },
+    "tall": {
+      "width": 608,
+      "height": 1080
     }
   },
   "segments": [

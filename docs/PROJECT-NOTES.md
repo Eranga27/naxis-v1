@@ -159,7 +159,9 @@ domain is live.
   in `media-library/services-film/`, cut by the edit list there
   (`edit.json`: per segment, clips, stills and crafted push-throughs;
   the script's docstring has the format). Change the edit, not the
-  frames. Needs `pip install imageio-ffmpeg` (no system ffmpeg here).
+  frames. `{wide,tall}-rest/` holds every hold frame again at the
+  footage's full resolution (1920x1080; 608x1080 tall) and quality 86.
+  Needs `pip install imageio-ffmpeg` (no system ffmpeg here).
 - `public/logos/naxis-wordmark-light.png` — the header's logo: the
   client's wordmark with AXIS in white (their ask for V2), **generated**
   from `naxis-wordmark.png` by `scripts/build-header-logo.py`, which
@@ -363,7 +365,11 @@ domain is live.
   exposure). Frames are fetched as bytes and decoded to bitmaps off the
   main thread, only round the playhead (about 128MB's worth, most of it
   ahead, the rest released). The scrub trails the scroll by 0.2s: Lenis
-  already smooths the wheel, and 0.6 on top of it read as lag. Wide frames on
+  already smooths the wheel, and 0.6 on top of it read as lag. The scrub
+  frames are squeezed to stream (WebP 62, 1440 wide), which looked low
+  when paused, so at rest (only ever on a hold frame) that frame's
+  full-resolution copy is fetched and fades in over the canvas as an
+  `<img>`; any scroll hides it at once. Wide frames on
   landscape screens, tall (a portrait crop) below 0.85 aspect. Snap is
   judged by where the scroll stopped (`self.progress`), not the
   momentum-projected value — returning that unchanged flung a fast

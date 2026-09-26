@@ -265,7 +265,11 @@ what keeps a camera move from stepping when the scroll is quick. The
 frames are decoded ahead of the playhead, so on the throttled phone
 profile it steps at ≈ 34ms (p90 40) either way. At rest the stage
 settles on a whole frame (a crossfade paused between two frames of a
-moving camera is a double exposure).
+moving camera is a double exposure), and then shows that frame at the
+footage's full resolution: every hold frame is also written to
+`wide-rest/` (1920×1080, 10.6MB in all) and `tall-rest/` (608×1080,
+4MB) at quality 86, and only the one the film stops on is fetched
+(60–260KB), fading in over the canvas.
 
 `python3 scripts/build-service-film.py` rebuilds it (needs `pip install
 imageio-ffmpeg`, a couple of minutes). It also prints how far apart
