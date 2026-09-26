@@ -65,7 +65,8 @@ number, title, summary, highlights and "Learn more" change with it.
 4. **Morphs** — M12, M23, M34 in first-and-last-frame (keyframe)
    mode: start = the last frame of the hold before, end = the first
    frame of the hold after, and the prompt describing the
-   transformation. Make 3–4 takes of each and keep the smoothest.
+   transformation. (With credits to spare, 3–4 takes of each to pick from;
+   the one-prompt route below makes one of each.)
    If Runable only takes a start frame: generate from it, describe the
    destination, and the last half-second is dissolved into the next
    hold's first frame in the edit (works, less magical).
@@ -126,6 +127,64 @@ number, title, summary, highlights and "Learn more" change with it.
   cardboard carton and the lid closes; the camera rises and pulls back —
   the carton is one of many on a pallet, then a container being lifted
   onto a ship at a port at golden hour. One continuous pull-out, no cut.
+
+### The one-prompt route (fewest credits)
+
+The owner asked for one prompt that has Runable do everything, one
+version of each (4 stills + 7 clips = 11 generations), to keep credits
+down. Paste this into a new Runable task in **Agent** mode, inside the
+project. It stops twice — for the cost estimate and to approve the
+stills — before any video is made; delete those two lines to run it
+straight through.
+
+```
+You are producing a short brand film for NAXIS Australia, a private-label apparel manufacturer. It will be played frame by frame on a website as people scroll, so every clip must be ONE slow, continuous camera move (no cuts, no fades), and the clips must join seamlessly, each one starting exactly where the one before it ends.
+
+CREDITS — IMPORTANT
+- Generate exactly ONE version of everything: no variations, no alternatives, no extra upscaling passes, audio off.
+- Before generating anything, tell me which image and video models you will use and the estimated total credit cost, and wait for my "go".
+- After Step 1, show me the four stills and wait for my "go" before making any video.
+- If something fails badly (visible text or logos, a cut or fade inside a clip, or a clip ending on a completely different scene), stop and ask me before regenerating.
+
+SPECS FOR EVERY IMAGE AND CLIP
+- 16:9, the highest resolution available (at least 1920x1080), 24 fps, every clip 5 seconds, audio off.
+- Look (put this in every prompt): Cinematic 35mm film look, shallow depth of field, warm tungsten key light from the left, soft deep shadows, rich blacks, colour palette of ochre gold, deep brown and warm cream with a subtle emerald green accent, fine film grain, photorealistic, premium fashion brand film.
+- Composition: main subject right of centre (about 60-65% across); the left third darker and calm (text will sit there); keep the subject inside the middle of the frame as well (a vertical phone crop is taken from it).
+- Never: readable text, letters, logos, labels, watermarks, faces in focus, close-up hands, fast or shaky camera, cuts, fades.
+- Video: use the best model you have that accepts BOTH a start image and an end image (first/last frame). Use the same video model for all seven clips.
+
+DO THESE STEPS IN ORDER
+
+STEP 1 - Four still images. Make A1 first, then A2, A3 and A4 with A1 as a style reference, so all four match in light, colour, lens and film look.
+A1: Three-quarter overhead view of a garment designer's worktable in a dim, warm atelier: kraft-paper sewing patterns with white chalk lines, a yellow tailor's tape measure, pencils, fabric swatches in cream and ochre, a sample jacket on a dress form softly out of focus behind. Main subject right of centre; the left third falls into soft shadow. No people.
+A2: An industrial sewing machine on a garment factory floor in warm light: its presser foot holding a panel of ochre fabric in the foreground, right of centre; rows of machines receding into soft focus; spools of cream and gold thread. Workers only as distant, soft silhouettes, faces not visible.
+A3: A clean quality-control room: a finished ochre garment laid flat on a white inspection table under a bright lamp, a yellow tape measure along its seam, a magnifying glass, a clipboard turned so nothing is readable; subject right of centre, the left third in soft shadow. No faces.
+A4: A container port at golden hour seen from above: stacked shipping containers in ochre, brown and deep green, gantry cranes silhouetted against a warm sky, a cargo ship alongside, the sea catching the light; the ship right of centre.
+
+STEP 2 - Four "hold" clips, image-to-video, each starting on its still.
+H1 (start image A1): Slow, steady dolly forward and gentle tilt down over the worktable, finishing looking straight down on a single kraft-paper pattern piece lying flat, right of centre, filling about half the frame. Dust drifting in the light. One continuous shot, no cuts.
+H2 (start image A2): Slow push towards the needle as it stitches the ochre panel, the fabric feeding smoothly; finishing on a close-up of the needle and a neat line of fresh stitches, right of centre. One continuous shot.
+H3 (start image A3): Slow glide along the inspection table, past the tape measure, finishing on a neatly folded ochre garment with a small gold swing tag, right of centre. One continuous shot.
+H4 (start image A4): Slow aerial push towards the ship as a container is lowered aboard; calm water, warm haze. One continuous shot.
+
+STEP 3 - Join frames. From the finished hold clips, extract full-resolution PNGs: the LAST frame of H1, H2 and H3, and the FIRST frame of H2, H3 and H4. (If you can't extract frames, stop here, give me everything so far and tell me.)
+
+STEP 4 - Three "morph" clips, each with start image = the last frame of the hold before, and end image = the first frame of the hold after.
+M12 (start H1 last frame, end H2 first frame): Seamless transformation: the kraft-paper pattern piece becomes a panel of woven ochre fabric of exactly the same shape; the paper texture turns into cloth and the chalk lines become stitching guides, as the camera slowly tilts up and pulls back to reveal the panel under the presser foot of an industrial sewing machine on a warm factory floor. One continuous shot, no cut, no fade.
+M23 (start H2 last frame, end H3 first frame): Seamless transition: the camera follows the thread up from the needle, then slowly pulls back and rises; the same stitched seam is now lying on a white inspection table under a bright lamp, a yellow tape measure unrolling along it. One continuous shot, no cut, no fade.
+M34 (start H3 last frame, end H4 first frame): Seamless transition: the camera rises straight up as the folded garment settles into an open cardboard carton; pulling back, the carton becomes one of hundreds in neat rows, which become stacked shipping containers at a port at golden hour. One continuous pull-out, no cut, no fade.
+If the video model can't take an end image, use the start image only and add "ending on:" plus the description of the next still (A2, A3 or A4) to the prompt.
+
+STEP 5 - Deliver. Name the seven clips exactly:
+1-hold-development.mp4
+2-morph-paper-to-cloth.mp4
+3-hold-manufacturing.mp4
+4-morph-stitch-to-check.mp4
+5-hold-quality.mp4
+6-morph-carton-to-container.mp4
+7-hold-logistics.mp4
+Also join them in that order into one preview, service-film-preview.mp4 (just joining, no new generation). Give me everything - the seven clips, the preview, the four stills and the join frames - as one zip, and tell me which video model you used and each clip's resolution and frame rate.
+```
 
 ## How the site plays it
 
