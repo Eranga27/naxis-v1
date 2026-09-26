@@ -357,7 +357,10 @@ domain is live.
   crafted push-throughs and slow push-ins on their stills (A3, K5's
   carton, A4) for the rest, until those clips are made. The intro sits above; the stage pins
   (0.6 screens a hold, 0.9 a morph; 0.45/0.75 on phones) and scrubs the
-  frames on a canvas, crossfading neighbours in twelfths. Wide frames on
+  frames on a canvas, crossfading neighbours in twelfths; a moment after
+  the scroll stops it eases to the nearest whole frame (paused between
+  two frames of hold 1's moving camera, the crossfade was a double
+  exposure). Wide frames on
   landscape screens, tall (a portrait crop) below 0.85 aspect. Snap is
   judged by where the scroll stopped (`self.progress`), not the
   momentum-projected value — returning that unchanged flung a fast

@@ -41,10 +41,11 @@ export default function ServicesFilm() {
  * The film stage. The section's intro sits above it; the stage pins, and
  * scrolling scrubs the film — a hold per service (the camera slowly
  * pushing in) and a morph between each — frame by frame on a canvas,
- * neighbouring frames crossfaded so it runs smooth between them. It never
- * comes to rest mid-morph: stopping in one snaps on to whichever service
- * is nearer. Each service's text leaves as its morph begins and arrives as
- * it lands; a rail shows where you are and jumps to a service.
+ * neighbouring frames crossfaded so it runs smooth between them (and at
+ * rest, a whole frame). It never comes to rest mid-morph: stopping in one
+ * snaps on to whichever service is nearer. Each service's text leaves as
+ * its morph begins and arrives as it lands; a rail shows where you are and
+ * jumps to a service.
  *
  * The frames load a couple of screens before the section, nearest first;
  * until one is ready the stage shows the first frame as a still (the
@@ -86,8 +87,12 @@ function FilmStage() {
     });
     const holds = segments.filter((s) => s.kind === "hold");
 
-    // The playhead, in frames; fractions crossfade to the next frame.
+    // The playhead, in frames; fractions crossfade to the next frame. What's
+    // drawn follows it, except at rest, when it eases to the nearest whole
+    // frame: a crossfade reads as motion only while it moves, and paused
+    // between two frames of a moving camera it's a double exposure.
     const play = { frame: 0 };
+    const display = { frame: 0 };
     const images: Array<HTMLImageElement | null> = new Array(count).fill(null);
     const ready: boolean[] = new Array(count).fill(false);
     let drawn = "";
@@ -110,7 +115,7 @@ function FilmStage() {
       return -1;
     };
     const draw = () => {
-      const f = Math.min(count - 1, Math.max(0, play.frame));
+      const f = Math.min(count - 1, Math.max(0, display.frame));
       const a = Math.floor(f);
       const frac = f - a;
       const shown = ready[a] ? a : nearestReady(a);
@@ -193,6 +198,22 @@ function FilmStage() {
     const ctx = gsap.context(() => {
       gsap.set(chapters.slice(1), { opacity: 0, y: 26 });
 
+      // Drawn with the playhead while it moves; a moment after it stops, on
+      // to the nearest whole frame.
+      let settling: gsap.core.Tween | null = null;
+      const rest = gsap
+        .delayedCall(0.18, () => {
+          const whole = Math.round(play.frame);
+          if (Math.abs(whole - display.frame) > 0.01) settling = gsap.to(display, { frame: whole, duration: 0.35, ease: "power1.out", onUpdate: draw });
+        })
+        .pause();
+      const scrubbed = () => {
+        settling?.kill();
+        display.frame = play.frame;
+        draw();
+        rest.restart(true);
+      };
+
       const film = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
@@ -229,7 +250,7 @@ function FilmStage() {
             }
           },
         },
-        onUpdate: draw,
+        onUpdate: scrubbed,
       });
 
       // The playhead through each segment: a hold from its first frame to
@@ -281,6 +302,8 @@ function FilmStage() {
 
     return () => {
       sized.disconnect();
+      // The settle is made after the context, so it isn't reverted with it.
+      gsap.killTweensOf(display);
       ctx.revert();
       goToRef.current = () => {};
     };

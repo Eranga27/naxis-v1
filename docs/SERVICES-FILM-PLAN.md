@@ -260,7 +260,9 @@ pieces: clips, stills, crafted push-throughs):
 | Hold 4, Logistics | A4, pushed in slowly |
 
 Wide 152 frames (≈ 5.4MB), tall 104 (≈ 2.0MB); on the throttled phone
-profile it steps like the stand-in did (≈ 43ms).
+profile it steps like the stand-in did (≈ 43ms). At rest the stage
+settles on a whole frame (a crossfade paused between two frames of a
+moving camera is a double exposure).
 
 `python3 scripts/build-service-film.py` rebuilds it (needs `pip install
 imageio-ffmpeg`, about a minute and a half). It also prints how far apart
