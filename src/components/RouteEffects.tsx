@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
@@ -43,9 +43,13 @@ export default function RouteEffects() {
     return () => window.removeEventListener("load", requestRefresh);
   }, []);
 
+  // (Not on the page's first load: ScrollTrigger measures the triggers it
+  // was just given by itself, and a second measure only cost a long task.)
+  const navigated = useRef(false);
   useEffect(() => {
     let cancelled = false;
-    requestRefresh();
+    if (navigated.current) requestRefresh();
+    navigated.current = true;
     document.fonts?.ready.then(() => {
       if (!cancelled) requestRefresh();
     });

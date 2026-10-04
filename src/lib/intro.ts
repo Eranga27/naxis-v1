@@ -41,11 +41,11 @@ let quiet: boolean | null = null;
 const quietWaiters = new Set<() => void>();
 const isQuiet = () => {
   if (quiet === null) {
-    let seen = true;
+    let seen = false;
     try {
       seen = sessionStorage.getItem(INTRO_SESSION_KEY) === "done";
     } catch {
-      // storage disabled: no intro plays
+      // storage disabled: the preloader plays the intro, as unseen
     }
     quiet = seen || window.location.pathname !== "/";
     // In case the intro never gets as far (it's cut short, or fails).
