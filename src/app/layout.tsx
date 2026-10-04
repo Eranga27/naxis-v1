@@ -25,9 +25,11 @@ const bebasNeue = Bebas_Neue({
   display: "swap",
 });
 
+// Only latin is preloaded (`subsets`); latin-ext (84KB, which no page's
+// text uses) still loads if a visitor types such a letter into the form.
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
   display: "swap",
 });
@@ -36,11 +38,14 @@ const inter = Inter({
 // (About, MOQ, service pages). A stand-in until the client confirms the
 // exact face used in their brand material. Variable, with the optical-size
 // axis so large headlines get the tighter display cut.
+// Not preloaded (120KB): nothing on the intro's screen is set in it, so it
+// loads once the page's text is laid out, after what the intro needs.
 const sourceSerif = Source_Serif_4({
   variable: "--font-source-serif",
   subsets: ["latin"],
   axes: ["opsz"],
   display: "swap",
+  preload: false,
 });
 
 // Handwritten accent for the client's "every detail matters." line — also
@@ -50,6 +55,7 @@ const allura = Allura({
   subsets: ["latin"],
   weight: "400",
   display: "swap",
+  preload: false,
 });
 
 // The intro's "Welcome to": a fine, high-contrast display serif, set in
@@ -69,6 +75,7 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
