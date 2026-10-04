@@ -11,6 +11,9 @@ gsap.registerPlugin(ScrollTrigger);
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+const VIDEO = "/videos/divider.mp4";
+const POSTER = "/images/divider-poster.jpg";
+
 export default function CinematicDivider() {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -18,10 +21,23 @@ export default function CinematicDivider() {
 
   // Only decode this video while it's near the viewport — two autoplaying
   // videos running at once is wasteful, and it keeps the hero's load clear.
+  // Nor is it fetched (1.6MB, and its poster) until the section is a few
+  // screens off: set in the markup, both went with the page's first load.
   useEffect(() => {
     const video = videoRef.current;
     const section = sectionRef.current;
     if (!video || !section) return;
+
+    const near = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        video.poster = POSTER;
+        video.src = VIDEO;
+        near.disconnect();
+      },
+      { rootMargin: "300% 0px" }
+    );
+    near.observe(section);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -37,7 +53,10 @@ export default function CinematicDivider() {
     );
 
     observer.observe(section);
-    return () => observer.disconnect();
+    return () => {
+      near.disconnect();
+      observer.disconnect();
+    };
   }, []);
 
   useIsomorphicLayoutEffect(() => {
@@ -83,8 +102,6 @@ export default function CinematicDivider() {
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
-        src="/videos/divider.mp4"
-        poster="/images/divider-poster.jpg"
         muted
         loop
         playsInline

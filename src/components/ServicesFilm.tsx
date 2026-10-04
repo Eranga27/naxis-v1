@@ -263,7 +263,9 @@ function FilmStage() {
       }
     };
     const showStill = (i: number) => {
-      if (!holdFrame(i)) return;
+      // Not before the section is near (the timeline's first render at
+      // load would fetch the first one with the page).
+      if (!loading || !holdFrame(i)) return;
       const token = ++resting;
       const url = restUrl(set, i);
       if (still.getAttribute("src") !== url) still.src = url;
@@ -437,7 +439,7 @@ function FilmStage() {
             <div ref={driftRef} className="absolute inset-0 will-change-transform">
               <picture className="absolute inset-0">
                 <source media={`(max-aspect-ratio: ${Math.round(TALL_BELOW * 100)}/100)`} srcSet={frameUrl("tall", 0)} />
-                <img src={frameUrl("wide", 0)} alt="" className="h-full w-full object-cover" />
+                <img src={frameUrl("wide", 0)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </picture>
               <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 block h-full w-full opacity-0 transition-opacity duration-300" />
               {/* eslint-disable-next-line @next/next/no-img-element -- its source is set from script, and the file is already made at its size */}
