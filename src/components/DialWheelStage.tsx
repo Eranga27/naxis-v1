@@ -8,7 +8,7 @@ import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP, prefersReducedMotion, useRe
 import { requestRefresh } from "@/lib/scrollRefresh";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 import type { DialFrame, DialScene } from "@/lib/dialScene";
-import { loadDialArt } from "@/lib/dialArt";
+import { decodeDialArt, fetchDialArt } from "@/lib/dialArt";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -196,13 +196,15 @@ export default function DialWheelStage({ fallback }: { fallback: React.ReactNode
     gsap.set(cue, { autoAlpha: 0 });
 
     // Build the scene; the intro's veil waits for it. three.js and the
-    // artwork load and decode now, off the main thread; uploading the art,
-    // compiling the shaders and drawing the first frame (which compiles the
-    // lens passes) all block it, so they wait for the intro's lockup to
-    // hold still rather than stall its letters.
-    const ready = Promise.all([import("@/lib/dialScene"), loadDialArt(phone ? ART_SRC.phone : ART_SRC.wide)])
-      .then(([{ createDialScene }, art]) => new Promise<[typeof createDialScene, typeof art]>((resolve) => whenIntroQuiet(() => resolve([createDialScene, art]))))
-      .then(([createDialScene, art]) => createDialScene(canvas, { art, phone }))
+    // artwork's bytes load now; decoding the art (off the main thread, but
+    // handing 64MB over to it isn't free), uploading it, compiling the
+    // shaders and drawing the first frame (which compiles the lens passes)
+    // all wait for the intro's lockup to hold still rather than stall its
+    // letters.
+    const src = phone ? ART_SRC.phone : ART_SRC.wide;
+    const ready = Promise.all([import("@/lib/dialScene"), fetchDialArt(src)])
+      .then(([{ createDialScene }, blob]) => new Promise<[typeof createDialScene, Blob | null]>((resolve) => whenIntroQuiet(() => resolve([createDialScene, blob]))))
+      .then(([createDialScene, blob]) => decodeDialArt(blob, src).then((art) => createDialScene(canvas, { art, phone })))
       .then((built) => {
         if (disposed) {
           built.dispose();
