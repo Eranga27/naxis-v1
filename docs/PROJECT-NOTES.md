@@ -147,6 +147,8 @@ domain is live.
   page; the pairings are ours). `src/content/networkMap.ts` +
   `public/images/network-map.svg` are **generated** by
   `scripts/build-world-map.mjs` — edit the script, not them. Likewise
+  `public/images/backdrop/*-dim.jpg` (Capabilities' backdrop, its
+  dimming baked in) come from `scripts/build-backdrops.py`.
   `src/content/giantWheel.ts` (the wheel's rings as path data) and
   `public/images/wheel/centre.webp` (its icon disc, drawn with the
   artwork's white details in the site's cream) and `original-*.webp` (the
@@ -185,7 +187,14 @@ domain is live.
   padding, the same tick rail, and a one-off nudge. Wayfinding only under
   reduced motion.
 - `src/lib/intro.ts` — preloader ↔ hero entrance handshake; the veil
-  holds until the wheel's disc image is decoded (`waitForHeroWheel`).
+  holds until the hero is ready (`setHeroReady` / `waitForHeroWheel`).
+  Also the intro's quiet moment (`whenIntroQuiet`, `markIntroQuiet`):
+  the lockup holding still, when heavy setup that waited for it runs.
+- `src/lib/scrollRefresh.ts` — `requestRefresh()`, the only way to ask for
+  a `ScrollTrigger.refresh()`: asks within 150ms share one, and during
+  the intro they wait for its quiet moment. ScrollTrigger's own refresh
+  on the window's load event is off (`autoRefreshEvents`, SmoothScroll);
+  RouteEffects asks for it instead.
 - `components/wheel/WheelLayers.tsx` — the wheel's rims, lettered rings
   and disc as shared server components, in a "light" (as drawn) or
   "dark" (gilded, for the hero's stage) tone.
@@ -196,6 +205,9 @@ domain is live.
 - `src/lib/dialScene.ts` — hero D's: the exact artwork on four stepped
   rings with its own shading, then depth of field, bloom and grain in
   its own passes; draws whatever `DialFrame` it's given.
+  `src/lib/dialArt.ts` fetches its artwork from mount and decodes it
+  (createImageBitmap, unflipped; the shader's `artUv` reads it upside
+  down) when the intro is quiet.
 - `src/lib/globeScene.ts` — the Global Network globe (three.js): night
   Earth shader, halo, routes, markers; it only draws what
   `GlobalNetwork.tsx` passes it each frame. Textures in
@@ -216,7 +228,12 @@ domain is live.
   veil switches to `mix-blend-mode: lighten` so the letters show the hero,
   then it scales about the centre of the X until the hero fills the
   screen. `VEIL_EXIT_MS` is reveal → veil gone; the hero times its
-  entrance off it. Reduced motion: static lockup, then fade. The `intro-seen`
+  entrance off it. After the fonts it also waits for the main thread to
+  come free (8 smooth frames, at most 1.2s, the veil still blank):
+  hydration's tail and ScrollTrigger's first measure of the page land
+  about when the fonts do. The lockup's hold is the intro's quiet moment
+  (`markIntroQuiet`): page refreshes and hero D's setup run there, so
+  nothing heavy lands on the letters while they move. Reduced motion: static lockup, then fade. The `intro-seen`
   class (which hides the veil on later visits) goes on only when the veil
   is released — added at the reveal, it cut the zoom off.
 - **Hero D** (`DialWheelHero.tsx` → `DialWheelStage.tsx` +
@@ -251,7 +268,11 @@ domain is live.
   runs across; the key light drifts (the pointer leads it on desktop)
   so the glint wanders over the lettering. Scrolling pulls the camera
   back to the whole medallion, laid back on the table, as the stage
-  closes to a card. Reduced motion or no WebGL 2: `DialStill.tsx`, the
+  closes to a card. Setup: three.js and the artwork's bytes load from
+  mount; decoding the art, uploading it, compiling and the first frame
+  wait for the intro's quiet moment, and after that warm-up frame nothing
+  is drawn until the reveal (behind the opaque veil it was GPU time taken
+  from the intro). Reduced motion or no WebGL 2: `DialStill.tsx`, the
   same close-up face on in CSS (ring layers masked from the one image,
   the outer three turning unless motion is reduced), no pin. The Scroll cue sits on a
   dark capsule where it has to cross the white face.
@@ -401,8 +422,11 @@ domain is live.
   owner's call), while the globe turns west; countries light as routes
   land, the logistics steps pop up as status pills, and shipments keep
   running out along the routes. Copy lines the risen globe would reach
-  fade out. three.js and textures load as it approaches; it renders only
-  while on screen. Reduced motion: the finished network, still. No WebGL:
+  fade out. three.js and textures load as it approaches (1.5 screens off,
+  inside the NAXIS wheel's pin), in pieces: the maps decoded off the main
+  thread and uploaded unflipped one a frame, the shaders compiled in the
+  background where `KHR_parallel_shader_compile` exists, nothing drawn
+  until then. It renders only while on screen. Reduced motion: the finished network, still. No WebGL:
   a list of the countries, no pin.
 - **Phones**: Hero and the NAXIS Australia section pin (shorter pins); Capabilities and
   Process use the swipe deck; Services cards are dealt in (no sticky:
@@ -479,6 +503,18 @@ these when adding motion:
   at p90 60ms on the throttled phone profile, scrolling back up over the
   same frames 36. Decoded ahead, p90 40 both ways. Only a window stays
   decoded: a 1440x810 frame is 4.7MB decoded, all of them ~1GB.
+- Big images for WebGL: fetch the bytes, `createImageBitmap(blob,
+  { premultiplyAlpha: "none", colorSpaceConversion: "none" })`, upload
+  with `flipY = false` and flip in the shader. From an `<img>` a 4096
+  is decoded during the upload (~220ms on the main thread); asked to
+  flip, createImageBitmap flips on the main thread (~70ms); and even a
+  plain decode is handed over as 64MB, which costs the main thread
+  ~45ms on a tablet, so decode when nothing is animating.
+- Capabilities' backdrop photos come pre-dimmed (no 55% layer, no 75%
+  veil over them): a moving layer under translucent ones is re-blended
+  every frame.
+- Below-the-fold media isn't in the first load: the divider's video and
+  poster attach three screens off, the film's poster is lazy.
 - Hero D on phones: the 2048 artwork, 1.5x pixel ratio (desktop is
   capped at ~4.2M pixels, so a big screen at 2x doesn't cost 8M a pass),
   2x MSAA instead of 4x, no paper tooth, 45 motes instead of 110.
@@ -562,6 +598,15 @@ these when adding motion:
   `filter: blur(0px)` on it (`clearProps: "filter"`), and avoid
   `backdrop-filter` on fixed bars over pinned sections. Measure by timing
   rAF frames while stepping `scrollTo` through the pin in headless Chrome.
+- Never call `ScrollTrigger.refresh()` directly: use `requestRefresh()`
+  (lib/scrollRefresh). On the homepage seven unrelated refreshes landed
+  in the intro, two of them on "Welcome to" as it started (the fonts
+  that start it are the ones that ask for a refresh).
+- ScrollTrigger batches its first full measure into the frame after
+  hydration creates the triggers; on a fresh load that's about when the
+  fonts land.
+- three's `compileAsync` warns (and compiles in one go) without
+  `KHR_parallel_shader_compile`: check the extension first.
 - A page reused across dynamic params (service → service) keeps its
   instance, so no transition plays and effects go stale: key `PageShell`
   by the slug. Preload the next hero on intent (`preloadHero`) so a
@@ -599,6 +644,14 @@ these when adding motion:
   GSAP and the scenes then run at that pace. Scroll into pinned sections in steps after
   the page settles; a single jump lands before late re-measures move
   them.
+- To find what stalls an animation, record a Chrome trace over CDP
+  (`Tracing.start`, categories `devtools.timeline`, `blink.user_timing`,
+  `v8.execute`) with `performance.mark()`s for the phases, and break each
+  main-thread `RunTask` over 50ms into its JS entry points (with script
+  URLs), style, layout and paint. A long task holding only
+  `AnimationFrame` markers is headless compositor noise. Software GL
+  makes WebGL sections crawl: stub the draw calls in an init script to
+  measure everything else.
 - Phone performance: emulate 390×844 at 3x density with CPU throttling
   (`Emulation.setCPUThrottlingRate` 4), step `scrollTo` a few percent of
   the viewport per double-rAF and time the frames, grouped by the
