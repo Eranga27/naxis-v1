@@ -18,6 +18,9 @@ const ZOOM_LETTER = BRAND.indexOf("X");
 // Longest wait for the webfonts before the sequence starts anyway — see
 // preloadFonts below.
 const FONT_WAIT_MS = 1500;
+// Longest wait, after that, for the main thread to come free — see
+// mainThreadFree below.
+const SETTLE_WAIT_MS = 1200;
 
 // A soft, low-saturation warm wash behind the lockup.
 const WELCOME_GRADIENT =
@@ -35,6 +38,27 @@ const ZOOM_DURATION = 1.25;
 export const VEIL_EXIT_MS = (FILL_BEAT + ZOOM_DURATION) * 1000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Resolves once the main thread has run a run of smooth frames, or after
+ * `maxMs`. On a fresh load the page's own setup (each section's effects,
+ * then ScrollTrigger measuring every pin, in one go) lands about when the
+ * fonts do; started then, the first letters stalled on it.
+ */
+function mainThreadFree(maxMs: number) {
+  return new Promise<void>((resolve) => {
+    const start = performance.now();
+    let last = start;
+    let smooth = 0;
+    const step = (now: number) => {
+      smooth = now - last < 25 ? smooth + 1 : 0;
+      last = now;
+      if (smooth >= 8 || now - start > maxMs) resolve();
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
 
 /** Fills an element with one inline-block span per letter, to animate. */
 function letterSpans(el: HTMLElement, text: string) {
@@ -284,6 +308,8 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       }
 
       await preloadFonts();
+      if (cancelled.current) return;
+      await mainThreadFree(SETTLE_WAIT_MS);
       if (cancelled.current) return;
 
       // "Welcome to" rises out of a blur, letter by letter.
