@@ -5,6 +5,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { INTRO_SESSION_KEY, onReveal, setHeroReady } from "@/lib/intro";
 import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP, prefersReducedMotion, useReducedMotion } from "@/lib/motion";
+import { requestRefresh } from "@/lib/scrollRefresh";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 import type { WovenScene } from "@/lib/wovenScene";
 
@@ -254,7 +255,7 @@ export default function WovenWheelStage({ fallback }: { fallback: React.ReactNod
     const settle = requestAnimationFrame(() => {
       window.dispatchEvent(new CustomEvent("hero:pinned"));
       ScrollTrigger.sort();
-      ScrollTrigger.refresh();
+      requestRefresh();
     });
 
     return () => {

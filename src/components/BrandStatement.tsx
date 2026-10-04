@@ -4,6 +4,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useIsomorphicLayoutEffect } from "@/lib/motion";
+import { requestRefresh } from "@/lib/scrollRefresh";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -168,7 +169,7 @@ export default function BrandStatement() {
 
     // The layout (and so where the middle is) changes when the webfont
     // lands.
-    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+    document.fonts?.ready.then(requestRefresh);
 
     return () => mm.revert();
   }, []);

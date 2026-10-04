@@ -13,6 +13,11 @@ export default function SmoothScroll() {
   const pathname = usePathname();
 
   useEffect(() => {
+    // ScrollTrigger re-measures by itself on the window's load event too,
+    // which can land mid-intro; RouteEffects asks for that refresh instead,
+    // through requestRefresh, which holds it until the intro is still.
+    ScrollTrigger.config({ autoRefreshEvents: "visibilitychange,DOMContentLoaded,resize" });
+
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;

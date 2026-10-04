@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { requestRefresh } from "@/lib/scrollRefresh";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -110,8 +111,8 @@ export default function Mission() {
       //
       // Kept to a single trigger element (sentenceWrap) for both start and
       // end, rather than referencing the Mission section itself: doing the
-      // latter hit a real cross-component layout-timing bug (see the
-      // pin-spacer watcher below for the full story) where the percentage
+      // latter hit a real cross-component layout-timing bug (the V1 hero's
+      // late pin-spacer; see the hero:pinned listener below) where the percentage
       // resolved as if Hero had no height at all. Anchoring purely to
       // sentenceWrap's own position sidesteps that class of bug entirely.
       //
@@ -135,34 +136,15 @@ export default function Mission() {
       });
     }, section);
 
-    // Hero's own pin-spacer isn't inserted until its entrance animation
-    // finishes, well after this effect runs. Until that spacer exists, the
-    // document is shorter by Hero's full pin distance. We listen to Hero's
-    // custom event and poll for the pin-spacer to ensure coordinates are exact.
-    const handleHeroPinned = () => {
-      ScrollTrigger.refresh();
-    };
-    window.addEventListener("hero:pinned", handleHeroPinned);
-
-    let pinSpacerSeen = false;
-    const pinSpacerCheck = setInterval(() => {
-      if (pinSpacerSeen) return;
-      if (document.querySelector(".pin-spacer")) {
-        pinSpacerSeen = true;
-        ScrollTrigger.refresh();
-        clearInterval(pinSpacerCheck);
-      }
-    }, 150);
-
-    const safetyTimeout = setTimeout(() => {
-      clearInterval(pinSpacerCheck);
-      ScrollTrigger.refresh();
-    }, 6000);
+    // Until the hero's pin-spacer exists, the document is shorter by the
+    // hero's pin distance, so re-measure once the hero says it's pinned.
+    // (The V1 hero pinned only after its entrance, so this also polled
+    // for the spacer and refreshed again at 6s; every V2 hero pins at
+    // mount and says so, and that late refresh landed mid-intro.)
+    window.addEventListener("hero:pinned", requestRefresh);
 
     return () => {
-      window.removeEventListener("hero:pinned", handleHeroPinned);
-      clearInterval(pinSpacerCheck);
-      clearTimeout(safetyTimeout);
+      window.removeEventListener("hero:pinned", requestRefresh);
       ctx.revert();
     };
   }, []);

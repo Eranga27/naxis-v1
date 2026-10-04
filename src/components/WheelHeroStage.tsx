@@ -5,6 +5,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { INTRO_SESSION_KEY, onReveal } from "@/lib/intro";
 import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP, prefersReducedMotion, useIsomorphicLayoutEffect } from "@/lib/motion";
+import { requestRefresh } from "@/lib/scrollRefresh";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -319,7 +320,7 @@ export default function WheelHeroStage({ art }: { art: React.ReactNode }) {
     const settle = requestAnimationFrame(() => {
       window.dispatchEvent(new CustomEvent("hero:pinned"));
       ScrollTrigger.sort();
-      ScrollTrigger.refresh();
+      requestRefresh();
     });
 
     // Rest while off screen: nothing turns or drifts, no dust is drawn.

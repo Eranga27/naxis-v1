@@ -7,6 +7,7 @@ import ScrollTrigger from "gsap/ScrollTrigger";
 import { NETWORK_MAP } from "@/content/networkMap";
 import { CONTACT_HREF } from "@/lib/navLinks";
 import { useIsomorphicLayoutEffect } from "@/lib/motion";
+import { requestRefresh } from "@/lib/scrollRefresh";
 import type { Globe, ScreenPoint } from "@/lib/globeScene";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -202,7 +203,7 @@ export default function GlobalNetwork() {
       if (disposed) return;
       setNoWebGL(true);
       mm.revert();
-      ScrollTrigger.refresh();
+      requestRefresh();
     };
     const hasWebGL = () => {
       const probe = document.createElement("canvas").getContext("webgl2");

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { INTRO_SESSION_KEY } from "@/lib/intro";
+import { INTRO_SESSION_KEY, markIntroQuiet } from "@/lib/intro";
 
 // The intro is a lockup: "Welcome to" rises in, then steps up to make
 // room for the name set large in the headline face, with the place
@@ -185,6 +185,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
     // Already played this session: never show the veil at all.
     if (seen) {
+      markIntroQuiet();
       fireReveal();
       setDone(true);
       return;
@@ -265,6 +266,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       gsap.set(letters, { yPercent: 0 });
       gsap.set(rules, { scaleX: 1 });
       gsap.set(placeText, { opacity: 1 });
+      markIntroQuiet();
       await holdForMedia(900);
       if (cancelled.current) return;
       fireReveal();
@@ -314,7 +316,10 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
       if (cancelled.current) return;
 
       // Hold on the lockup until the hero is actually ready, so the exit
-      // never lands on an unloaded wheel.
+      // never lands on an unloaded wheel. Nothing moves now, so this is
+      // when the heavy setup that waited for it runs (the hero's scene,
+      // re-measuring the page's pins).
+      markIntroQuiet();
       await holdForMedia(LOCKUP_HOLD_MS);
       if (cancelled.current) return;
 
@@ -350,6 +355,7 @@ export default function Preloader({ onReveal, waitForMedia }: Props) {
 
     return () => {
       cancelled.current = true;
+      markIntroQuiet();
       tweens.revert();
       document.body.style.overflow = prevOverflow;
       releaseInert();

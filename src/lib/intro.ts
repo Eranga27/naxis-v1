@@ -31,6 +31,42 @@ export function onReveal(cb: () => void): () => void {
   };
 }
 
+// The intro's quiet moment: once the lockup has formed and holds still,
+// a long task can't show as a stutter, so heavy setup (the hero's scene,
+// re-measuring the page's pins) waits for it rather than landing on the
+// letters as they move. The page can't scroll under the veil meanwhile.
+// Unknown until first asked: busy only when the homepage's intro is
+// about to play (not yet seen this session).
+let quiet: boolean | null = null;
+const quietWaiters = new Set<() => void>();
+const isQuiet = () => {
+  if (quiet === null) {
+    let seen = true;
+    try {
+      seen = sessionStorage.getItem(INTRO_SESSION_KEY) === "done";
+    } catch {
+      // storage disabled: no intro plays
+    }
+    quiet = seen || window.location.pathname !== "/";
+    // In case the intro never gets as far (it's cut short, or fails).
+    if (!quiet) setTimeout(markIntroQuiet, 8000);
+  }
+  return quiet;
+};
+
+/** The lockup is holding still (or the intro is over): run what waited. */
+export function markIntroQuiet() {
+  quiet = true;
+  for (const fn of quietWaiters) fn();
+  quietWaiters.clear();
+}
+
+/** Runs `cb` now, or when the intro next holds still if it's animating. */
+export function whenIntroQuiet(cb: () => void) {
+  if (isQuiet()) cb();
+  else quietWaiters.add(cb);
+}
+
 let heroReady: Promise<void> | null = null;
 
 /**
