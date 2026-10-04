@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { INTRO_SESSION_KEY, onReveal, setHeroReady } from "@/lib/intro";
+import { INTRO_SESSION_KEY, onReveal, setHeroReady, whenIntroQuiet } from "@/lib/intro";
 import { CARD_CLIP_PHONE, CARD_CLIP_WIDE, FULL_CLIP, prefersReducedMotion, useReducedMotion } from "@/lib/motion";
 import { requestRefresh } from "@/lib/scrollRefresh";
 import { VEIL_EXIT_MS } from "@/components/Preloader";
 import type { DialFrame, DialScene } from "@/lib/dialScene";
+import { loadDialArt } from "@/lib/dialArt";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -118,10 +119,14 @@ export default function DialWheelStage({ fallback }: { fallback: React.ReactNode
 
     let scene: DialScene | null = null;
     let disposed = false;
+    // Drawn only once the veil starts to show it: behind the opaque veil
+    // every frame of it (depth of field, bloom, at full size) was GPU time
+    // taken from the intro's own animation.
+    let live = alreadySeen;
     const start = performance.now();
     let last = 0;
     const tick = () => {
-      if (!scene) return;
+      if (!scene || !live) return;
       const box = section.getBoundingClientRect();
       if (box.bottom <= 0 || box.top >= window.innerHeight) {
         last = 0;
@@ -190,22 +195,31 @@ export default function DialWheelStage({ fallback }: { fallback: React.ReactNode
       }, land + 4.4);
     gsap.set(cue, { autoAlpha: 0 });
 
-    // Build the scene (three.js loads now); the intro's veil waits for it.
-    const ready = import("@/lib/dialScene")
-      .then(({ createDialScene }) => createDialScene(canvas, { artSrc: phone ? ART_SRC.phone : ART_SRC.wide, phone }))
+    // Build the scene; the intro's veil waits for it. three.js and the
+    // artwork load and decode now, off the main thread; uploading the art,
+    // compiling the shaders and drawing the first frame (which compiles the
+    // lens passes) all block it, so they wait for the intro's lockup to
+    // hold still rather than stall its letters.
+    const ready = Promise.all([import("@/lib/dialScene"), loadDialArt(phone ? ART_SRC.phone : ART_SRC.wide)])
+      .then(([{ createDialScene }, art]) => new Promise<[typeof createDialScene, typeof art]>((resolve) => whenIntroQuiet(() => resolve([createDialScene, art]))))
+      .then(([createDialScene, art]) => createDialScene(canvas, { art, phone }))
       .then((built) => {
         if (disposed) {
           built.dispose();
           return;
         }
         scene = built;
+        const shown = live;
+        live = true;
         tick();
+        live = shown;
       });
     ready.catch(() => {
       if (!disposed) setFailed(true);
     });
     setHeroReady(ready);
     const unsubscribe = onReveal(() => {
+      live = true;
       ready.then(() => intro.play()).catch(() => {});
     });
 

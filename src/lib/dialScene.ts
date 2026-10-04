@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GIANT_WHEEL as W } from "@/content/giantWheel";
+import type { DialArt } from "@/lib/dialArt";
 
 // The homepage hero's wheel, close up (V2 hero D): the client's Giant
 // Wheel as a made object — a medallion on a dark table, shot like a
@@ -141,9 +142,14 @@ const ringFragment = /* glsl */ `
   varying vec2 vAxis;
   ${lightGlsl}
 
+  // The artwork goes up as it's stored, top row first (flipping it on the
+  // way up costs main-thread time), so up the face is down the texture.
+  vec2 artUv(vec2 uv) {
+    return vec2(uv.x, 1.0 - uv.y);
+  }
   // How much ink there is here, softened (the ink stands proud of the white).
   float inkAt(vec2 uv) {
-    vec4 c = textureLod(uArt, uv, 1.6);
+    vec4 c = textureLod(uArt, artUv(uv), 1.6);
     return mix(1.0, 1.0 - smoothstep(0.5, 0.9, min(c.r, min(c.g, c.b))), c.a);
   }
   // Gold ink — the lettering, rims and N — is foil. (Not the icons' own
@@ -163,7 +169,7 @@ const ringFragment = /* glsl */ `
     // Past the artwork's last pixel, keep to its gold rim.
     vec2 p = r > 0.996 ? vLocal * (0.996 / r) : vLocal;
     vec2 uv = p * 0.5 + 0.5;
-    vec4 art = texture2D(uArt, uv);
+    vec4 art = texture2D(uArt, artUv(uv));
     vec3 base = mix(uGold, art.rgb, art.a);
 
     // Relief from the ink, turned with the ring.
@@ -502,21 +508,13 @@ function noiseTexture() {
 }
 
 type Options = {
-  /** The whole wheel as drawn (public/images/wheel/original-*.webp). */
-  artSrc: string;
+  /** The whole wheel as drawn, from loadDialArt. */
+  art: DialArt;
   /** A lighter build: fewer pixels and motes, no paper tooth. */
   phone: boolean;
 };
 
-export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone }: Options) {
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = artSrc;
-  });
-  await image.decode?.().catch(() => {});
-
+export async function createDialScene(canvas: HTMLCanvasElement, { art: image, phone }: Options) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: "high-performance" });
   renderer.autoClear = false;
   renderer.setClearColor(0x000000, 1);
@@ -545,6 +543,8 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
   // The artwork, colours exactly as drawn (sampled and written as they
   // are, with no colour conversion either way).
   const art = new THREE.Texture(image);
+  // Not flipped (the shader reads it upside down instead; see artUv).
+  art.flipY = false;
   art.anisotropy = renderer.capabilities.getMaxAnisotropy();
   art.generateMipmaps = true;
   art.minFilter = THREE.LinearMipmapLinearFilter;
@@ -797,6 +797,7 @@ export async function createDialScene(canvas: HTMLCanvasElement, { artSrc, phone
       for (const p of [across, bright, glowAcross, glowDown, final]) p.material.dispose();
       for (const t of [sceneTarget, acrossTarget, glowA, glowB]) t.dispose();
       art.dispose();
+      if (image instanceof ImageBitmap) image.close();
       noise.dispose();
       renderer.dispose();
     },
