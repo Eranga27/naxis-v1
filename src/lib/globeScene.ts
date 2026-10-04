@@ -71,8 +71,11 @@ const earthFragment = /* glsl */ `
     vec3 n = normalize(vNormal);
     float sunlit = dot(n, sun);
     float day = smoothstep(-0.05, 0.4, sunlit);
-    vec3 surface = texture2D(dayMap, vUv).rgb;
-    float lights = texture2D(lightsMap, vUv).r;
+    // The maps go up as stored, top row first (see loadMap), so north is
+    // down the texture.
+    vec2 mapUv = vec2(vUv.x, 1.0 - vUv.y);
+    vec3 surface = texture2D(dayMap, mapUv).rgb;
+    float lights = texture2D(lightsMap, mapUv).r;
     // Night: the land barely there, the cities warm gold.
     vec3 night = surface * vec3(0.05, 0.07, 0.11) + pow(lights, 0.8) * vec3(1.0, 0.72, 0.36) * 2.1;
     vec3 lit = surface * (0.45 + 1.1 * max(sunlit, 0.0));
@@ -146,6 +149,22 @@ function glowTexture() {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(canvas);
+}
+
+/** A map decoded off the main thread, as stored (unflipped); else an <img>. */
+async function loadMap(url: string): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const blob = await (await fetch(url)).blob();
+      return await createImageBitmap(blob, { premultiplyAlpha: "none", colorSpaceConversion: "none" });
+    } catch {
+      // fall through to the <img>
+    }
+  }
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+  return image;
 }
 
 export function createGlobe(
@@ -279,20 +298,41 @@ export function createGlobe(
     builtFor = radius;
   };
 
-  const loader = new THREE.TextureLoader();
-  const load = (url: string) =>
-    loader.loadAsync(url).then((texture) => {
-      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      return texture;
-    });
+  // The globe sets itself up while the section before it is still being
+  // scrolled (it loads 1.5 screens early), so none of it may land on the
+  // main thread in one piece. The maps are decoded off it and go up to the
+  // GPU unflipped, one a frame; then the shaders compile, in the
+  // background where the browser can; only then is it drawn. Loaded
+  // through <img>s, the two 4096 maps were decoded and flipped during the
+  // first draw, which also compiled every shader: a 600ms stall.
+  const toTexture = (image: ImageBitmap | HTMLImageElement) => {
+    const texture = new THREE.Texture(image);
+    texture.flipY = false;
+    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    texture.needsUpdate = true;
+    return texture;
+  };
+  const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  let compiled = false;
   const size = renderer.capabilities.maxTextureSize >= 4096 ? textureSize : 2048;
-  const ready = Promise.all([
-    load(`/images/globe/earth-day-${size}.webp`),
-    load(`/images/globe/earth-lights-${size}.webp`),
-  ]).then(([day, lights]) => {
-    earthUniforms.dayMap.value = day;
-    earthUniforms.lightsMap.value = lights;
-  });
+  const ready = Promise.all([loadMap(`/images/globe/earth-day-${size}.webp`), loadMap(`/images/globe/earth-lights-${size}.webp`)]).then(
+    async ([dayImage, lightsImage]) => {
+      const day = toTexture(dayImage);
+      await nextFrame();
+      renderer.initTexture(day);
+      const lights = toTexture(lightsImage);
+      await nextFrame();
+      renderer.initTexture(lights);
+      earthUniforms.dayMap.value = day;
+      earthUniforms.lightsMap.value = lights;
+      await nextFrame();
+      // In the background where the browser can (else three warns, and
+      // compiles in one go, in a frame of its own).
+      if (renderer.extensions.has("KHR_parallel_shader_compile")) await renderer.compileAsync(scene, camera);
+      else renderer.compile(scene, camera);
+      compiled = true;
+    }
+  );
 
   let width = 1;
   let height = 1;
@@ -315,6 +355,9 @@ export function createGlobe(
 
   let ease = 0;
   const render = (frame: GlobeFrame) => {
+    // Not until it's ready to draw without stalling (see ready); the
+    // caller should keep asking.
+    if (!compiled) return true;
     if (Math.abs(frame.radius - builtFor) / Math.max(builtFor, 1) > 0.08) buildTubes(frame.radius);
     globe.scale.setScalar(frame.radius);
     globe.position.set(frame.cx - width / 2, height / 2 - frame.cy, 0);
@@ -374,8 +417,10 @@ export function createGlobe(
       disc.dispose();
       ring.dispose();
       glow.dispose();
-      earthUniforms.dayMap.value?.dispose();
-      earthUniforms.lightsMap.value?.dispose();
+      for (const map of [earthUniforms.dayMap.value, earthUniforms.lightsMap.value]) {
+        map?.dispose();
+        if (map?.image instanceof ImageBitmap) map.image.close();
+      }
       renderer.dispose();
       renderer.forceContextLoss();
     },

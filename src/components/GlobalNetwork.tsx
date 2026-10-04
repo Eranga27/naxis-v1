@@ -205,11 +205,10 @@ export default function GlobalNetwork() {
       mm.revert();
       requestRefresh();
     };
-    const hasWebGL = () => {
-      const probe = document.createElement("canvas").getContext("webgl2");
-      probe?.getExtension("WEBGL_lose_context")?.loseContext();
-      return probe !== null;
-    };
+    // A cheap first check. (A probe context cost a long task of its own as
+    // the section approached; if the real one can't be made, createGlobe
+    // throws and the list stands in all the same.)
+    const hasWebGL = () => typeof WebGL2RenderingContext !== "undefined";
 
     const load = () => {
       if (!hasWebGL()) return giveUp();
