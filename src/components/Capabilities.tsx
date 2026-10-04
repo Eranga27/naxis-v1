@@ -47,11 +47,14 @@ const CATEGORY_IMAGES = [
 // block of ink behind the cards.
 // Greyscale copies (public/images/backdrop/), rather than a CSS
 // grayscale filter: the photos drift with the scroll, and a filter on
-// them was re-run on every frame — noticeably slower on phones.
+// them was re-run on every frame — noticeably slower on phones. For the
+// same reason they come already dimmed into the ink (*-dim.jpg, from
+// scripts/build-backdrops.py) rather than shown at 55% under a 75% ink
+// veil, which re-blended them through two layers every frame.
 const BACKDROP_IMAGES = [
-  "/images/backdrop/apparel3-mono.jpg",
-  "/images/backdrop/apparel4-mono.jpg",
-  "/images/backdrop/apparel6-mono.jpg",
+  "/images/backdrop/apparel3-dim.jpg",
+  "/images/backdrop/apparel4-dim.jpg",
+  "/images/backdrop/apparel6-dim.jpg",
 ];
 
 export default function Capabilities() {
@@ -231,7 +234,7 @@ export default function Capabilities() {
       {/* Ambient texture only — three generic, brand-free textile shots as
           a dim backdrop, not a claim about specific product categories
           (that's what the cards below are for). */}
-      <div className="absolute inset-0 grid grid-cols-3 opacity-55">
+      <div className="absolute inset-0 grid grid-cols-3">
         {BACKDROP_IMAGES.map((src, i) => (
           <div
             key={src}
@@ -258,7 +261,6 @@ export default function Capabilities() {
           </div>
         ))}
       </div>
-      <div className="absolute inset-0 bg-ink/75" />
 
       <div className="relative z-10">
         <p
