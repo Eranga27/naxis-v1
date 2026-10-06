@@ -27,7 +27,9 @@ domain is live.
 
 ## Branches and deploys
 
-- `main` → Vercel **Production**: https://naxis-v1.vercel.app
+- `main` → Vercel **Production**: https://naxis-v1.vercel.app — V2 since
+  2026-10-07. V1 as it last ran there is `df4c3f0`, still the tip of
+  `v1-homepage-rebuild`, so it can be redeployed from that branch.
 - `v1-homepage-rebuild` → iteration branch; every push gets a Vercel
   Preview. V1 of the homepage shipped to `main` on 2026-09-24 (`46a559e`).
 - Workflow: work on `v1-homepage-rebuild`, push, wait for its Vercel
@@ -37,8 +39,11 @@ domain is live.
   the owner's request; later rounds follow the same ask-first workflow.
 - `v2` → V2, branched from `main` at `df4c3f0` (V1 as the client
   reviewed it: ~70% satisfied, with a first round of changes). V2 work
-  goes here and only here; `main` stays V1 until the owner says
-  otherwise. Its pushes get Vercel previews like any branch. On
+  goes here; `main` was fast-forwarded to it at the owner's request on
+  2026-10-07, and later rounds follow the same ask-first workflow (push
+  `v2`, wait for its preview, fast-forward `main` only when asked). Its
+  pushes get Vercel previews like any branch; the latest is always at
+  https://naxis-v1-git-v2-eranga-bowatte.vercel.app. On
   2026-09-26 it was fast-forwarded to `v2-hero-d` (`bd005ad`): the owner
   is working with hero D until the client confirms it, so `v2` carries D
   (and the header kept off the hero), with the other heroes' components
@@ -51,9 +56,10 @@ domain is live.
 - `v2-hero-d` → V2 with hero D (the wheel close up), branched from
   `v2-hero-c` at `24ea974`; a snapshot of D as the client first saw it
   (`v2` has moved on from it).
-  The four heroes are alternatives for the client to choose between;
-  each branch has its own preview. Once one is chosen, bring it to `v2`
-  and drop the other heroes' components.
+  The four heroes are alternatives for the client to choose between.
+  Their Vercel previews have been removed (410 "deployment has been
+  removed" by 2026-09-30); push to a hero branch to get one again. Once
+  one is chosen, bring it to `v2` and drop the other heroes' components.
 - Deployment status without `gh`: public GitHub API
   `/repos/Eranga27/naxis-v1/deployments` and `/deployments/{id}/statuses`.
 
@@ -661,12 +667,10 @@ these when adding motion:
 
 ## Next up
 
-- **V1 is built and live** (`docs/V1-PLAN.md`): every page the client
-  material supports; the owner asked for it on `main` on 2026-09-25.
-  Preview deployments are behind Vercel Authentication, so the owner
-  can't open them on a phone without logging in to Vercel; to share
-  previews, turn it off (or use a shareable link) under the Vercel
-  project's Settings → Deployment Protection. Still to come: Global Network and What We Make pages (blocked
+- **V2 is live** on `main` since 2026-10-07, over V1's pages
+  (`docs/V1-PLAN.md`: every page the client material supports). Preview
+  deployments open without a Vercel login (as of 2026-09-30), so the
+  owner can share them. Still to come: Global Network and What We Make pages (blocked
   on client detail), the privacy notice, and turning on enquiry email.
 - **The service film** (`docs/SERVICES-FILM-PLAN.md`): What We Do
   (`ServicesFilm.tsx`) plays the owner's Runable film — a hold shot per
